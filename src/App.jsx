@@ -4,6 +4,15 @@
 // ================================================================
 
 import { useState, useEffect, useRef, useMemo } from "react";
+import {
+  auth, googleProvider, appleProvider,
+  signInWithPopup,
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  updateProfile,
+  onAuthStateChanged,
+  signOut,
+} from "./firebase.js";
 
 // ── Inject global CSS for safe-area, viewport, scrollbar hiding ─
 const GLOBAL_CSS = `
@@ -302,77 +311,210 @@ function FilterBadge({ preset, dateRange, onClick, primaryColor:p }) {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// AUTH
+// AUTH SCREEN — Firebase: Google + Apple + Email
 // ═══════════════════════════════════════════════════════════════
-function AuthScreen({ onLogin }) {
-  const [mode, setMode] = useState("login");
-  const [form, setForm] = useState({name:"",email:"",password:"",confirm:"",businessName:""});
-  const [err, setErr]   = useState("");
-  const [busy, setBusy] = useState(false);
+function AuthScreen() {
+  const [mode,    setMode]  = useState("login");
+  const [form,    setForm]  = useState({name:"",email:"",password:"",confirm:"",businessName:""});
+  const [err,     setErr]   = useState("");
+  const [busy,    setBusy]  = useState(false);
+  const [busyBtn, setBusyBtn] = useState(""); // "google" | "apple" | "email"
   const f = (k,v) => setForm(p=>({...p,[k]:v}));
 
-  const handleRegister = () => {
-    setErr("");
-    if (!form.name.trim())            return setErr("Enter your full name");
-    if (!form.businessName.trim())    return setErr("Enter your business name");
-    if (!form.email.includes("@"))    return setErr("Enter a valid email address");
-    if (form.password.length < 6)     return setErr("Password must be at least 6 characters");
-    if (form.password!==form.confirm) return setErr("Passwords do not match");
-    const users = DB.get("lb_users")||[];
-    if (users.find(u=>u.email.toLowerCase()===form.email.toLowerCase())) return setErr("An account with this email already exists");
-    const user = {id:genId(),name:form.name,email:form.email.toLowerCase(),password:btoa(form.password),businessName:form.businessName,createdAt:new Date().toISOString()};
-    DB.set("lb_users",[...users,user]); DB.set("lb_session",user.id);
-    if (!DB.get(`lb_branding_${user.id}`)) DB.set(`lb_branding_${user.id}`,{...DEFAULT_BRANDING,businessName:form.businessName});
-    setBusy(true); setTimeout(()=>onLogin(user),700);
+  // ── Social sign-in ──────────────────────────────────────────
+  const handleSocial = async (provider, name) => {
+    setErr(""); setBusyBtn(name); setBusy(true);
+    try {
+      const result = await signInWithPopup(auth, provider);
+      // If new Google/Apple user, save their business name prompt
+      const uid = result.user.uid;
+      if (!DB.get(`lb_bname_${uid}`)) {
+        DB.set(`lb_bname_${uid}`, result.user.displayName?.split(" ")[0] + "'s Business" || "My Business");
+      }
+      // onAuthStateChanged in ROOT will pick up the login automatically
+    } catch (e) {
+      if (e.code === "auth/popup-closed-by-user") setErr("Sign-in cancelled. Please try again.");
+      else if (e.code === "auth/popup-blocked") setErr("Popup was blocked. Please allow popups for this site and try again.");
+      else if (e.code !== "auth/cancelled-popup-request") setErr(e.message || "Sign-in failed. Please try again.");
+    } finally {
+      setBusy(false); setBusyBtn("");
+    }
   };
 
-  const handleLogin = () => {
+  // ── Email register ──────────────────────────────────────────
+  const handleRegister = async () => {
     setErr("");
-    if (!form.email||!form.password) return setErr("Please fill in all fields");
-    const users = DB.get("lb_users")||[];
-    const user = users.find(u=>u.email.toLowerCase()===form.email.toLowerCase());
-    if (!user) return setErr("No account found with this email");
-    if (atob(user.password)!==form.password) return setErr("Incorrect password");
-    DB.set("lb_session",user.id); setBusy(true); setTimeout(()=>onLogin(user),600);
+    if (!form.name.trim())         return setErr("Enter your full name");
+    if (!form.businessName.trim()) return setErr("Enter your business name");
+    if (!form.email.includes("@")) return setErr("Enter a valid email address");
+    if (form.password.length < 6)  return setErr("Password must be at least 6 characters");
+    if (form.password !== form.confirm) return setErr("Passwords do not match");
+    setBusy(true); setBusyBtn("email");
+    try {
+      const cred = await createUserWithEmailAndPassword(auth, form.email, form.password);
+      await updateProfile(cred.user, { displayName: form.name });
+      DB.set(`lb_bname_${cred.user.uid}`, form.businessName);
+    } catch (e) {
+      if (e.code === "auth/email-already-in-use") setErr("An account with this email already exists. Sign in instead.");
+      else if (e.code === "auth/invalid-email") setErr("That email address doesn't look right.");
+      else setErr(e.message || "Registration failed. Please try again.");
+    } finally {
+      setBusy(false); setBusyBtn("");
+    }
+  };
+
+  // ── Email login ─────────────────────────────────────────────
+  const handleLogin = async () => {
+    setErr("");
+    if (!form.email || !form.password) return setErr("Please fill in all fields");
+    setBusy(true); setBusyBtn("email");
+    try {
+      await signInWithEmailAndPassword(auth, form.email, form.password);
+    } catch (e) {
+      if (e.code === "auth/user-not-found" || e.code === "auth/invalid-credential") setErr("No account found. Check your email or sign up.");
+      else if (e.code === "auth/wrong-password") setErr("Incorrect password. Please try again.");
+      else if (e.code === "auth/too-many-requests") setErr("Too many attempts. Please wait a moment and try again.");
+      else setErr(e.message || "Sign-in failed. Please try again.");
+    } finally {
+      setBusy(false); setBusyBtn("");
+    }
   };
 
   return (
-    <div style={{ minHeight:"100vh", background:"linear-gradient(160deg,#075E54 0%,#128C7E 50%,#25D366 100%)",
+    <div style={{ minHeight:"100vh",
+      background:"linear-gradient(160deg,#075E54 0%,#128C7E 50%,#25D366 100%)",
       display:"flex", alignItems:"center", justifyContent:"center",
-      padding:`max(24px, env(safe-area-inset-top, 24px)) max(20px, env(safe-area-inset-right, 20px)) max(24px, env(safe-area-inset-bottom, 24px)) max(20px, env(safe-area-inset-left, 20px))` }}>
-      <div style={{ width:"100%", maxWidth:400, background:"#fff", borderRadius:24, overflow:"hidden", boxShadow:"0 20px 60px rgba(0,0,0,0.25)" }}>
+      padding:`max(24px, env(safe-area-inset-top,24px)) max(20px, env(safe-area-inset-right,20px)) max(24px, env(safe-area-inset-bottom,24px)) max(20px, env(safe-area-inset-left,20px))` }}>
+
+      <div style={{ width:"100%", maxWidth:400, background:"#fff", borderRadius:28,
+        overflow:"hidden", boxShadow:"0 24px 64px rgba(0,0,0,0.28)" }}>
+
+        {/* Header */}
         <div style={{ background:"linear-gradient(135deg,#075E54,#25D366)", padding:"36px 28px 28px", textAlign:"center" }}>
-          <div style={{ width:72, height:72, borderRadius:20, background:"rgba(255,255,255,0.2)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:38, margin:"0 auto 16px" }}>📒</div>
-          <div style={{ color:"#fff", fontWeight:900, fontSize:23, letterSpacing:-.5 }}>LedgerBook Pro</div>
+          <div style={{ width:76, height:76, borderRadius:22, background:"rgba(255,255,255,0.2)",
+            display:"flex", alignItems:"center", justifyContent:"center", fontSize:40, margin:"0 auto 16px" }}>📒</div>
+          <div style={{ color:"#fff", fontWeight:900, fontSize:24, letterSpacing:-.5 }}>LedgerBook Pro</div>
           <div style={{ color:"rgba(255,255,255,0.75)", fontSize:14, marginTop:5 }}>Business Finance Tracker</div>
         </div>
+
+        {/* Tab switcher */}
         <div style={{ display:"flex", background:"#f5f5f5" }}>
           {[["login","Sign In"],["register","Create Account"]].map(([m,l])=>(
             <button key={m} onClick={()=>{setMode(m);setErr("");}}
-              style={{ flex:1, padding:"13px", border:"none", fontWeight:700, fontSize:14, cursor:"pointer",
+              style={{ flex:1, padding:"14px", border:"none", fontWeight:700, fontSize:14, cursor:"pointer",
                 background:mode===m?"#fff":"transparent", color:mode===m?"#075E54":"#999",
                 borderBottom:mode===m?"3px solid #075E54":"3px solid transparent" }}>
               {l}
             </button>
           ))}
         </div>
+
         <div style={{ padding:`24px ${S.px}px 30px` }}>
+
+          {/* ── SOCIAL BUTTONS ── */}
+          <div style={{ display:"flex", flexDirection:"column", gap:11, marginBottom:20 }}>
+
+            {/* Google */}
+            <button onClick={()=>handleSocial(googleProvider,"google")} disabled={busy}
+              style={{ width:"100%", padding:"14px 16px", border:"2px solid #e8e8e8", borderRadius:14,
+                background: busyBtn==="google"?"#f5f5f5":"#fff", cursor:busy?"not-allowed":"pointer",
+                display:"flex", alignItems:"center", justifyContent:"center", gap:12,
+                fontWeight:700, fontSize:15, color:"#333",
+                boxShadow:"0 1px 4px rgba(0,0,0,0.08)", transition:"all 0.15s" }}>
+              {busyBtn==="google" ? (
+                <span style={{ fontSize:13, color:"#888" }}>Connecting…</span>
+              ) : (
+                <>
+                  {/* Google G logo SVG */}
+                  <svg width="20" height="20" viewBox="0 0 48 48">
+                    <path fill="#FFC107" d="M43.6 20H24v8h11.3C33.7 33.5 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3 0 5.7 1.1 7.8 2.9l5.7-5.7C34.1 6.5 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20c11 0 19.4-7.8 19.4-20 0-1.3-.1-2.7-.4-4z"/>
+                    <path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.5 16 19 13 24 13c3 0 5.7 1.1 7.8 2.9l5.7-5.7C34.1 6.5 29.3 4 24 4c-7.8 0-14.5 4.3-17.7 10.7z"/>
+                    <path fill="#4CAF50" d="M24 44c5.2 0 9.9-1.9 13.5-5l-6.2-5.2C29.4 35.6 26.8 36 24 36c-5.2 0-9.7-3.4-11.3-8.1l-6.6 5.1C9.6 39.7 16.3 44 24 44z"/>
+                    <path fill="#1976D2" d="M43.6 20H24v8h11.3c-.8 2.2-2.3 4.1-4.2 5.4l6.2 5.2C40.9 35.3 44 30 44 24c0-1.3-.1-2.7-.4-4z"/>
+                  </svg>
+                  Continue with Google
+                </>
+              )}
+            </button>
+
+            {/* Apple */}
+            <button onClick={()=>handleSocial(appleProvider,"apple")} disabled={busy}
+              style={{ width:"100%", padding:"14px 16px", border:"2px solid #e8e8e8", borderRadius:14,
+                background: busyBtn==="apple"?"#111":"#000", cursor:busy?"not-allowed":"pointer",
+                display:"flex", alignItems:"center", justifyContent:"center", gap:12,
+                fontWeight:700, fontSize:15, color:"#fff",
+                boxShadow:"0 1px 4px rgba(0,0,0,0.15)", transition:"all 0.15s" }}>
+              {busyBtn==="apple" ? (
+                <span style={{ fontSize:13, color:"#aaa" }}>Connecting…</span>
+              ) : (
+                <>
+                  {/* Apple logo SVG */}
+                  <svg width="18" height="22" viewBox="0 0 814 1000" fill="white">
+                    <path d="M788.1 340.9c-5.8 4.5-108.2 62.2-108.2 190.5 0 148.4 130.3 200.9 134.2 202.2-.6 3.2-20.7 71.9-68.7 141.9-42.8 61.6-87.5 123.1-155.5 123.1s-85.5-39.5-164-39.5c-76 0-103.7 40.8-165.9 40.8s-105-57.8-155.5-127.4C46 790.7 0 663 0 541.8c0-207.5 135.4-317.5 269-317.5 70.1 0 128.4 46.4 172.5 46.4 42.8 0 109.6-49 192-49 30.8 0 110.7 2.6 173.3 66.5zm-245.7-191.4c33.4-39.5 56.7-95.3 56.7-151.1 0-7.7-.6-15.4-1.9-22.4-53.5 2-116.8 35.5-154.2 79.5-29.5 33.9-57.1 89.6-57.1 146.1 0 8.3 1.3 16.6 1.9 19.2 3.2.6 8.3 1.3 13.4 1.3 47.9 0 109.6-32.1 141.2-72.6z"/>
+                  </svg>
+                  Continue with Apple
+                </>
+              )}
+            </button>
+          </div>
+
+          {/* Divider */}
+          <div style={{ display:"flex", alignItems:"center", gap:12, marginBottom:20 }}>
+            <div style={{ flex:1, height:1, background:"#eee" }}/>
+            <span style={{ fontSize:12, color:"#bbb", fontWeight:600 }}>OR</span>
+            <div style={{ flex:1, height:1, background:"#eee" }}/>
+          </div>
+
+          {/* ── EMAIL FORM ── */}
           {mode==="register"&&<>
-            <AInput label="Full Name"     placeholder="John Doe"         value={form.name}         onChange={v=>f("name",v)}/>
-            <AInput label="Business Name" placeholder="Ade Electronics"  value={form.businessName} onChange={v=>f("businessName",v)}/>
+            <AInput label="Full Name"     placeholder="John Doe"        value={form.name}         onChange={v=>f("name",v)}/>
+            <AInput label="Business Name" placeholder="Ade Electronics" value={form.businessName} onChange={v=>f("businessName",v)}/>
           </>}
-          <AInput label="Email"    placeholder="you@example.com" type="email"    value={form.email}    onChange={v=>f("email",v)}/>
+          <AInput label="Email"    placeholder="you@example.com"  type="email"    value={form.email}    onChange={v=>f("email",v)}/>
           <AInput label="Password" placeholder="Min. 6 characters" type="password" value={form.password} onChange={v=>f("password",v)}/>
           {mode==="register"&&<AInput label="Confirm Password" placeholder="Re-enter password" type="password" value={form.confirm} onChange={v=>f("confirm",v)}/>}
-          {err&&<div style={{ background:"#fff3f3", border:"1px solid #ffcdd2", borderRadius:11, padding:"11px 14px", color:"#c62828", fontSize:13, marginBottom:14, lineHeight:1.4 }}>⚠️ {err}</div>}
+
+          {/* Error */}
+          {err&&(
+            <div style={{ background:"#fff3f3", border:"1px solid #ffcdd2", borderRadius:12,
+              padding:"12px 14px", color:"#c62828", fontSize:13, marginBottom:14, lineHeight:1.5 }}>
+              ⚠️ {err}
+            </div>
+          )}
+
+          {/* Submit */}
           <button onClick={mode==="login"?handleLogin:handleRegister} disabled={busy}
-            style={{ width:"100%", padding:"15px", background:busy?"#aaa":"linear-gradient(135deg,#075E54,#25D366)",
-              color:"#fff", border:"none", borderRadius:14, fontSize:16, fontWeight:900, cursor:busy?"not-allowed":"pointer" }}>
-            {busy?"Please wait…":mode==="login"?"Sign In →":"Create Account →"}
+            style={{ width:"100%", padding:"15px",
+              background:busy?"#ccc":"linear-gradient(135deg,#075E54,#25D366)",
+              color:"#fff", border:"none", borderRadius:14, fontSize:16, fontWeight:900,
+              cursor:busy?"not-allowed":"pointer",
+              boxShadow:busy?"none":"0 4px 18px rgba(7,94,84,0.35)" }}>
+            {busyBtn==="email" ? "Please wait…" : mode==="login" ? "Sign In →" : "Create Account →"}
           </button>
-          {mode==="login"&&<div style={{ textAlign:"center", marginTop:16, fontSize:13, color:"#999" }}>
-            No account?{" "}<button onClick={()=>{setMode("register");setErr("");}} style={{ background:"none", border:"none", color:"#075E54", fontWeight:700, cursor:"pointer", fontSize:13 }}>Sign up free</button>
-          </div>}
+
+          {/* Switch mode */}
+          <div style={{ textAlign:"center", marginTop:16, fontSize:13, color:"#999" }}>
+            {mode==="login" ? (
+              <>No account?{" "}
+                <button onClick={()=>{setMode("register");setErr("");}}
+                  style={{ background:"none", border:"none", color:"#075E54", fontWeight:700, cursor:"pointer", fontSize:13 }}>
+                  Sign up free
+                </button>
+              </>
+            ) : (
+              <>Already have an account?{" "}
+                <button onClick={()=>{setMode("login");setErr("");}}
+                  style={{ background:"none", border:"none", color:"#075E54", fontWeight:700, cursor:"pointer", fontSize:13 }}>
+                  Sign in
+                </button>
+              </>
+            )}
+          </div>
+
+          {/* Terms note */}
+          <div style={{ textAlign:"center", marginTop:14, fontSize:11, color:"#ccc", lineHeight:1.5 }}>
+            By continuing, you agree to our Terms of Service and Privacy Policy
+          </div>
         </div>
       </div>
     </div>
@@ -716,13 +858,36 @@ function CatChart({ entries, currency, type, color }) {
 // ROOT
 // ═══════════════════════════════════════════════════════════════
 export default function LedgerBookPro() {
-  const [user,setUser]             = useState(null);
-  const [authChecked,setChecked]   = useState(false);
+  const [user,setUser]           = useState(null);
+  const [authChecked,setChecked] = useState(false);
+
   useEffect(()=>{
-    const uid = DB.get("lb_session");
-    if (uid) { const u=(DB.get("lb_users")||[]).find(x=>x.id===uid); if(u)setUser(u); }
-    setChecked(true);
+    // Firebase listens for login/logout automatically
+    const unsub = onAuthStateChanged(auth, (firebaseUser) => {
+      if (firebaseUser) {
+        // Map Firebase user to our app's user shape
+        const u = {
+          id:           firebaseUser.uid,
+          name:         firebaseUser.displayName || firebaseUser.email.split("@")[0],
+          email:        firebaseUser.email,
+          businessName: DB.get(`lb_bname_${firebaseUser.uid}`) || "My Business",
+          photoURL:     firebaseUser.photoURL || null,
+          createdAt:    firebaseUser.metadata.creationTime || new Date().toISOString(),
+        };
+        setUser(u);
+      } else {
+        setUser(null);
+      }
+      setChecked(true);
+    });
+    return () => unsub();
   },[]);
+
+  const handleLogout = async () => {
+    await signOut(auth);
+    setUser(null);
+  };
+
   if (!authChecked) return (
     <>
       <GlobalStyles/>
@@ -731,8 +896,8 @@ export default function LedgerBookPro() {
       </div>
     </>
   );
-  if (!user) return (<><GlobalStyles/><AuthScreen onLogin={u=>setUser(u)}/></>);
-  return (<><GlobalStyles/><AppCore user={user} onLogout={()=>{ DB.del("lb_session"); setUser(null); }}/></>);
+  if (!user) return (<><GlobalStyles/><AuthScreen/></>);
+  return (<><GlobalStyles/><AppCore user={user} onLogout={handleLogout}/></>);
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -745,7 +910,6 @@ function AppCore({ user, onLogout }) {
   const [currency, setCurrency]  = useState(()=>DB.get(`lb_currency_${uid}`)||DEFAULT_CURRENCY);
   const [incCats,  setIncCats]   = useState(()=>DB.get(`lb_incCats_${uid}`)||DEFAULT_INC_CATS);
   const [expCats,  setExpCats]   = useState(()=>DB.get(`lb_expCats_${uid}`)||DEFAULT_EXP_CATS);
-
   const [view,      setView]      = useState("home");
   const [form,      setForm]      = useState({type:"income",amount:"",category:"",note:""});
   const [txFilter,  setTxFilter]  = useState("all");
