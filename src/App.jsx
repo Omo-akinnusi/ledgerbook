@@ -5,13 +5,17 @@
 
 import { useState, useEffect, useRef, useMemo } from "react";
 import {
-  auth, googleProvider, appleProvider,
+  auth, db,
+  googleProvider, appleProvider,
   signInWithPopup,
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   updateProfile,
   onAuthStateChanged,
   signOut,
+  doc, getDoc, setDoc, updateDoc,
+  collection, addDoc, deleteDoc,
+  onSnapshot, query, orderBy, serverTimestamp,
 } from "./firebase.js";
 
 // ── Inject global CSS for safe-area, viewport, scrollbar hiding ─
@@ -56,7 +60,24 @@ const S = {
   headerPx: "14px 20px 12px",
 };
 
-// ── Persistent Storage ──────────────────────────────────────────
+// ── Firestore helpers ────────────────────────────────────────────
+// User profile doc: users/{uid}
+const userDoc   = (uid) => doc(db, "users", uid);
+// Settings doc: users/{uid}/settings/prefs
+const settingsDoc = (uid) => doc(db, "users", uid, "settings", "prefs");
+// Entries collection: users/{uid}/entries
+const entriesCol = (uid) => collection(db, "users", uid, "entries");
+
+// Save/merge user profile
+const saveProfile = (uid, data) => setDoc(userDoc(uid), data, { merge: true });
+// Save/merge settings
+const saveSettings = (uid, data) => setDoc(settingsDoc(uid), data, { merge: true });
+// Add entry
+const addEntry = (uid, entry) => addDoc(entriesCol(uid), { ...entry, createdAt: serverTimestamp() });
+// Delete entry
+const delEntry = (uid, id) => deleteDoc(doc(db, "users", uid, "entries", id));
+
+// ── Keep localStorage only as fast cache (no more SAMPLE_ENTRIES) ─
 const DB = {
   get: (k) => { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : null; } catch { return null; } },
   set: (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} },
@@ -85,21 +106,6 @@ const CURRENCIES = [
   { code: "XOF", symbol: "CFA",name: "West African CFA",  locale: "fr-SN" },
   { code: "EGP", symbol: "E£", name: "Egyptian Pound",    locale: "ar-EG" },
   { code: "INR", symbol: "₹", name: "Indian Rupee",       locale: "en-IN" },
-];
-
-const SAMPLE_ENTRIES = [
-  { id:"s1",  type:"income",  amount:185000, category:"Sales",     note:"Wholesale order – Ade Stores",   date: new Date(Date.now()-864e5*1).toISOString()  },
-  { id:"s2",  type:"expense", amount:22000,  category:"Transport", note:"Delivery to Island branch",      date: new Date(Date.now()-864e5*1).toISOString()  },
-  { id:"s3",  type:"income",  amount:75000,  category:"Service",   note:"Installation + setup fee",       date: new Date(Date.now()-864e5*3).toISOString()  },
-  { id:"s4",  type:"expense", amount:48000,  category:"Inventory", note:"Restock — electronics batch",    date: new Date(Date.now()-864e5*3).toISOString()  },
-  { id:"s5",  type:"expense", amount:18500,  category:"Utilities", note:"NEPA + generator fuel",          date: new Date(Date.now()-864e5*5).toISOString()  },
-  { id:"s6",  type:"income",  amount:220000, category:"Sales",     note:"Bulk order — TechHub Ltd",       date: new Date(Date.now()-864e5*8).toISOString()  },
-  { id:"s7",  type:"expense", amount:55000,  category:"Salary",    note:"Staff — week 1",                 date: new Date(Date.now()-864e5*10).toISOString() },
-  { id:"s8",  type:"income",  amount:32000,  category:"Service",   note:"Consulting — Bright Co.",        date: new Date(Date.now()-864e5*12).toISOString() },
-  { id:"s9",  type:"income",  amount:98000,  category:"Sales",     note:"Walk-in customers",              date: new Date(Date.now()-864e5*15).toISOString() },
-  { id:"s10", type:"expense", amount:12000,  category:"Marketing", note:"Social media ads",               date: new Date(Date.now()-864e5*15).toISOString() },
-  { id:"s11", type:"income",  amount:45000,  category:"Service",   note:"Maintenance contract",           date: new Date(Date.now()-864e5*20).toISOString() },
-  { id:"s12", type:"expense", amount:30000,  category:"Rent",      note:"Office space — March",           date: new Date(Date.now()-864e5*20).toISOString() },
 ];
 
 // ── Helpers ─────────────────────────────────────────────────────
@@ -901,15 +907,19 @@ export default function LedgerBookPro() {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// APP CORE
+// APP CORE — Firestore powered
 // ═══════════════════════════════════════════════════════════════
 function AppCore({ user, onLogout }) {
   const uid = user.id;
-  const [entries,  setEntries]   = useState(()=>DB.get(`lb_entries_${uid}`)||SAMPLE_ENTRIES);
-  const [branding, setBranding]  = useState(()=>DB.get(`lb_branding_${uid}`)||{...DEFAULT_BRANDING,businessName:user.businessName||"My Business"});
-  const [currency, setCurrency]  = useState(()=>DB.get(`lb_currency_${uid}`)||DEFAULT_CURRENCY);
-  const [incCats,  setIncCats]   = useState(()=>DB.get(`lb_incCats_${uid}`)||DEFAULT_INC_CATS);
-  const [expCats,  setExpCats]   = useState(()=>DB.get(`lb_expCats_${uid}`)||DEFAULT_EXP_CATS);
+
+  // ── Data state — all start empty, loaded from Firestore ──────
+  const [entries,  setEntries]   = useState([]);
+  const [branding, setBranding]  = useState({...DEFAULT_BRANDING, businessName: user.businessName || "My Business"});
+  const [currency, setCurrency]  = useState(DEFAULT_CURRENCY);
+  const [incCats,  setIncCats]   = useState(DEFAULT_INC_CATS);
+  const [expCats,  setExpCats]   = useState(DEFAULT_EXP_CATS);
+  const [loading,  setLoading]   = useState(true); // show spinner while data loads
+
   const [view,      setView]      = useState("home");
   const [form,      setForm]      = useState({type:"income",amount:"",category:"",note:""});
   const [txFilter,  setTxFilter]  = useState("all");
@@ -924,11 +934,41 @@ function AppCore({ user, onLogout }) {
 
   const handleDateChange = (preset,range) => { setDatePreset(preset); setDateRange(range); };
 
-  useEffect(()=>{ DB.set(`lb_entries_${uid}`,entries); },[entries]);
-  useEffect(()=>{ DB.set(`lb_branding_${uid}`,branding); },[branding]);
-  useEffect(()=>{ DB.set(`lb_currency_${uid}`,currency); },[currency]);
-  useEffect(()=>{ DB.set(`lb_incCats_${uid}`,incCats); },[incCats]);
-  useEffect(()=>{ DB.set(`lb_expCats_${uid}`,expCats); },[expCats]);
+  // ── Load settings from Firestore once on mount ───────────────
+  useEffect(() => {
+    let unsubEntries;
+    const loadData = async () => {
+      try {
+        // Load settings (branding, currency, categories)
+        const snap = await getDoc(settingsDoc(uid));
+        if (snap.exists()) {
+          const d = snap.data();
+          if (d.branding)  setBranding(d.branding);
+          if (d.currency)  setCurrency(d.currency);
+          if (d.incCats)   setIncCats(d.incCats);
+          if (d.expCats)   setExpCats(d.expCats);
+        }
+        // Real-time listener for entries
+        const q = query(entriesCol(uid), orderBy("date", "desc"));
+        unsubEntries = onSnapshot(q, (snapshot) => {
+          const data = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+          setEntries(data);
+          setLoading(false);
+        }, () => setLoading(false));
+      } catch(e) {
+        setLoading(false);
+      }
+    };
+    loadData();
+    return () => { if (unsubEntries) unsubEntries(); };
+  }, [uid]);
+
+  // ── Save settings to Firestore whenever they change ──────────
+  const savingRef = useRef(false);
+  useEffect(() => {
+    if (loading) return; // don't save defaults before data loads
+    saveSettings(uid, { branding, currency, incCats, expCats });
+  }, [branding, currency, incCats, expCats]);
 
   const p  = branding.primaryColor;
   const bg = getBg(branding);
@@ -945,14 +985,54 @@ function AppCore({ user, onLogout }) {
   const cats      = form.type==="income"?incCats:expCats;
 
   const showToast = (msg,color) => { setToast({msg,color:color||p}); setTimeout(()=>setToast(null),2600); };
-  const handleAdd = () => {
+
+  // ── Add entry — saves to Firestore ───────────────────────────
+  const handleAdd = async () => {
     if (!form.amount||!form.category) return showToast("⚠️ Fill all required fields","#c62828");
-    setEntries(prev=>[{...form,id:genId(),amount:parseFloat(form.amount),date:new Date().toISOString()},...prev]);
-    setForm({type:"income",amount:"",category:"",note:""});
-    showToast(form.type==="income"?"✅ Income recorded!":"📤 Expense recorded!","#25D366"); setView("home");
+    const entry = { ...form, amount: parseFloat(form.amount), date: new Date().toISOString() };
+    try {
+      await addEntry(uid, entry);
+      setForm({type:"income",amount:"",category:"",note:""});
+      showToast(entry.type==="income"?"✅ Income recorded!":"📤 Expense recorded!","#25D366");
+      setView("home");
+    } catch(e) {
+      showToast("❌ Failed to save. Check connection.","#c62828");
+    }
   };
-  const handleDel = (id) => { setEntries(prev=>prev.filter(e=>e.id!==id)); showToast("Removed","#888"); };
-  const handleKB  = (data) => { if(data)setEntries(prev=>[{...data,id:genId(),date:new Date().toISOString()},...prev]); if(data)showToast("⌨️ Quick entry saved!"); setShowKB(false); };
+
+  // ── Delete entry — removes from Firestore ────────────────────
+  const handleDel = async (id) => {
+    try {
+      await delEntry(uid, id);
+      showToast("Removed","#888");
+    } catch(e) {
+      showToast("❌ Failed to delete.","#c62828");
+    }
+  };
+
+  // ── Quick keyboard entry ─────────────────────────────────────
+  const handleKB = async (data) => {
+    if (data) {
+      try {
+        await addEntry(uid, { ...data, date: new Date().toISOString() });
+        showToast("⌨️ Quick entry saved!");
+      } catch(e) {
+        showToast("❌ Failed to save.","#c62828");
+      }
+    }
+    setShowKB(false);
+  };
+
+  // ── Loading screen while Firestore data loads ────────────────
+  if (loading) return (
+    <div style={{ minHeight:"100vh", background:"#075E54", display:"flex", flexDirection:"column",
+      alignItems:"center", justifyContent:"center", gap:16 }}>
+      <div style={{ width:56, height:56, borderRadius:16, background:"rgba(255,255,255,0.15)",
+        display:"flex", alignItems:"center", justifyContent:"center", fontSize:30 }}>📒</div>
+      <div style={{ color:"#fff", fontSize:16, fontWeight:700 }}>Loading your data…</div>
+      <div style={{ color:"rgba(255,255,255,0.6)", fontSize:13 }}>{user.name}</div>
+    </div>
+  );
 
   // Shared inner padding style
   const PX = { paddingLeft:S.px, paddingRight:S.px };
