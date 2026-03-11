@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Terms of Service — LedgerBook Pro</title>
+  <style>
+    :root {
+      --brand:   #075E54;
+      --accent:  #128C7E;
+      --green:   #25D366;
+      --bg:      #f4f6f5;
+      --card:    #ffffff;
+      --text:    #1a1a1a;
+      --muted:   #666666;
+      --border:  #e0e6e4;
+      --info-bg: #e8f5e9;
+      --info-border: #a5d6a7;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.7;
+      font-size: 16px;
+    }
+    .topbar {
+      background: var(--brand);
+      color: #fff;
+      padding: 14px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.18);
+    }
+    .topbar-brand { display: flex; align-items: center; gap: 10px; text-decoration: none; color: #fff; }
+    .topbar-brand .logo { width: 34px; height: 34px; background: var(--green); border-radius: 10px;
+      display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
+    .topbar-brand .name { font-weight: 900; font-size: 16px; letter-spacing: -.2px; }
+    .topbar-brand .sub  { font-size: 11px; opacity: .65; margin-top: 1px; }
+    .topbar-other { font-size: 12px; opacity: .7; }
+    .topbar-other a { color: rgba(255,255,255,0.8); text-decoration: none; }
+    .topbar-other a:hover { color: #fff; text-decoration: underline; }
+    .page-wrap { max-width: 780px; margin: 0 auto; padding: 40px 24px 80px; }
+    .cover {
+      background: var(--card);
+      border-radius: 20px;
+      padding: 40px 36px 32px;
+      margin-bottom: 32px;
+      border-top: 5px solid var(--brand);
+      box-shadow: 0 2px 16px rgba(0,0,0,0.06);
+    }
+    .cover-label { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 2px;
+      color: var(--accent); margin-bottom: 8px; }
+    .cover-title { font-size: 34px; font-weight: 900; color: var(--brand); letter-spacing: -.8px;
+      margin-bottom: 10px; line-height: 1.15; }
+    .cover-subtitle { font-size: 15px; color: var(--muted); margin-bottom: 22px; line-height: 1.5; }
+    .cover-meta { display: flex; flex-wrap: wrap; gap: 8px; }
+    .meta-pill { background: var(--bg); border: 1px solid var(--border); border-radius: 20px;
+      padding: 5px 14px; font-size: 12px; color: var(--muted); }
+    .meta-pill strong { color: var(--text); }
+    .info-box {
+      background: var(--info-bg);
+      border: 1.5px solid var(--info-border);
+      border-left: 4px solid var(--brand);
+      border-radius: 14px;
+      padding: 16px 20px;
+      margin: 24px 0;
+      font-size: 14px;
+      color: #1B5E20;
+      line-height: 1.65;
+    }
+    .info-box p { margin: 0; }
+    .info-box p + p { margin-top: 6px; }
+    .toc {
+      background: var(--card);
+      border-radius: 16px;
+      padding: 24px 28px;
+      margin-bottom: 32px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+      border: 1px solid var(--border);
+    }
+    .toc-title { font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 1.5px;
+      color: var(--muted); margin-bottom: 14px; }
+    .toc ol { padding-left: 20px; }
+    .toc li { margin-bottom: 6px; }
+    .toc a { color: var(--accent); text-decoration: none; font-size: 14px; font-weight: 500; }
+    .toc a:hover { text-decoration: underline; color: var(--brand); }
+    .section {
+      background: var(--card);
+      border-radius: 18px;
+      padding: 28px 32px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+      border: 1px solid var(--border);
+    }
+    .section:target { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(18,140,126,0.12); }
+    h2 {
+      font-size: 20px; font-weight: 900; color: var(--brand);
+      margin-bottom: 14px; letter-spacing: -.3px;
+      display: flex; align-items: center; gap: 10px;
+    }
+    h2 .num {
+      background: var(--brand); color: #fff;
+      width: 28px; height: 28px; border-radius: 8px;
+      display: inline-flex; align-items: center; justify-content: center;
+      font-size: 13px; font-weight: 900; flex-shrink: 0;
+    }
+    h3 { font-size: 15px; font-weight: 800; color: var(--accent); margin: 18px 0 8px; }
+    p { margin-bottom: 12px; font-size: 15px; color: #333; }
+    p:last-child { margin-bottom: 0; }
+    ul, ol { padding-left: 22px; margin-bottom: 12px; }
+    li { margin-bottom: 7px; font-size: 15px; color: #333; }
+    strong { color: var(--text); }
+    .contact-box {
+      background: linear-gradient(135deg, var(--brand) 0%, var(--accent) 100%);
+      border-radius: 16px; padding: 24px 28px; color: #fff; margin-top: 16px;
+    }
+    .contact-box .co-name  { font-size: 18px; font-weight: 900; margin-bottom: 10px; }
+    .contact-box .co-line  { font-size: 14px; opacity: .85; margin-bottom: 6px; display: flex; align-items: center; gap: 8px; }
+    .contact-box a         { color: rgba(255,255,255,0.9); }
+    .page-footer {
+      text-align: center; font-size: 12px; color: var(--muted);
+      margin-top: 48px; padding-top: 24px; border-top: 1px solid var(--border);
+    }
+    .page-footer a { color: var(--accent); text-decoration: none; }
+    .page-footer a:hover { text-decoration: underline; }
+    @media (max-width: 600px) {
+      .page-wrap { padding: 24px 16px 60px; }
+      .cover { padding: 28px 22px 24px; }
+      .cover-title { font-size: 26px; }
+      .section { padding: 22px 20px; }
+      h2 { font-size: 17px; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="topbar">
+    <a class="topbar-brand" href="https://ledgerbook-nu.vercel.app">
+      <div class="logo">📒</div>
+      <div>
+        <div class="name">LedgerBook Pro</div>
+        <div class="sub">by VBook Enterprise</div>
+      </div>
+    </a>
+    <div class="topbar-other">
+      <a href="/privacy">← Privacy Policy</a>
+    </div>
+  </div>
+
+  <div class="page-wrap">
+
+    <div class="cover">
+      <div class="cover-label">Legal Document</div>
+      <div class="cover-title">Terms of Service</div>
+      <div class="cover-subtitle">Please read these terms carefully before using LedgerBook Pro. By creating an account or using the App, you agree to these Terms.</div>
+      <div class="cover-meta">
+        <span class="meta-pill"><strong>Effective:</strong> 11 March 2026</span>
+        <span class="meta-pill"><strong>Governed by:</strong> Laws of Nigeria</span>
+        <span class="meta-pill"><strong>Contact:</strong> v.bookenterprise@gmail.com</span>
+      </div>
+    </div>
+
+    <div class="info-box">
+      <p>📌 <strong>By creating an account or using the App, you agree to these Terms of Service.</strong> If you do not agree, please do not use the App.</p>
+    </div>
+
+    <div class="toc">
+      <div class="toc-title">Table of Contents</div>
+      <ol>
+        <li><a href="#s1">Acceptance of Terms</a></li>
+        <li><a href="#s2">Description of Service</a></li>
+        <li><a href="#s3">Eligibility</a></li>
+        <li><a href="#s4">User Accounts</a></li>
+        <li><a href="#s5">Acceptable Use</a></li>
+        <li><a href="#s6">Your Financial Data</a></li>
+        <li><a href="#s7">Intellectual Property</a></li>
+        <li><a href="#s8">Third-Party Services</a></li>
+        <li><a href="#s9">Availability and Downtime</a></li>
+        <li><a href="#s10">Limitation of Liability</a></li>
+        <li><a href="#s11">Indemnification</a></li>
+        <li><a href="#s12">Termination</a></li>
+        <li><a href="#s13">Governing Law and Disputes</a></li>
+        <li><a href="#s14">Changes to These Terms</a></li>
+        <li><a href="#s15">Miscellaneous</a></li>
+        <li><a href="#s16">Contact Us</a></li>
+      </ol>
+    </div>
+
+    <div class="section" id="s1">
+      <h2><span class="num">1</span> Acceptance of Terms</h2>
+      <p>These Terms of Service ("Terms") constitute a legally binding agreement between you ("User", "you") and <strong>VBook Enterprise</strong> ("we", "us", "our"), the developer and operator of LedgerBook Pro (the "App"). By accessing or using the App — including by creating an account, entering data, or using any feature — you confirm that you have read, understood, and agree to be bound by these Terms and our <a href="/privacy">Privacy Policy</a>.</p>
+      <p>If you are using the App on behalf of a business, you represent that you have the authority to bind that business to these Terms.</p>
+    </div>
+
+    <div class="section" id="s2">
+      <h2><span class="num">2</span> Description of Service</h2>
+      <p>LedgerBook Pro is a cloud-based business finance tracking application that allows users to:</p>
+      <ul>
+        <li>Record income and expense transactions with categories and notes.</li>
+        <li>Generate financial summaries, reports, and income statements.</li>
+        <li>Export financial data in CSV and PDF formats.</li>
+        <li>Customise branding settings for business use.</li>
+        <li>Access their data securely across multiple devices via cloud synchronisation.</li>
+      </ul>
+      <p>The App is provided as a software-as-a-service tool. We reserve the right to modify, suspend, or discontinue any feature or the App as a whole at any time, with reasonable notice where practicable.</p>
+    </div>
+
+    <div class="section" id="s3">
+      <h2><span class="num">3</span> Eligibility</h2>
+      <p>To use the App, you must:</p>
+      <ul>
+        <li>Be at least 13 years of age. If you are between 13 and 18 years old, you must have the consent of a parent or legal guardian.</li>
+        <li>Have the legal capacity to enter into a binding contract in your jurisdiction.</li>
+        <li>Not be prohibited from using the App under applicable laws.</li>
+        <li>Provide accurate, current, and complete information when creating your account.</li>
+      </ul>
+    </div>
+
+    <div class="section" id="s4">
+      <h2><span class="num">4</span> User Accounts</h2>
+      <h3>4.1 Account creation</h3>
+      <p>You may create an account using Google Sign-In or email and password authentication. You are responsible for maintaining the confidentiality of your login credentials and for all activities that occur under your account.</p>
+      <h3>4.2 Account security</h3>
+      <p>You agree to notify us immediately at <a href="mailto:v.bookenterprise@gmail.com">v.bookenterprise@gmail.com</a> if you become aware of any unauthorised access to or use of your account. We will not be liable for any loss or damage arising from your failure to maintain adequate account security.</p>
+      <h3>4.3 Accurate information</h3>
+      <p>You agree to provide accurate information when creating your account and to keep your account information up to date. We reserve the right to suspend or terminate accounts that contain materially false or misleading information.</p>
+    </div>
+
+    <div class="section" id="s5">
+      <h2><span class="num">5</span> Acceptable Use</h2>
+      <p>You agree to use the App only for lawful purposes and in accordance with these Terms. You must not:</p>
+      <ul>
+        <li>Use the App to record, facilitate, or conceal any unlawful financial activity, including money laundering, tax evasion, or fraud.</li>
+        <li>Attempt to gain unauthorised access to other users' accounts, data, or the underlying systems of the App.</li>
+        <li>Interfere with or disrupt the integrity, security, or performance of the App or its servers.</li>
+        <li>Reverse engineer, decompile, or attempt to extract the source code of the App.</li>
+        <li>Use automated tools (bots, scrapers) to access or extract data from the App without our written consent.</li>
+        <li>Upload or transmit any malicious code, viruses, or harmful content through the App.</li>
+        <li>Resell, sublicense, or commercially exploit the App or its features without written permission from us.</li>
+      </ul>
+      <p>We reserve the right to suspend or terminate your account immediately if we determine, in our reasonable judgement, that you have violated this section.</p>
+    </div>
+
+    <div class="section" id="s6">
+      <h2><span class="num">6</span> Your Financial Data</h2>
+      <h3>6.1 Ownership</h3>
+      <p>All financial data you enter into the App remains yours. We do not claim any ownership rights over your data. You may export or delete your data at any time using the tools provided within the App.</p>
+      <h3>6.2 Accuracy</h3>
+      <p>You are solely responsible for the accuracy, completeness, and legality of all financial data you enter into the App. The App is a recording tool — it does not verify, audit, or validate your financial entries.</p>
+      <h3>6.3 Not financial advice</h3>
+      <div class="info-box">
+        <p>📌 <strong>Nothing in the App constitutes financial, accounting, tax, legal, or professional advice.</strong> You should consult a qualified professional for such advice. We are not liable for any financial decisions made based on information within the App.</p>
+      </div>
+    </div>
+
+    <div class="section" id="s7">
+      <h2><span class="num">7</span> Intellectual Property</h2>
+      <p>The App, including its design, code, content, branding, and all intellectual property embodied therein, is owned by or licensed to VBook Enterprise. Nothing in these Terms grants you any right, title, or interest in the App's intellectual property beyond the limited licence to use the App as described in these Terms.</p>
+      <p>You are granted a limited, non-exclusive, non-transferable, revocable licence to use the App for your personal or internal business purposes, subject to compliance with these Terms.</p>
+    </div>
+
+    <div class="section" id="s8">
+      <h2><span class="num">8</span> Third-Party Services</h2>
+      <p>The App integrates with the following third-party services to deliver its functionality:</p>
+      <ul>
+        <li><strong>Google Firebase</strong> — authentication and cloud data storage.</li>
+        <li><strong>Sentry</strong> — error monitoring and crash reporting.</li>
+        <li><strong>Vercel</strong> — application hosting.</li>
+        <li><strong>Meta (WhatsApp)</strong> — support message delivery.</li>
+      </ul>
+      <p>Your use of these third-party services is subject to their respective terms of service and privacy policies. We are not responsible for the practices, content, or availability of third-party services.</p>
+    </div>
+
+    <div class="section" id="s9">
+      <h2><span class="num">9</span> Availability and Downtime</h2>
+      <p>We aim to provide the App on a continuous basis, but we do not guarantee uninterrupted or error-free availability. The App may be temporarily unavailable due to:</p>
+      <ul>
+        <li>Scheduled maintenance (we will endeavour to provide advance notice).</li>
+        <li>Unplanned outages or technical failures.</li>
+        <li>Disruptions to third-party services (Firebase, Vercel, Sentry, etc.).</li>
+        <li>Circumstances beyond our reasonable control.</li>
+      </ul>
+      <p>We will not be liable to you or any third party for any loss or inconvenience arising from downtime or service interruptions.</p>
+    </div>
+
+    <div class="section" id="s10">
+      <h2><span class="num">10</span> Limitation of Liability</h2>
+      <p>To the maximum extent permitted by applicable law:</p>
+      <ul>
+        <li>LedgerBook Pro and VBook Enterprise are provided "as is" and "as available" without warranties of any kind, express or implied.</li>
+        <li>We do not warrant that the App will be free from errors, that data will not be lost, or that the App will meet your specific requirements.</li>
+        <li>In no event shall we be liable for indirect, incidental, special, consequential, or punitive damages, including loss of profits, loss of data, or business interruption.</li>
+        <li>Our total liability to you for any claim shall not exceed the amount you paid to us in the 12 months preceding the claim. If the App is free, our liability is limited to <strong>NGN 10,000</strong>.</li>
+      </ul>
+    </div>
+
+    <div class="section" id="s11">
+      <h2><span class="num">11</span> Indemnification</h2>
+      <p>You agree to indemnify, defend, and hold harmless VBook Enterprise, its directors, employees, and agents from and against any claims, liabilities, damages, losses, and expenses (including reasonable legal fees) arising out of or in connection with: (a) your use of the App; (b) your violation of these Terms; (c) your violation of any applicable law; or (d) any financial data you enter or actions you take within the App.</p>
+    </div>
+
+    <div class="section" id="s12">
+      <h2><span class="num">12</span> Termination</h2>
+      <h3>12.1 By you</h3>
+      <p>You may stop using the App and delete your account at any time through the Settings screen. Account deletion will result in permanent erasure of all your data within 30 days in accordance with our Privacy Policy.</p>
+      <h3>12.2 By us</h3>
+      <p>We reserve the right to suspend or terminate your account and access to the App at any time, with or without notice, for any reason including but not limited to violation of these Terms, suspected fraud or illegal activity, or extended periods of inactivity.</p>
+      <h3>12.3 Effect of termination</h3>
+      <p>Upon termination, your licence to use the App ceases immediately. Sections 6.3, 7, 10, 11, and 14 of these Terms survive termination.</p>
+    </div>
+
+    <div class="section" id="s13">
+      <h2><span class="num">13</span> Governing Law and Disputes</h2>
+      <p>These Terms are governed by and construed in accordance with the laws of the <strong>Federal Republic of Nigeria</strong>. Any dispute arising out of or in connection with these Terms shall first be attempted to be resolved through good-faith negotiation. If unresolved within 30 days, disputes shall be submitted to the jurisdiction of the Nigerian courts.</p>
+      <p>If you are an international user, mandatory consumer protection laws in your jurisdiction may apply in addition to Nigerian law.</p>
+    </div>
+
+    <div class="section" id="s14">
+      <h2><span class="num">14</span> Changes to These Terms</h2>
+      <p>We may update these Terms from time to time. We will notify you of material changes by updating the Effective Date and, where appropriate, by posting a notice within the App. Your continued use of the App after changes take effect constitutes your acceptance of the revised Terms.</p>
+    </div>
+
+    <div class="section" id="s15">
+      <h2><span class="num">15</span> Miscellaneous</h2>
+      <ul>
+        <li><strong>Entire Agreement:</strong> These Terms and our Privacy Policy constitute the entire agreement between you and us regarding the App.</li>
+        <li><strong>Severability:</strong> If any provision of these Terms is found to be unenforceable, the remaining provisions will continue in full force and effect.</li>
+        <li><strong>No Waiver:</strong> Our failure to enforce any right under these Terms shall not constitute a waiver of that right.</li>
+        <li><strong>Assignment:</strong> You may not assign your rights or obligations under these Terms without our prior written consent. We may assign our rights and obligations freely.</li>
+      </ul>
+    </div>
+
+    <div class="section" id="s16">
+      <h2><span class="num">16</span> Contact Us</h2>
+      <p>If you have any questions or concerns about these Terms of Service, please contact us:</p>
+      <div class="contact-box">
+        <div class="co-name">VBook Enterprise</div>
+        <div class="co-line">📧 <a href="mailto:v.bookenterprise@gmail.com">v.bookenterprise@gmail.com</a></div>
+        <div class="co-line">🌐 <a href="https://ledgerbook-nu.vercel.app">https://ledgerbook-nu.vercel.app</a></div>
+        <div class="co-line">📅 Effective Date: 11 March 2026</div>
+      </div>
+    </div>
+
+    <div class="page-footer">
+      <p>© 2026 VBook Enterprise · LedgerBook Pro</p>
+      <p style="margin-top:6px">
+        <a href="/privacy">Privacy Policy</a> &nbsp;·&nbsp;
+        <a href="/terms">Terms of Service</a> &nbsp;·&nbsp;
+        <a href="https://ledgerbook-nu.vercel.app">Back to App</a>
+      </p>
+    </div>
+
+  </div>
+</body>
+</html>

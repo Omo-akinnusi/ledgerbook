@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Privacy Policy — LedgerBook Pro</title>
+  <style>
+    :root {
+      --brand:   #075E54;
+      --accent:  #128C7E;
+      --green:   #25D366;
+      --bg:      #f4f6f5;
+      --card:    #ffffff;
+      --text:    #1a1a1a;
+      --muted:   #666666;
+      --border:  #e0e6e4;
+      --info-bg: #e8f5e9;
+      --info-border: #a5d6a7;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.7;
+      font-size: 16px;
+    }
+
+    /* ── Top bar ── */
+    .topbar {
+      background: var(--brand);
+      color: #fff;
+      padding: 14px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.18);
+    }
+    .topbar-brand { display: flex; align-items: center; gap: 10px; text-decoration: none; color: #fff; }
+    .topbar-brand .logo { width: 34px; height: 34px; background: var(--green); border-radius: 10px;
+      display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
+    .topbar-brand .name { font-weight: 900; font-size: 16px; letter-spacing: -.2px; }
+    .topbar-brand .sub  { font-size: 11px; opacity: .65; margin-top: 1px; }
+    .topbar-other { font-size: 12px; opacity: .7; }
+    .topbar-other a { color: rgba(255,255,255,0.8); text-decoration: none; }
+    .topbar-other a:hover { color: #fff; text-decoration: underline; }
+
+    /* ── Layout ── */
+    .page-wrap { max-width: 780px; margin: 0 auto; padding: 40px 24px 80px; }
+
+    /* ── Cover ── */
+    .cover {
+      background: var(--card);
+      border-radius: 20px;
+      padding: 40px 36px 32px;
+      margin-bottom: 32px;
+      border-top: 5px solid var(--brand);
+      box-shadow: 0 2px 16px rgba(0,0,0,0.06);
+    }
+    .cover-label { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 2px;
+      color: var(--accent); margin-bottom: 8px; }
+    .cover-title { font-size: 34px; font-weight: 900; color: var(--brand); letter-spacing: -.8px;
+      margin-bottom: 10px; line-height: 1.15; }
+    .cover-subtitle { font-size: 15px; color: var(--muted); margin-bottom: 22px; line-height: 1.5; }
+    .cover-meta { display: flex; flex-wrap: wrap; gap: 8px; }
+    .meta-pill { background: var(--bg); border: 1px solid var(--border); border-radius: 20px;
+      padding: 5px 14px; font-size: 12px; color: var(--muted); }
+    .meta-pill strong { color: var(--text); }
+
+    /* ── Info box ── */
+    .info-box {
+      background: var(--info-bg);
+      border: 1.5px solid var(--info-border);
+      border-left: 4px solid var(--brand);
+      border-radius: 14px;
+      padding: 16px 20px;
+      margin: 24px 0;
+      font-size: 14px;
+      color: #1B5E20;
+      line-height: 1.65;
+    }
+    .info-box p { margin: 0; }
+    .info-box p + p { margin-top: 6px; }
+
+    /* ── TOC ── */
+    .toc {
+      background: var(--card);
+      border-radius: 16px;
+      padding: 24px 28px;
+      margin-bottom: 32px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+      border: 1px solid var(--border);
+    }
+    .toc-title { font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 1.5px;
+      color: var(--muted); margin-bottom: 14px; }
+    .toc ol { padding-left: 20px; }
+    .toc li { margin-bottom: 6px; }
+    .toc a { color: var(--accent); text-decoration: none; font-size: 14px; font-weight: 500; }
+    .toc a:hover { text-decoration: underline; color: var(--brand); }
+
+    /* ── Sections ── */
+    .section {
+      background: var(--card);
+      border-radius: 18px;
+      padding: 28px 32px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+      border: 1px solid var(--border);
+    }
+    .section:target { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(18,140,126,0.12); }
+
+    h2 {
+      font-size: 20px;
+      font-weight: 900;
+      color: var(--brand);
+      margin-bottom: 14px;
+      letter-spacing: -.3px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    h2 .num {
+      background: var(--brand);
+      color: #fff;
+      width: 28px;
+      height: 28px;
+      border-radius: 8px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      font-weight: 900;
+      flex-shrink: 0;
+    }
+    h3 {
+      font-size: 15px;
+      font-weight: 800;
+      color: var(--accent);
+      margin: 18px 0 8px;
+    }
+    p { margin-bottom: 12px; font-size: 15px; color: #333; }
+    p:last-child { margin-bottom: 0; }
+    ul, ol { padding-left: 22px; margin-bottom: 12px; }
+    li { margin-bottom: 7px; font-size: 15px; color: #333; }
+    strong { color: var(--text); }
+
+    /* ── Table ── */
+    .table-wrap { overflow-x: auto; margin: 16px 0; border-radius: 12px; border: 1px solid var(--border); }
+    table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    thead tr { background: var(--brand); color: #fff; }
+    thead th { padding: 12px 16px; text-align: left; font-weight: 700; font-size: 13px; }
+    tbody tr:nth-child(even) { background: #f9fafb; }
+    tbody td { padding: 11px 16px; border-bottom: 1px solid var(--border); color: #333; }
+    tbody tr:last-child td { border-bottom: none; }
+
+    /* ── Contact box ── */
+    .contact-box {
+      background: linear-gradient(135deg, var(--brand) 0%, var(--accent) 100%);
+      border-radius: 16px;
+      padding: 24px 28px;
+      color: #fff;
+      margin-top: 16px;
+    }
+    .contact-box .co-name  { font-size: 18px; font-weight: 900; margin-bottom: 10px; }
+    .contact-box .co-line  { font-size: 14px; opacity: .85; margin-bottom: 6px; display: flex; align-items: center; gap: 8px; }
+    .contact-box a         { color: rgba(255,255,255,0.9); }
+
+    /* ── Footer ── */
+    .page-footer {
+      text-align: center;
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 48px;
+      padding-top: 24px;
+      border-top: 1px solid var(--border);
+    }
+    .page-footer a { color: var(--accent); text-decoration: none; }
+    .page-footer a:hover { text-decoration: underline; }
+
+    /* ── Responsive ── */
+    @media (max-width: 600px) {
+      .page-wrap { padding: 24px 16px 60px; }
+      .cover { padding: 28px 22px 24px; }
+      .cover-title { font-size: 26px; }
+      .section { padding: 22px 20px; }
+      h2 { font-size: 17px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top bar -->
+  <div class="topbar">
+    <a class="topbar-brand" href="https://ledgerbook-nu.vercel.app">
+      <div class="logo">📒</div>
+      <div>
+        <div class="name">LedgerBook Pro</div>
+        <div class="sub">by VBook Enterprise</div>
+      </div>
+    </a>
+    <div class="topbar-other">
+      <a href="/terms">Terms of Service →</a>
+    </div>
+  </div>
+
+  <div class="page-wrap">
+
+    <!-- Cover -->
+    <div class="cover">
+      <div class="cover-label">Legal Document</div>
+      <div class="cover-title">Privacy Policy</div>
+      <div class="cover-subtitle">How we collect, use, store, and protect your personal information when you use LedgerBook Pro.</div>
+      <div class="cover-meta">
+        <span class="meta-pill"><strong>Effective:</strong> 11 March 2026</span>
+        <span class="meta-pill"><strong>Governed by:</strong> Nigeria Data Protection Act 2023</span>
+        <span class="meta-pill"><strong>Contact:</strong> v.bookenterprise@gmail.com</span>
+      </div>
+    </div>
+
+    <!-- Info box -->
+    <div class="info-box">
+      <p>📌 <strong>This Privacy Policy is governed primarily by Nigeria's Data Protection Act 2023 (NDPA).</strong> International users are also protected under applicable laws including the GDPR (EU/UK).</p>
+      <p>⚡ <strong>We do not sell, rent, or trade your personal data. Ever.</strong></p>
+    </div>
+
+    <!-- TOC -->
+    <div class="toc">
+      <div class="toc-title">Table of Contents</div>
+      <ol>
+        <li><a href="#s1">Who We Are</a></li>
+        <li><a href="#s2">Information We Collect</a></li>
+        <li><a href="#s3">How We Use Your Information</a></li>
+        <li><a href="#s4">Legal Basis for Processing</a></li>
+        <li><a href="#s5">How We Store Your Data</a></li>
+        <li><a href="#s6">Data Retention</a></li>
+        <li><a href="#s7">Sharing Your Information</a></li>
+        <li><a href="#s8">International Data Transfers</a></li>
+        <li><a href="#s9">Your Rights</a></li>
+        <li><a href="#s10">Children's Privacy</a></li>
+        <li><a href="#s11">Cookies and Tracking</a></li>
+        <li><a href="#s12">Security</a></li>
+        <li><a href="#s13">Changes to This Policy</a></li>
+        <li><a href="#s14">Contact Us</a></li>
+      </ol>
+    </div>
+
+    <!-- Sections -->
+    <div class="section" id="s1">
+      <h2><span class="num">1</span> Who We Are</h2>
+      <p>LedgerBook Pro is a business finance tracking application developed and operated by <strong>VBook Enterprise</strong>. We are registered in Nigeria and are the data controller responsible for your personal information under Nigeria's Data Protection Act 2023.</p>
+      <p><strong>Contact us at any time:</strong></p>
+      <ul>
+        <li>Email: <a href="mailto:v.bookenterprise@gmail.com">v.bookenterprise@gmail.com</a></li>
+        <li>App: <a href="https://ledgerbook-nu.vercel.app">https://ledgerbook-nu.vercel.app</a></li>
+      </ul>
+    </div>
+
+    <div class="section" id="s2">
+      <h2><span class="num">2</span> Information We Collect</h2>
+      <h3>2.1 Information you provide directly</h3>
+      <ul>
+        <li>Your name and email address, collected when you sign in via Google or email/password authentication.</li>
+        <li>Your business name, tagline, logo, and branding preferences that you configure within the App.</li>
+        <li>Financial records you enter into the App, including income amounts, expense amounts, categories, and transaction notes.</li>
+        <li>Support messages you send through the in-app chat widget, including the content of your message and the topic you selected.</li>
+      </ul>
+      <h3>2.2 Information collected automatically</h3>
+      <ul>
+        <li>Device type, browser, operating system, and screen resolution — collected by Sentry (our error monitoring provider) to help us diagnose and fix technical issues.</li>
+        <li>Error logs, crash reports, and performance data generated during your use of the App.</li>
+        <li>Your approximate location (country level only), inferred from your IP address, used solely for analytics and compliance purposes. We do not collect your precise location.</li>
+      </ul>
+    </div>
+
+    <div class="section" id="s3">
+      <h2><span class="num">3</span> How We Use Your Information</h2>
+      <ul>
+        <li>To create and manage your account and authenticate your identity when you sign in.</li>
+        <li>To store and sync your financial records securely across your devices in real time.</li>
+        <li>To generate reports, exports, and summaries that you request within the App.</li>
+        <li>To receive and respond to support messages you send us through the in-app chat.</li>
+        <li>To detect, diagnose, and fix bugs, errors, and performance issues using error monitoring tools.</li>
+        <li>To improve the App's features, design, and overall user experience.</li>
+        <li>To comply with applicable legal and regulatory obligations under Nigerian law and other applicable laws.</li>
+      </ul>
+      <div class="info-box">
+        <p>⚡ <strong>We do not use your financial data for advertising, profiling, resale, or any purpose other than providing the App's core functionality.</strong></p>
+      </div>
+    </div>
+
+    <div class="section" id="s4">
+      <h2><span class="num">4</span> Legal Basis for Processing</h2>
+      <p>Under Nigeria's Data Protection Act 2023 and, where applicable, the GDPR, we process your personal data on the following lawful bases:</p>
+      <ul>
+        <li><strong>Contractual necessity:</strong> processing required to provide the App and its features to you.</li>
+        <li><strong>Legitimate interests:</strong> error monitoring and performance improvement to ensure App stability.</li>
+        <li><strong>Legal obligation:</strong> compliance with applicable laws and regulations.</li>
+        <li><strong>Consent:</strong> where you have actively provided information (such as support messages), your act of submission constitutes consent.</li>
+      </ul>
+    </div>
+
+    <div class="section" id="s5">
+      <h2><span class="num">5</span> How We Store Your Data</h2>
+      <p>Your data is stored using Google Firebase, a cloud platform operated by Google LLC. Specifically:</p>
+      <ul>
+        <li>Authentication data (name and email) is managed by Firebase Authentication.</li>
+        <li>Financial records, settings, and branding data are stored in Google Firestore, hosted in the <strong>European Union (europe-west1 region)</strong>.</li>
+        <li>Error and crash data is processed and stored by Sentry, Inc., whose servers are located in the European Union.</li>
+      </ul>
+      <p>We implement Firestore security rules that ensure only you — authenticated with your own account — can read or write your data. No other user can access your records.</p>
+    </div>
+
+    <div class="section" id="s6">
+      <h2><span class="num">6</span> Data Retention</h2>
+      <ul>
+        <li>Your financial records, settings, and account data are retained until you delete your account or request deletion.</li>
+        <li>Upon account deletion or a valid deletion request, all records will be permanently erased <strong>within 30 days</strong>.</li>
+        <li>Error logs held by Sentry are retained for <strong>90 days</strong> before automatic deletion.</li>
+        <li>Support messages sent via WhatsApp are subject to WhatsApp's own retention policies once delivered.</li>
+      </ul>
+    </div>
+
+    <div class="section" id="s7">
+      <h2><span class="num">7</span> Sharing Your Information</h2>
+      <p>We do not sell, rent, or trade your personal information. We share data only with the following trusted service providers, strictly as necessary to operate the App:</p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Service Provider</th>
+              <th>Purpose</th>
+              <th>Data Location</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>Google Firebase</td><td>Account management &amp; data storage</td><td>European Union</td></tr>
+            <tr><td>Sentry, Inc.</td><td>Error monitoring &amp; crash reporting</td><td>European Union</td></tr>
+            <tr><td>Meta Platforms (WhatsApp)</td><td>Delivery of support messages</td><td>United States</td></tr>
+            <tr><td>Vercel, Inc.</td><td>App hosting &amp; serverless functions</td><td>United States</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>Each provider is bound by their own privacy policy and applicable data protection law. We do not permit any provider to use your data for their own commercial purposes.</p>
+    </div>
+
+    <div class="section" id="s8">
+      <h2><span class="num">8</span> International Data Transfers</h2>
+      <p>As a Nigerian-based service, your data may be processed outside Nigeria — specifically in the European Union (Firebase Firestore and Sentry) and the United States (Vercel and Meta). Where such transfers occur, we rely on:</p>
+      <ul>
+        <li>Standard contractual clauses and data processing agreements provided by each service provider.</li>
+        <li>The European Union's adequacy mechanisms, which apply to Firestore and Sentry data stored within the EU.</li>
+        <li>Compliance with Nigeria's Data Protection Act 2023, which governs cross-border data transfers from Nigeria.</li>
+      </ul>
+    </div>
+
+    <div class="section" id="s9">
+      <h2><span class="num">9</span> Your Rights</h2>
+      <p>Depending on your location, you have the following rights regarding your personal data:</p>
+      <ul>
+        <li><strong>Access:</strong> Request a copy of the personal data we hold about you.</li>
+        <li><strong>Correction:</strong> Ask us to correct inaccurate or incomplete personal data.</li>
+        <li><strong>Deletion:</strong> Request that we permanently delete your account and all associated data.</li>
+        <li><strong>Portability:</strong> Request your financial data in a structured, machine-readable format. CSV export is available directly within the App.</li>
+        <li><strong>Objection:</strong> Object to certain types of processing, including profiling (we do not engage in profiling).</li>
+        <li><strong>Restriction:</strong> Request that we restrict processing of your data in certain circumstances.</li>
+      </ul>
+      <div class="info-box">
+        <p>📌 To exercise any of these rights, contact us at <a href="mailto:v.bookenterprise@gmail.com"><strong>v.bookenterprise@gmail.com</strong></a>. We will acknowledge your request within 72 hours and respond fully within 30 days.</p>
+      </div>
+    </div>
+
+    <div class="section" id="s10">
+      <h2><span class="num">10</span> Children's Privacy</h2>
+      <p>LedgerBook Pro is not directed at or intended for use by children under the age of 13. We do not knowingly collect personal information from children under 13. If you believe a child has created an account or provided us with their personal data, please contact us immediately at <a href="mailto:v.bookenterprise@gmail.com">v.bookenterprise@gmail.com</a> and we will delete the data promptly.</p>
+    </div>
+
+    <div class="section" id="s11">
+      <h2><span class="num">11</span> Cookies and Tracking</h2>
+      <p>The App does not use advertising cookies, third-party tracking pixels, or behavioural analytics tools. The following essential technologies are used solely to operate the App:</p>
+      <ul>
+        <li><strong>Firebase Authentication session tokens</strong> — required to keep you logged in securely.</li>
+        <li><strong>Sentry session identifiers</strong> — required to link error reports to a browser session for debugging. These do not identify you personally.</li>
+      </ul>
+      <p>These are strictly necessary for the App to function and cannot be disabled without breaking core functionality. No personal financial data is included in these session identifiers.</p>
+    </div>
+
+    <div class="section" id="s12">
+      <h2><span class="num">12</span> Security</h2>
+      <p>We take reasonable technical and organisational measures to protect your personal data, including:</p>
+      <ul>
+        <li>Encrypted data transmission using HTTPS/TLS on all connections.</li>
+        <li>Firebase Authentication tokens with automatic expiry and refresh.</li>
+        <li>Firestore security rules that restrict each user's data to their own authenticated account.</li>
+        <li>Continuous error and anomaly monitoring via Sentry with EU-based data storage.</li>
+      </ul>
+      <p>No method of electronic transmission or storage is 100% secure. While we use commercially reasonable means to protect your data, we cannot guarantee absolute security. We will notify affected users promptly in the event of a data breach as required by applicable law.</p>
+    </div>
+
+    <div class="section" id="s13">
+      <h2><span class="num">13</span> Changes to This Policy</h2>
+      <p>We may update this Privacy Policy from time to time to reflect changes in our practices, technology, or legal requirements. When we do, we will revise the Effective Date at the top of this document and, where material changes are made, notify users via a notice within the App. Continued use of the App after changes are posted constitutes your acceptance of the updated Policy.</p>
+    </div>
+
+    <div class="section" id="s14">
+      <h2><span class="num">14</span> Contact Us</h2>
+      <p>If you have any questions, concerns, complaints, or requests regarding this Privacy Policy, please contact us:</p>
+      <div class="contact-box">
+        <div class="co-name">VBook Enterprise</div>
+        <div class="co-line">📧 <a href="mailto:v.bookenterprise@gmail.com">v.bookenterprise@gmail.com</a></div>
+        <div class="co-line">🌐 <a href="https://ledgerbook-nu.vercel.app">https://ledgerbook-nu.vercel.app</a></div>
+        <div class="co-line">📅 Effective Date: 11 March 2026</div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="page-footer">
+      <p>© 2026 VBook Enterprise · LedgerBook Pro</p>
+      <p style="margin-top:6px">
+        <a href="/privacy">Privacy Policy</a> &nbsp;·&nbsp;
+        <a href="/terms">Terms of Service</a> &nbsp;·&nbsp;
+        <a href="https://ledgerbook-nu.vercel.app">Back to App</a>
+      </p>
+    </div>
+
+  </div>
+</body>
+</html>
