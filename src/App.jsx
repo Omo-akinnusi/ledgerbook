@@ -4,6 +4,7 @@
 // ================================================================
 
 import { useState, useEffect, useRef, useMemo } from "react";
+import * as Sentry from "@sentry/react";
 import {
   auth, db,
   googleProvider, appleProvider,
@@ -1265,7 +1266,6 @@ export default function LedgerBookPro() {
     // Firebase listens for login/logout automatically
     const unsub = onAuthStateChanged(auth, (firebaseUser) => {
       if (firebaseUser) {
-        // Map Firebase user to our app's user shape
         const u = {
           id:           firebaseUser.uid,
           name:         firebaseUser.displayName || firebaseUser.email.split("@")[0],
@@ -1274,8 +1274,11 @@ export default function LedgerBookPro() {
           photoURL:     firebaseUser.photoURL || null,
           createdAt:    firebaseUser.metadata.creationTime || new Date().toISOString(),
         };
+        // Tell Sentry who is logged in — makes error reports much easier to investigate
+        Sentry.setUser({ id: firebaseUser.uid, email: firebaseUser.email, username: u.name });
         setUser(u);
       } else {
+        Sentry.setUser(null); // clear user on logout
         setUser(null);
       }
       setChecked(true);
@@ -1348,8 +1351,12 @@ function AppCore({ user, onLogout }) {
           const data = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
           setEntries(data);
           setLoading(false);
-        }, () => setLoading(false));
+        }, (err) => {
+          Sentry.captureException(err, { tags: { operation: "entries_snapshot" } });
+          setLoading(false);
+        });
       } catch(e) {
+        Sentry.captureException(e, { tags: { operation: "load_user_data" } });
         setLoading(false);
       }
     };
@@ -1390,27 +1397,28 @@ function AppCore({ user, onLogout }) {
       showToast(entry.type==="income"?"✅ Income recorded!":"📤 Expense recorded!","#25D366");
       setView("home");
     } catch(e) {
+      Sentry.captureException(e, { tags: { operation: "add_entry" } });
       showToast("❌ Failed to save. Check connection.","#c62828");
     }
   };
 
-  // ── Delete entry — removes from Firestore ────────────────────
   const handleDel = async (id) => {
     try {
       await delEntry(uid, id);
       showToast("Removed","#888");
     } catch(e) {
+      Sentry.captureException(e, { tags: { operation: "delete_entry" } });
       showToast("❌ Failed to delete.","#c62828");
     }
   };
 
-  // ── Quick keyboard entry ─────────────────────────────────────
   const handleKB = async (data) => {
     if (data) {
       try {
         await addEntry(uid, { ...data, date: new Date().toISOString() });
         showToast("⌨️ Quick entry saved!");
       } catch(e) {
+        Sentry.captureException(e, { tags: { operation: "quick_entry" } });
         showToast("❌ Failed to save.","#c62828");
       }
     }
