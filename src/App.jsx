@@ -598,7 +598,6 @@ const exportPDF = (entries, currency, branding, rangeLabel, allEntries, budgets 
 
 ${(() => {
   if (!budgets || budgets.length === 0) return "";
-  // Find budgets that overlap with the report period
   const reportFrom = entries.length ? entries.map(e=>e.date.slice(0,10)).sort()[0] : null;
   const reportTo   = toISO(new Date());
   const relevant   = budgets.filter(b => reportFrom ? b.endDate >= reportFrom && b.startDate <= reportTo : true);
@@ -606,58 +605,101 @@ ${(() => {
 
   const f2 = (n) => fmtAmt(n, currency);
   const budgetRows = relevant.map(b => {
-    const bEntries  = (allEntries||entries).filter(e => e.date.slice(0,10) >= b.startDate && e.date.slice(0,10) <= b.endDate);
-    const actInc    = bEntries.filter(e=>e.type==="income").reduce((s,e)=>s+e.amount,0);
-    const actExp    = bEntries.filter(e=>e.type==="expense").reduce((s,e)=>s+e.amount,0);
-    const incPct    = b.totalIncome  > 0 ? ((actInc/b.totalIncome)*100).toFixed(1)  : "—";
-    const expPct    = b.totalExpense > 0 ? ((actExp/b.totalExpense)*100).toFixed(1) : "—";
-    const expOver   = b.totalExpense > 0 && actExp > b.totalExpense;
-    const incMet    = b.totalIncome  > 0 && actInc >= b.totalIncome;
-    const today     = toISO(new Date());
-    const status    = today < b.startDate ? "Upcoming" : today > b.endDate ? "Ended" : "Active";
+    const bAll         = (allEntries||entries).filter(e => e.date.slice(0,10) >= b.startDate && e.date.slice(0,10) <= b.endDate);
+    const incCatB      = b.incCatBudgets || {};
+    const expCatB      = b.expCatBudgets || {};
+    const budgetedIncs = Object.keys(incCatB);
+    const budgetedExps = Object.keys(expCatB);
 
-    // Category rows
-    const catBudgets = b.catBudgets || {};
-    const allCats    = [...new Set([...Object.keys(catBudgets), ...bEntries.map(e=>e.category)])];
-    const catRowsHtml = allCats.map(cat => {
-      const budgeted = catBudgets[cat] || 0;
-      const actual   = bEntries.filter(e=>e.category===cat).reduce((s,e)=>s+e.amount,0);
-      const pct      = budgeted > 0 ? ((actual/budgeted)*100).toFixed(1) : "—";
-      const over     = budgeted > 0 && actual > budgeted;
+    // Per-category actuals (income and expense separately)
+    const catActI = {}, catActE = {};
+    bAll.filter(e=>e.type==="income").forEach(e =>  { catActI[e.category] = (catActI[e.category]||0)+e.amount; });
+    bAll.filter(e=>e.type==="expense").forEach(e => { catActE[e.category] = (catActE[e.category]||0)+e.amount; });
+
+    const actBudgetedInc = budgetedIncs.reduce((s,c)=>s+(catActI[c]||0),0);
+    const actBudgetedExp = budgetedExps.reduce((s,c)=>s+(catActE[c]||0),0);
+    const budgetInc      = b.totalIncome  || 0;
+    const budgetExp      = b.totalExpense || 0;
+    const expOver        = budgetExp > 0 && actBudgetedExp > budgetExp;
+    const incMet         = budgetInc > 0 && actBudgetedInc >= budgetInc;
+    const today          = toISO(new Date());
+    const status         = today < b.startDate ? "Upcoming" : today > b.endDate ? "Ended" : "Active";
+
+    // Unplanned
+    const unplannedIncs = Object.keys(catActI).filter(c=>!budgetedIncs.includes(c));
+    const unplannedExps = Object.keys(catActE).filter(c=>!budgetedExps.includes(c));
+    const unplannedInc  = unplannedIncs.reduce((s,c)=>s+(catActI[c]||0),0);
+    const unplannedExp  = unplannedExps.reduce((s,c)=>s+(catActE[c]||0),0);
+
+    // Build income category rows
+    const incCatRows = budgetedIncs.map(cat => {
+      const bud  = incCatB[cat]; const act = catActI[cat]||0;
+      const pct  = bud > 0 ? ((act/bud)*100).toFixed(1) : "—";
+      const met  = bud > 0 && act >= bud;
       return `<tr>
-        <td style="padding-left:28px;color:#666;font-size:12px">${cat}</td>
-        <td style="font-size:12px">${budgeted > 0 ? f2(budgeted) : "—"}</td>
-        <td style="font-size:12px;color:${over?"#c62828":"inherit"}">${f2(actual)}</td>
-        <td style="font-size:12px;font-weight:700;color:${over?"#c62828":pct!=="—"&&parseFloat(pct)>=100?"#2E7D32":"inherit"}">${pct !== "—" ? pct+"%" : "—"}${over?" ⚠️":""}</td>
-        <td style="font-size:12px;color:${budgeted>0&&actual>budgeted?"#c62828":budgeted>0?"#2E7D32":"#888"}">${budgeted > 0 ? (actual > budgeted ? `–${f2(actual-budgeted)}` : `+${f2(budgeted-actual)}`) : "—"}</td>
+        <td style="padding-left:24px;color:#555;font-size:12px">💰 ${cat}</td>
+        <td style="font-size:12px">${f2(bud)}</td>
+        <td style="font-size:12px;color:${met?"#2E7D32":"inherit"}">${f2(act)}</td>
+        <td style="font-size:12px;font-weight:700;color:${met?"#2E7D32":"inherit"}">${pct!=="—"?pct+"%":"—"}${met?" ✓":""}</td>
+        <td style="font-size:12px;color:${met?"#2E7D32":"#c62828"}">${bud>0?(act>=bud?`+${f2(act-bud)}`:`–${f2(bud-act)}`):"—"}</td>
       </tr>`;
     }).join("");
 
+    // Build expense category rows
+    const expCatRows = budgetedExps.map(cat => {
+      const bud  = expCatB[cat]; const act = catActE[cat]||0;
+      const pct  = bud > 0 ? ((act/bud)*100).toFixed(1) : "—";
+      const over = bud > 0 && act > bud;
+      return `<tr>
+        <td style="padding-left:24px;color:#555;font-size:12px">📤 ${cat}</td>
+        <td style="font-size:12px">${f2(bud)}</td>
+        <td style="font-size:12px;color:${over?"#c62828":"inherit"}">${f2(act)}</td>
+        <td style="font-size:12px;font-weight:700;color:${over?"#c62828":parseFloat(pct)>=80?"#e65100":"inherit"}">${pct!=="—"?pct+"%":"—"}${over?" ⚠️":""}</td>
+        <td style="font-size:12px;color:${over?"#c62828":"#2E7D32"}">${bud>0?(act>bud?`–${f2(act-bud)} over`:`+${f2(bud-act)} left`):"—"}</td>
+      </tr>`;
+    }).join("");
+
+    // Build unplanned rows
+    const unplannedRows = [
+      ...unplannedIncs.map(cat => `<tr style="background:#f9fff9">
+        <td style="padding-left:24px;color:#888;font-size:11px;font-style:italic">💰 ${cat} <span style="color:#aaa">(unplanned)</span></td>
+        <td style="font-size:11px;color:#aaa">—</td>
+        <td style="font-size:11px;color:#2E7D32">${f2(catActI[cat]||0)}</td>
+        <td style="font-size:11px;color:#aaa">—</td>
+        <td style="font-size:11px;color:#2E7D32">+${f2(catActI[cat]||0)}</td>
+      </tr>`),
+      ...unplannedExps.map(cat => `<tr style="background:#fff9f9">
+        <td style="padding-left:24px;color:#888;font-size:11px;font-style:italic">📤 ${cat} <span style="color:#aaa">(unplanned)</span></td>
+        <td style="font-size:11px;color:#aaa">—</td>
+        <td style="font-size:11px;color:#E65100">${f2(catActE[cat]||0)}</td>
+        <td style="font-size:11px;color:#aaa">—</td>
+        <td style="font-size:11px;color:#E65100">–${f2(catActE[cat]||0)}</td>
+      </tr>`),
+    ].join("");
+
     return `
-    <tr style="background:#f9f9f9">
-      <td colspan="5" style="padding:10px 14px;font-weight:900;font-size:13px;border-top:2px solid #e0e0e0">
+    <tr style="background:#f2f2f2">
+      <td colspan="5" style="padding:10px 14px;font-weight:900;font-size:13px;border-top:2px solid #ccc">
         ${b.name}
-        <span style="margin-left:10px;font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px;background:${status==="Active"?"#E8F5E9":status==="Ended"?"#F5F5F5":"#E3F2FD"};color:${status==="Active"?"#2E7D32":status==="Ended"?"#888":"#1565C0"}">
-          ${status}
-        </span>
-        <span style="margin-left:8px;font-size:11px;color:#aaa;font-weight:400">${b.startDate} → ${b.endDate}</span>
+        <span style="margin-left:10px;font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px;background:${status==="Active"?"#E8F5E9":status==="Ended"?"#F5F5F5":"#E3F2FD"};color:${status==="Active"?"#2E7D32":status==="Ended"?"#888":"#1565C0"}">${status}</span>
+        <span style="margin-left:8px;font-size:10px;color:#aaa">${b.startDate} → ${b.endDate}</span>
       </td>
     </tr>
-    <tr>
-      <td style="padding-left:14px;font-weight:700">Total Income</td>
-      <td>${b.totalIncome > 0 ? f2(b.totalIncome) : "—"}</td>
-      <td>${f2(actInc)}</td>
-      <td style="font-weight:700;color:${incMet?"#2E7D32":"inherit"}">${incPct !== "—" ? incPct+"%" : "—"}${incMet?" ✓":""}</td>
-      <td style="color:${actInc>=b.totalIncome&&b.totalIncome>0?"#2E7D32":"#888"}">${b.totalIncome > 0 ? (actInc >= b.totalIncome ? `+${f2(actInc-b.totalIncome)}` : `–${f2(b.totalIncome-actInc)}`) : "—"}</td>
-    </tr>
-    <tr>
-      <td style="padding-left:14px;font-weight:700">Total Expenses</td>
-      <td>${b.totalExpense > 0 ? f2(b.totalExpense) : "—"}</td>
-      <td style="color:${expOver?"#c62828":"inherit"}">${f2(actExp)}</td>
-      <td style="font-weight:700;color:${expOver?"#c62828":"inherit"}">${expPct !== "—" ? expPct+"%" : "—"}${expOver?" ⚠️":""}</td>
-      <td style="color:${expOver?"#c62828":"#2E7D32"}">${b.totalExpense > 0 ? (actExp > b.totalExpense ? `–${f2(actExp-b.totalExpense)} over` : `+${f2(b.totalExpense-actExp)} left`) : "—"}</td>
-    </tr>
-    ${catRowsHtml}`;
+    ${budgetedIncs.length>0?`
+    <tr style="background:#f9f9f9"><td colspan="5" style="padding:6px 14px;font-size:11px;font-weight:800;color:#2E7D32;letter-spacing:0.5px;text-transform:uppercase">Income</td></tr>
+    ${incCatRows}
+    <tr style="background:#E8F5E9"><td style="padding-left:14px;font-weight:900;font-size:12px">Total Income</td><td style="font-weight:900">${f2(budgetInc)}</td><td style="font-weight:900;color:${incMet?"#2E7D32":"inherit"}">${f2(actBudgetedInc)}</td><td style="font-weight:900;color:${incMet?"#2E7D32":"inherit"}">${budgetInc>0?((actBudgetedInc/budgetInc)*100).toFixed(1)+"%":"—"}</td><td style="font-weight:900;color:${incMet?"#2E7D32":"#c62828"}">${budgetInc>0?(actBudgetedInc>=budgetInc?`+${f2(actBudgetedInc-budgetInc)}`:`–${f2(budgetInc-actBudgetedInc)}`):"—"}</td></tr>
+    `:""}
+    ${budgetedExps.length>0?`
+    <tr style="background:#f9f9f9"><td colspan="5" style="padding:6px 14px;font-size:11px;font-weight:800;color:#E65100;letter-spacing:0.5px;text-transform:uppercase">Expenses</td></tr>
+    ${expCatRows}
+    <tr style="background:#FFF3E0"><td style="padding-left:14px;font-weight:900;font-size:12px">Total Expenses</td><td style="font-weight:900">${f2(budgetExp)}</td><td style="font-weight:900;color:${expOver?"#c62828":"inherit"}">${f2(actBudgetedExp)}</td><td style="font-weight:900;color:${expOver?"#c62828":"inherit"}">${budgetExp>0?((actBudgetedExp/budgetExp)*100).toFixed(1)+"%":"—"}</td><td style="font-weight:900;color:${expOver?"#c62828":"#2E7D32"}">${budgetExp>0?(actBudgetedExp>budgetExp?`–${f2(actBudgetedExp-budgetExp)} over`:`+${f2(budgetExp-actBudgetedExp)} left`):"—"}</td></tr>
+    `:""}
+    ${(unplannedIncs.length||unplannedExps.length)?`
+    <tr style="background:#f5f5f5"><td colspan="5" style="padding:6px 14px;font-size:11px;font-weight:800;color:#888;letter-spacing:0.5px;text-transform:uppercase">Other Factors (not in budget plan)</td></tr>
+    ${unplannedRows}
+    <tr><td style="padding-left:14px;font-weight:900;font-size:12px;color:#555">Net impact of other factors</td><td colspan="2"></td><td colspan="2" style="font-weight:900;color:${(unplannedInc-unplannedExp)>=0?"#2E7D32":"#c62828"}">${(unplannedInc-unplannedExp)>=0?"+":""}${f2(unplannedInc-unplannedExp)}</td></tr>
+    `:""}`;
   }).join("");
 
   return `
@@ -665,14 +707,10 @@ ${(() => {
     <div class="section-header">Note 6 — Budget Performance</div>
     <div class="section-body">
       <p style="font-weight:900;font-size:13px;margin-bottom:6px;font-family:'Segoe UI',sans-serif">Budget vs Actual Analysis</p>
-      <div class="note-block">The following table compares budgeted targets against actual performance for all budgets overlapping the reporting period. Variances shown in green indicate favourable performance; red indicates an overspend or shortfall.</div>
+      <div class="note-block">The table below compares budgeted targets against actual performance, separated into income and expense sections. Items marked as "other factors" occurred during the budget period but were not included in the budget plan — they influenced overall performance but fall outside the scope of the tracked budget.</div>
       <table class="comp-table">
         <thead><tr>
-          <th>Category</th>
-          <th>Budget</th>
-          <th>Actual</th>
-          <th>% Used</th>
-          <th>Variance</th>
+          <th>Category</th><th>Budget</th><th>Actual</th><th>% Used</th><th>Variance</th>
         </tr></thead>
         <tbody>${budgetRows}</tbody>
       </table>
@@ -2006,12 +2044,13 @@ function AppCore({ user, onLogout }) {
                     <div style={{ fontWeight:800, fontSize:14, color:isDesktop?"#1a1a1a":p, marginBottom:10 }}>🎯 Active Budgets</div>
                     {active.map(b => {
                       const bEntries = entries.filter(e => e.date.slice(0,10) >= b.startDate && e.date.slice(0,10) <= b.endDate);
-                      const actualExp = bEntries.filter(e=>e.type==="expense").reduce((s,e)=>s+e.amount,0);
-                      const actualInc = bEntries.filter(e=>e.type==="income").reduce((s,e)=>s+e.amount,0);
-                      const expPct = b.totalExpense > 0 ? Math.min(100,(actualExp/b.totalExpense)*100) : 0;
-                      const incPct = b.totalIncome  > 0 ? Math.min(100,(actualInc/b.totalIncome)*100)  : 0;
-                      const expOver = actualExp > b.totalExpense && b.totalExpense > 0;
-                      const incMet  = actualInc >= b.totalIncome && b.totalIncome > 0;
+                      const { actualBudgetedExp, actualBudgetedInc } = calcBudgetStats(b, entries);
+                      const budgetInc = b.totalIncome  || 0;
+                      const budgetExp = b.totalExpense || 0;
+                      const expPct = budgetExp > 0 ? Math.min(100,(actualBudgetedExp/budgetExp)*100) : 0;
+                      const incPct = budgetInc  > 0 ? Math.min(100,(actualBudgetedInc/budgetInc)*100)  : 0;
+                      const expOver = budgetExp > 0 && actualBudgetedExp > budgetExp;
+                      const incMet  = budgetInc  > 0 && actualBudgetedInc >= budgetInc;
                       return (
                         <div key={b.id} className="lb-section" style={{ marginBottom:12, cursor:"pointer", padding: isDesktop?"22px 24px":"14px 16px" }}
                           onClick={()=>{ setActiveBudget(b); setBudgetView("detail"); setView("budget"); }}>
@@ -2029,7 +2068,7 @@ function AppCore({ user, onLogout }) {
                             <div style={{ marginBottom:10 }}>
                               <div style={{ display:"flex", justifyContent:"space-between", fontSize:12, color:"#555", marginBottom:5 }}>
                                 <span>📤 Expenses</span>
-                                <span style={{ fontWeight:700, color: expOver?"#c62828":"#333" }}>{Math.round(expPct)}% — {fmtAmt(actualExp,currency)} of {fmtAmt(b.totalExpense,currency)}</span>
+                                <span style={{ fontWeight:700, color: expOver?"#c62828":"#333" }}>{Math.round(expPct)}% — {fmtAmt(actualBudgetedExp,currency)} of {fmtAmt(budgetExp,currency)}</span>
                               </div>
                               <div style={{ height:8, background:"#f0f0f0", borderRadius:99, overflow:"hidden" }}>
                                 <div style={{ height:"100%", borderRadius:99, width:`${expPct}%`,
@@ -2041,7 +2080,7 @@ function AppCore({ user, onLogout }) {
                             <div>
                               <div style={{ display:"flex", justifyContent:"space-between", fontSize:12, color:"#555", marginBottom:5 }}>
                                 <span>💰 Income</span>
-                                <span style={{ fontWeight:700, color: incMet?"#2E7D32":"#333" }}>{Math.round(incPct)}% — {fmtAmt(actualInc,currency)} of {fmtAmt(b.totalIncome,currency)}</span>
+                                <span style={{ fontWeight:700, color: incMet?"#2E7D32":"#333" }}>{Math.round(incPct)}% — {fmtAmt(actualBudgetedInc,currency)} of {fmtAmt(budgetInc,currency)}</span>
                               </div>
                               <div style={{ height:8, background:"#f0f0f0", borderRadius:99, overflow:"hidden" }}>
                                 <div style={{ height:"100%", borderRadius:99, width:`${incPct}%`,
@@ -2197,23 +2236,51 @@ const calcBudgetStats = (budget, entries) => {
   const inRange = entries.filter(e =>
     e.date.slice(0,10) >= budget.startDate && e.date.slice(0,10) <= budget.endDate
   );
+
+  // Actual income and expense totals
   const actualInc = inRange.filter(e=>e.type==="income").reduce((s,e)=>s+e.amount, 0);
   const actualExp = inRange.filter(e=>e.type==="expense").reduce((s,e)=>s+e.amount, 0);
 
-  // Per-category actual spend
-  const catActual = {};
-  inRange.forEach(e => { catActual[e.category] = (catActual[e.category]||0) + e.amount; });
+  // Separate per-category actual maps
+  const catActualInc = {}, catActualExp = {};
+  inRange.filter(e=>e.type==="income").forEach(e  => { catActualInc[e.category] = (catActualInc[e.category]||0) + e.amount; });
+  inRange.filter(e=>e.type==="expense").forEach(e => { catActualExp[e.category] = (catActualExp[e.category]||0) + e.amount; });
+
+  // Budgeted category maps (support both new schema and legacy catBudgets)
+  const incCatBudgets = budget.incCatBudgets || {};
+  const expCatBudgets = budget.expCatBudgets || {};
 
   const today = toISO(new Date());
-  const totalDays = Math.max(1, Math.ceil((new Date(budget.endDate) - new Date(budget.startDate)) / 864e5) + 1);
-  const elapsedDays = Math.min(totalDays, Math.max(0, Math.ceil((new Date(Math.min(new Date(today), new Date(budget.endDate))) - new Date(budget.startDate)) / 864e5) + 1));
+  const totalDays    = Math.max(1, Math.ceil((new Date(budget.endDate) - new Date(budget.startDate)) / 864e5) + 1);
+  const elapsedDays  = Math.min(totalDays, Math.max(0,
+    Math.ceil((new Date(Math.min(new Date(today), new Date(budget.endDate))) - new Date(budget.startDate)) / 864e5) + 1
+  ));
   const pctTimeElapsed = elapsedDays / totalDays;
-
   const isActive  = today >= budget.startDate && today <= budget.endDate;
   const isPast    = today > budget.endDate;
   const isFuture  = today < budget.startDate;
 
-  return { actualInc, actualExp, catActual, totalDays, elapsedDays, pctTimeElapsed, inRange, isActive, isPast, isFuture };
+  // Actual income in budgeted categories vs unbudgeted
+  const budgetedIncCats   = Object.keys(incCatBudgets);
+  const budgetedExpCats   = Object.keys(expCatBudgets);
+  const actualBudgetedInc = budgetedIncCats.reduce((s,c)=>s+(catActualInc[c]||0), 0);
+  const actualBudgetedExp = budgetedExpCats.reduce((s,c)=>s+(catActualExp[c]||0), 0);
+  const unbudgetedIncCats = Object.keys(catActualInc).filter(c => !budgetedIncCats.includes(c));
+  const unbudgetedExpCats = Object.keys(catActualExp).filter(c => !budgetedExpCats.includes(c));
+  const unbudgetedInc     = unbudgetedIncCats.reduce((s,c)=>s+(catActualInc[c]||0), 0);
+  const unbudgetedExp     = unbudgetedExpCats.reduce((s,c)=>s+(catActualExp[c]||0), 0);
+
+  return {
+    actualInc, actualExp,
+    catActualInc, catActualExp,
+    incCatBudgets, expCatBudgets,
+    budgetedIncCats, budgetedExpCats,
+    actualBudgetedInc, actualBudgetedExp,
+    unbudgetedIncCats, unbudgetedExpCats,
+    unbudgetedInc, unbudgetedExp,
+    totalDays, elapsedDays, pctTimeElapsed,
+    inRange, isActive, isPast, isFuture,
+  };
 };
 
 // ═══════════════════════════════════════════════════════════════
@@ -2226,10 +2293,13 @@ function BudgetList({ budgets, entries, currency, p, isDesktop, onNew, onView, o
   const future = budgets.filter(b => b.startDate > today);
 
   const BudgetCard = ({ b }) => {
-    const { actualExp, actualInc, pctTimeElapsed, isActive, isPast } = calcBudgetStats(b, entries);
-    const expPct   = b.totalExpense > 0 ? Math.min(100,(actualExp/b.totalExpense)*100) : null;
-    const incPct   = b.totalIncome  > 0 ? Math.min(100,(actualInc/b.totalIncome)*100)  : null;
-    const expOver  = b.totalExpense > 0 && actualExp > b.totalExpense;
+    const { actualBudgetedExp, actualBudgetedInc, pctTimeElapsed, isActive, isPast,
+            budgetedExpCats, budgetedIncCats } = calcBudgetStats(b, entries);
+    const budgetInc = b.totalIncome  || 0;
+    const budgetExp = b.totalExpense || 0;
+    const expPct   = budgetExp > 0 ? Math.min(100,(actualBudgetedExp/budgetExp)*100) : null;
+    const incPct   = budgetInc > 0 ? Math.min(100,(actualBudgetedInc/budgetInc)*100) : null;
+    const expOver  = budgetExp > 0 && actualBudgetedExp > budgetExp;
     const timePct  = Math.round(pctTimeElapsed * 100);
 
     return (
@@ -2257,7 +2327,7 @@ function BudgetList({ budgets, entries, currency, p, isDesktop, onNew, onView, o
           <div style={{ marginBottom:8 }}>
             <div style={{ display:"flex", justifyContent:"space-between", fontSize:11, color:"#888", marginBottom:4 }}>
               <span>📤 Expenses</span>
-              <span style={{ fontWeight:700, color: expOver?"#c62828":"#555" }}>{Math.round(expPct)}% of {fmtAmt(b.totalExpense,currency)}</span>
+              <span style={{ fontWeight:700, color: expOver?"#c62828":"#555" }}>{Math.round(expPct)}% of {fmtAmt(budgetExp,currency)}</span>
             </div>
             <div style={{ height:7, background:"#f0f0f0", borderRadius:99, overflow:"hidden" }}>
               <div style={{ height:"100%", borderRadius:99, width:`${expPct}%`, background: expOver?"#ef5350":"#FF9800", transition:"width 0.6s" }}/>
@@ -2268,7 +2338,7 @@ function BudgetList({ budgets, entries, currency, p, isDesktop, onNew, onView, o
           <div style={{ marginBottom: isActive?8:0 }}>
             <div style={{ display:"flex", justifyContent:"space-between", fontSize:11, color:"#888", marginBottom:4 }}>
               <span>💰 Income</span>
-              <span style={{ fontWeight:700, color: incPct>=100?"#2E7D32":"#555" }}>{Math.round(incPct)}% of {fmtAmt(b.totalIncome,currency)}</span>
+              <span style={{ fontWeight:700, color: incPct>=100?"#2E7D32":"#555" }}>{Math.round(incPct)}% of {fmtAmt(budgetInc,currency)}</span>
             </div>
             <div style={{ height:7, background:"#f0f0f0", borderRadius:99, overflow:"hidden" }}>
               <div style={{ height:"100%", borderRadius:99, width:`${incPct}%`, background: incPct>=100?"#25D366":"#128C7E", transition:"width 0.6s" }}/>
@@ -2328,31 +2398,41 @@ function BudgetList({ budgets, entries, currency, p, isDesktop, onNew, onView, o
 // ═══════════════════════════════════════════════════════════════
 function BudgetCreate({ budget, expCats, incCats, currency, p, isDesktop, onSave, onBack }) {
   const isEdit = !!budget;
-  const [name,      setName]      = useState(budget?.name || "");
-  const [startDate, setStartDate] = useState(budget?.startDate || toISO(new Date()));
-  const [endDate,   setEndDate]   = useState(budget?.endDate || "");
-  const [totInc,    setTotInc]    = useState(budget?.totalIncome  != null ? String(budget.totalIncome)  : "");
-  const [totExp,    setTotExp]    = useState(budget?.totalExpense != null ? String(budget.totalExpense) : "");
-  const [catBudgets,setCatBudgets]= useState(budget?.catBudgets || {}); // { catName: amount }
-  const [tab,       setTab]       = useState("overall"); // "overall" | "income" | "expense"
-  const [saving,    setSaving]    = useState(false);
+  const [name,          setName]         = useState(budget?.name || "");
+  const [startDate,     setStartDate]    = useState(budget?.startDate || toISO(new Date()));
+  const [endDate,       setEndDate]      = useState(budget?.endDate || "");
+  // Separate maps: incCatBudgets = { cat: amount } for income, expCatBudgets for expense
+  const [incCatBudgets, setIncCatBudgets]= useState(budget?.incCatBudgets || {});
+  const [expCatBudgets, setExpCatBudgets]= useState(budget?.expCatBudgets || {});
+  const [tab,           setTab]          = useState("overview");
+  const [saving,        setSaving]       = useState(false);
 
-  const setCat = (cat, val) => setCatBudgets(prev => ({ ...prev, [cat]: val === "" ? "" : parseFloat(val)||0 }));
+  // Auto-totals derived from categories
+  const totalIncome  = Object.values(incCatBudgets).reduce((s,v)=>s+(parseFloat(v)||0), 0);
+  const totalExpense = Object.values(expCatBudgets).reduce((s,v)=>s+(parseFloat(v)||0), 0);
+
+  const setIncCat = (cat, val) => setIncCatBudgets(prev => ({ ...prev, [cat]: val === "" ? "" : parseFloat(val)||0 }));
+  const setExpCat = (cat, val) => setExpCatBudgets(prev => ({ ...prev, [cat]: val === "" ? "" : parseFloat(val)||0 }));
 
   const handleSave = async () => {
-    if (!name.trim())      return alert("Please enter a budget name.");
-    if (!startDate)        return alert("Please select a start date.");
-    if (!endDate)          return alert("Please select an end date.");
+    if (!name.trim())        return alert("Please enter a budget name.");
+    if (!startDate)          return alert("Please select a start date.");
+    if (!endDate)            return alert("Please select an end date.");
     if (endDate < startDate) return alert("End date must be after start date.");
+    if (totalIncome === 0 && totalExpense === 0) return alert("Please set at least one income target or expense limit.");
     setSaving(true);
-    const clean = {};
-    Object.entries(catBudgets).forEach(([k,v]) => { if (v !== "" && v > 0) clean[k] = Number(v); });
+    const cleanInc = {}, cleanExp = {};
+    Object.entries(incCatBudgets).forEach(([k,v]) => { if (v !== "" && parseFloat(v) > 0) cleanInc[k] = parseFloat(v); });
+    Object.entries(expCatBudgets).forEach(([k,v]) => { if (v !== "" && parseFloat(v) > 0) cleanExp[k] = parseFloat(v); });
     await onSave({
       ...(isEdit ? { id: budget.id } : {}),
       name: name.trim(), startDate, endDate,
-      totalIncome:  totInc  !== "" ? parseFloat(totInc)  : 0,
-      totalExpense: totExp  !== "" ? parseFloat(totExp)  : 0,
-      catBudgets: clean,
+      totalIncome,
+      totalExpense,
+      incCatBudgets: cleanInc,
+      expCatBudgets: cleanExp,
+      // keep legacy catBudgets empty so old code doesn't mix
+      catBudgets: {},
     });
     setSaving(false);
   };
@@ -2361,6 +2441,25 @@ function BudgetCreate({ budget, expCats, incCats, currency, p, isDesktop, onSave
     fontSize:15, outline:"none", marginBottom:16, boxSizing:"border-box", background:"#fafafa", fontFamily:"inherit" };
   const labelStyle = { fontSize:11, fontWeight:800, color:"#999", textTransform:"uppercase", letterSpacing:.5, marginBottom:7, display:"block" };
 
+  const CatInput = ({ cat, value, onChange, type }) => (
+    <div style={{ display:"flex", alignItems:"center", gap:12, marginBottom:12,
+      padding:"10px 14px", background:"#fafafa", borderRadius:13, border:"1.5px solid #eee" }}>
+      <div style={{ flex:1, fontWeight:700, fontSize:14, color:"#333" }}>
+        {type==="income"?"💰":"📤"} {cat}
+      </div>
+      <div style={{ position:"relative", width:150, flexShrink:0 }}>
+        <span style={{ position:"absolute", left:11, top:"50%", transform:"translateY(-50%)",
+          fontSize:13, color:"#aaa", fontWeight:700, pointerEvents:"none" }}>{currency.symbol}</span>
+        <input type="number" placeholder="—" value={value??""} onChange={e=>onChange(cat, e.target.value)}
+          style={{ width:"100%", padding:"9px 10px 9px 26px", border:`2px solid ${value>0?p:"#e5e5e5"}`,
+            borderRadius:10, fontSize:14, outline:"none", boxSizing:"border-box", background:"#fff" }}/>
+      </div>
+    </div>
+  );
+
+  const incCatsWithValues = Object.values(incCatBudgets).filter(v=>parseFloat(v)>0).length;
+  const expCatsWithValues = Object.values(expCatBudgets).filter(v=>parseFloat(v)>0).length;
+
   return (
     <div style={{ flex:1, overflowY:"auto",
       paddingLeft:isDesktop?0:S.px, paddingRight:isDesktop?0:S.px,
@@ -2368,34 +2467,39 @@ function BudgetCreate({ budget, expCats, incCats, currency, p, isDesktop, onSave
       paddingBottom:isDesktop?48:`calc(${S.navH}px + env(safe-area-inset-bottom,0px) + 16px)` }}>
 
       {/* Header */}
-      <div style={{ display:"flex", alignItems:"center", gap:12, marginBottom:24 }}>
-        <button onClick={onBack} style={{ background:"#f0f0f0", border:"none", borderRadius:11, padding:"8px 14px", cursor:"pointer", fontWeight:800, fontSize:14, color:"#555" }}>← Back</button>
-        <div style={{ fontWeight:900, fontSize: isDesktop?22:18, color:"#1a1a1a", letterSpacing:-.3 }}>
+      <div style={{ display:"flex", alignItems:"center", gap:12, marginBottom:22 }}>
+        <button onClick={onBack} style={{ background:"#f0f0f0", border:"none", borderRadius:11, padding:"8px 14px",
+          cursor:"pointer", fontWeight:800, fontSize:14, color:"#555" }}>← Back</button>
+        <div style={{ fontWeight:900, fontSize:isDesktop?22:18, color:"#1a1a1a", letterSpacing:-.3 }}>
           {isEdit ? "Edit Budget" : "Create Budget"}
         </div>
       </div>
 
-      <div style={{ maxWidth: isDesktop?580:undefined }}>
+      <div style={{ maxWidth:isDesktop?600:undefined }}>
 
         {/* Tabs */}
-        <div style={{ display:"flex", background:"#f2f2f2", borderRadius:14, padding:4, marginBottom:22 }}>
-          {[["overall","📋 Overview"],["income","💰 Income"],["expense","📤 Expenses"]].map(([id,lbl])=>(
+        <div style={{ display:"flex", background:"#f2f2f2", borderRadius:14, padding:4, marginBottom:20 }}>
+          {[
+            ["overview", "📋 Overview"],
+            ["income",   `💰 Income${incCatsWithValues>0?` (${incCatsWithValues})`:""}` ],
+            ["expense",  `📤 Expenses${expCatsWithValues>0?` (${expCatsWithValues})`:""}` ],
+          ].map(([id,lbl])=>(
             <button key={id} onClick={()=>setTab(id)}
-              style={{ flex:1, padding:"10px 6px", border:"none", borderRadius:11, fontSize:13, fontWeight:700, cursor:"pointer",
-                background:tab===id?p:"transparent", color:tab===id?"#fff":"#888" }}>
+              style={{ flex:1, padding:"10px 4px", border:"none", borderRadius:11, fontSize:12, fontWeight:700,
+                cursor:"pointer", background:tab===id?p:"transparent", color:tab===id?"#fff":"#888" }}>
               {lbl}
             </button>
           ))}
         </div>
 
         {/* ── OVERVIEW TAB ── */}
-        {tab==="overall" && (
-          <div className="lb-section" style={{ padding: isDesktop?"26px 28px":"18px 20px" }}>
+        {tab==="overview" && (
+          <div className="lb-section" style={{ padding:isDesktop?"26px 28px":"18px 20px" }}>
             <label style={labelStyle}>Budget Name</label>
             <input value={name} onChange={e=>setName(e.target.value)} placeholder="e.g. Q2 2026 Budget"
               style={inputStyle}/>
 
-            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:14, marginBottom:4 }}>
+            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:14 }}>
               <div>
                 <label style={labelStyle}>Start Date</label>
                 <input type="date" value={startDate} onChange={e=>setStartDate(e.target.value)}
@@ -2408,60 +2512,100 @@ function BudgetCreate({ budget, expCats, incCats, currency, p, isDesktop, onSave
               </div>
             </div>
             {startDate&&endDate&&endDate>=startDate&&(
-              <div style={{ background:`${p}12`, borderRadius:10, padding:"9px 14px", fontSize:12, color:p, fontWeight:700, marginTop:12, marginBottom:16 }}>
+              <div style={{ background:`${p}12`, borderRadius:10, padding:"9px 14px", fontSize:12,
+                color:p, fontWeight:700, marginTop:12, marginBottom:4 }}>
                 📅 {Math.ceil((new Date(endDate)-new Date(startDate))/864e5)+1} days · {fmtDate(startDate+"T12:00:00")} → {fmtDate(endDate+"T12:00:00")}
               </div>
             )}
 
-            <label style={{...labelStyle, marginTop:8}}>Total Income Target ({currency.symbol})</label>
-            <input type="number" placeholder="0 — leave blank to skip" value={totInc} onChange={e=>setTotInc(e.target.value)}
-              style={inputStyle}/>
-
-            <label style={labelStyle}>Total Expense Limit ({currency.symbol})</label>
-            <input type="number" placeholder="0 — leave blank to skip" value={totExp} onChange={e=>setTotExp(e.target.value)}
-              style={{...inputStyle, marginBottom:0}}/>
+            {/* Auto-total preview */}
+            <div style={{ background:"#f9f9f9", borderRadius:14, padding:"16px 18px", marginTop:18,
+              border:"1.5px dashed #ddd" }}>
+              <div style={{ fontSize:11, fontWeight:800, color:"#aaa", textTransform:"uppercase",
+                letterSpacing:1, marginBottom:12 }}>Projected Totals (from categories)</div>
+              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
+                <div style={{ background:totalIncome>0?"#E8F5E9":"#fff", borderRadius:12, padding:"14px 16px",
+                  border:`1.5px solid ${totalIncome>0?"#a5d6a7":"#eee"}` }}>
+                  <div style={{ fontSize:11, color:"#888", marginBottom:4 }}>💰 Projected Income</div>
+                  <div style={{ fontWeight:900, fontSize:18, color:totalIncome>0?"#2E7D32":"#ccc" }}>
+                    {totalIncome>0 ? fmtAmt(totalIncome,currency) : "—"}
+                  </div>
+                  <div style={{ fontSize:11, color:"#aaa", marginTop:3 }}>
+                    {incCatsWithValues>0 ? `${incCatsWithValues} categor${incCatsWithValues===1?"y":"ies"}` : "Set on Income tab →"}
+                  </div>
+                </div>
+                <div style={{ background:totalExpense>0?"#FFF3E0":"#fff", borderRadius:12, padding:"14px 16px",
+                  border:`1.5px solid ${totalExpense>0?"#ffcc80":"#eee"}` }}>
+                  <div style={{ fontSize:11, color:"#888", marginBottom:4 }}>📤 Expense Limit</div>
+                  <div style={{ fontWeight:900, fontSize:18, color:totalExpense>0?"#E65100":"#ccc" }}>
+                    {totalExpense>0 ? fmtAmt(totalExpense,currency) : "—"}
+                  </div>
+                  <div style={{ fontSize:11, color:"#aaa", marginTop:3 }}>
+                    {expCatsWithValues>0 ? `${expCatsWithValues} categor${expCatsWithValues===1?"y":"ies"}` : "Set on Expenses tab →"}
+                  </div>
+                </div>
+              </div>
+              {totalIncome>0&&totalExpense>0&&(
+                <div style={{ marginTop:12, display:"flex", justifyContent:"space-between", fontSize:12,
+                  fontWeight:700, color:"#555", background:"#fff", borderRadius:10, padding:"10px 14px",
+                  border:"1px solid #eee" }}>
+                  <span>Projected Net</span>
+                  <span style={{ color: totalIncome-totalExpense>=0?"#2E7D32":"#c62828", fontWeight:900 }}>
+                    {fmtAmt(totalIncome-totalExpense,currency)}
+                  </span>
+                </div>
+              )}
+              <div style={{ fontSize:11, color:"#bbb", marginTop:10, lineHeight:1.6 }}>
+                Totals are auto-calculated from the income and expense category tabs. You don't need to enter them manually.
+              </div>
+            </div>
           </div>
         )}
 
         {/* ── INCOME CATEGORIES TAB ── */}
         {tab==="income" && (
-          <div className="lb-section" style={{ padding: isDesktop?"26px 28px":"18px 20px" }}>
-            <div style={{ fontSize:13, color:"#888", marginBottom:18, lineHeight:1.6 }}>
-              Set individual income targets per category. Leave blank to skip tracking for that category.
+          <div>
+            <div className="lb-section" style={{ padding:isDesktop?"22px 24px":"16px 18px", marginBottom:12 }}>
+              <div style={{ fontSize:13, color:"#666", lineHeight:1.65, marginBottom:4 }}>
+                Enter your expected income per category for this period. Only categories with a value will be tracked. Leave blank to exclude a category.
+              </div>
             </div>
             {incCats.map(cat=>(
-              <div key={cat} style={{ display:"flex", alignItems:"center", gap:12, marginBottom:14 }}>
-                <div style={{ flex:1, fontWeight:700, fontSize:14, color:"#333" }}>💰 {cat}</div>
-                <div style={{ position:"relative", width:160, flexShrink:0 }}>
-                  <span style={{ position:"absolute", left:12, top:"50%", transform:"translateY(-50%)", fontSize:13, color:"#888", fontWeight:700 }}>{currency.symbol}</span>
-                  <input type="number" placeholder="—" value={catBudgets[cat]??""} onChange={e=>setCat(cat,e.target.value)}
-                    style={{ width:"100%", padding:"10px 12px 10px 28px", border:"2px solid #e5e5e5", borderRadius:11, fontSize:14, outline:"none", boxSizing:"border-box" }}/>
-                </div>
-              </div>
+              <CatInput key={cat} cat={cat} value={incCatBudgets[cat]} onChange={setIncCat} type="income"/>
             ))}
+            {totalIncome > 0 && (
+              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center",
+                background:`${p}15`, borderRadius:14, padding:"14px 18px", marginTop:8,
+                border:`1.5px solid ${p}40` }}>
+                <span style={{ fontWeight:800, fontSize:14, color:p }}>Total Projected Income</span>
+                <span style={{ fontWeight:900, fontSize:16, color:p }}>{fmtAmt(totalIncome,currency)}</span>
+              </div>
+            )}
           </div>
         )}
 
         {/* ── EXPENSE CATEGORIES TAB ── */}
         {tab==="expense" && (
-          <div className="lb-section" style={{ padding: isDesktop?"26px 28px":"18px 20px" }}>
-            <div style={{ fontSize:13, color:"#888", marginBottom:18, lineHeight:1.6 }}>
-              Set spending limits per expense category. A warning will appear when you're close to or over the limit.
+          <div>
+            <div className="lb-section" style={{ padding:isDesktop?"22px 24px":"16px 18px", marginBottom:12 }}>
+              <div style={{ fontSize:13, color:"#666", lineHeight:1.65, marginBottom:4 }}>
+                Enter your spending limit per expense category. Categories without a value will not be tracked against a budget, but will still appear as "unplanned" in your report.
+              </div>
             </div>
             {expCats.map(cat=>(
-              <div key={cat} style={{ display:"flex", alignItems:"center", gap:12, marginBottom:14 }}>
-                <div style={{ flex:1, fontWeight:700, fontSize:14, color:"#333" }}>📤 {cat}</div>
-                <div style={{ position:"relative", width:160, flexShrink:0 }}>
-                  <span style={{ position:"absolute", left:12, top:"50%", transform:"translateY(-50%)", fontSize:13, color:"#888", fontWeight:700 }}>{currency.symbol}</span>
-                  <input type="number" placeholder="—" value={catBudgets[cat]??""} onChange={e=>setCat(cat,e.target.value)}
-                    style={{ width:"100%", padding:"10px 12px 10px 28px", border:"2px solid #e5e5e5", borderRadius:11, fontSize:14, outline:"none", boxSizing:"border-box" }}/>
-                </div>
-              </div>
+              <CatInput key={cat} cat={cat} value={expCatBudgets[cat]} onChange={setExpCat} type="expense"/>
             ))}
+            {totalExpense > 0 && (
+              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center",
+                background:"#FFF3E0", borderRadius:14, padding:"14px 18px", marginTop:8,
+                border:"1.5px solid #ffcc80" }}>
+                <span style={{ fontWeight:800, fontSize:14, color:"#E65100" }}>Total Expense Limit</span>
+                <span style={{ fontWeight:900, fontSize:16, color:"#E65100" }}>{fmtAmt(totalExpense,currency)}</span>
+              </div>
+            )}
           </div>
         )}
 
-        {/* Save button */}
         <button onClick={handleSave} disabled={saving}
           style={{ width:"100%", padding:"16px", background:p, color:"#fff", border:"none", borderRadius:16,
             fontSize:16, fontWeight:900, cursor:"pointer", marginTop:20, boxShadow:`0 4px 16px ${p}50` }}>
@@ -2476,53 +2620,66 @@ function BudgetCreate({ budget, expCats, incCats, currency, p, isDesktop, onSave
 // BUDGET DETAIL
 // ═══════════════════════════════════════════════════════════════
 function BudgetDetail({ budget, entries, currency, p, bg, isDesktop, onBack, onEdit, onDelete }) {
-  const { actualInc, actualExp, catActual, totalDays, elapsedDays, pctTimeElapsed, inRange, isActive, isPast, isFuture } = calcBudgetStats(budget, entries);
+  const {
+    actualInc, actualExp,
+    catActualInc, catActualExp,
+    incCatBudgets, expCatBudgets,
+    budgetedIncCats, budgetedExpCats,
+    actualBudgetedInc, actualBudgetedExp,
+    unbudgetedIncCats, unbudgetedExpCats,
+    unbudgetedInc, unbudgetedExp,
+    totalDays, elapsedDays, pctTimeElapsed,
+    inRange, isActive, isPast, isFuture,
+  } = calcBudgetStats(budget, entries);
 
-  const expPct  = budget.totalExpense > 0 ? Math.min(100,(actualExp/budget.totalExpense)*100) : null;
-  const incPct  = budget.totalIncome  > 0 ? Math.min(100,(actualInc/budget.totalIncome)*100)  : null;
-  const expOver = budget.totalExpense > 0 && actualExp > budget.totalExpense;
-  const incMet  = budget.totalIncome  > 0 && actualInc >= budget.totalIncome;
-  const timePct = Math.round(pctTimeElapsed*100);
-  const netBudget = (budget.totalIncome||0) - (budget.totalExpense||0);
+  const totalBudgetedInc = Object.values(incCatBudgets).reduce((s,v)=>s+v,0);
+  const totalBudgetedExp = Object.values(expCatBudgets).reduce((s,v)=>s+v,0);
+
+  // Use budget's stored totals (which equal sum of categories)
+  const budgetInc = budget.totalIncome  || totalBudgetedInc;
+  const budgetExp = budget.totalExpense || totalBudgetedExp;
+
+  const expPct    = budgetExp > 0 ? Math.min(100,(actualBudgetedExp/budgetExp)*100) : null;
+  const incPct    = budgetInc > 0 ? Math.min(100,(actualBudgetedInc/budgetInc)*100) : null;
+  const expOver   = budgetExp > 0 && actualBudgetedExp > budgetExp;
+  const incMet    = budgetInc > 0 && actualBudgetedInc >= budgetInc;
+  const timePct   = Math.round(pctTimeElapsed*100);
+  const netBudget = budgetInc - budgetExp;
   const netActual = actualInc - actualExp;
 
-  // All categories that have either a budget or actual spend
-  const allExpCats = [...new Set([...Object.keys(budget.catBudgets||{}).filter(k => {
-    const anyInc = entries.some(e => e.type==="income" && e.category===k);
-    return !anyInc;
-  }), ...inRange.filter(e=>e.type==="expense").map(e=>e.category)])];
-  const allIncCats = [...new Set([...Object.keys(budget.catBudgets||{}), ...inRange.filter(e=>e.type==="income").map(e=>e.category)])].filter(k => {
-    const budgeted = (budget.catBudgets||{})[k] !== undefined;
-    const hasInc   = inRange.some(e=>e.type==="income" && e.category===k);
-    return budgeted || hasInc;
-  });
-
-  const CatRow = ({ cat, type }) => {
-    const budgeted = (budget.catBudgets||{})[cat] || 0;
-    const actual   = catActual[cat] || 0;
-    const pct      = budgeted > 0 ? Math.min(100, (actual/budgeted)*100) : null;
-    const over     = budgeted > 0 && actual > budgeted;
-    const barColor = type==="income" ? (pct>=100?"#25D366":"#128C7E") : (over?"#ef5350": pct>=80?"#FF9800":"#25D366");
+  // ── Category row component ───────────────────────────────────
+  const CatRow = ({ cat, budgeted, actual, type }) => {
+    const pct   = budgeted > 0 ? Math.min(100,(actual/budgeted)*100) : null;
+    const over  = budgeted > 0 && actual > budgeted;
+    const near  = !over && pct !== null && pct >= 80;
+    const barColor = type==="income"
+      ? (pct >= 100 ? "#25D366" : "#128C7E")
+      : (over ? "#ef5350" : near ? "#FF9800" : "#25D366");
 
     return (
-      <div style={{ marginBottom:16, paddingBottom:16, borderBottom:"1px solid #f5f5f5" }}>
-        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:6 }}>
-          <div style={{ fontWeight:700, fontSize:14, color:"#222" }}>{type==="income"?"💰":"📤"} {cat}</div>
-          <div style={{ textAlign:"right" }}>
-            <div style={{ fontSize:13, fontWeight:800, color: over?"#c62828": pct>=100&&type==="income"?"#2E7D32":"#333" }}>
+      <div style={{ marginBottom:14, paddingBottom:14, borderBottom:"1px solid #f5f5f5" }}>
+        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:pct!==null?7:0 }}>
+          <div style={{ fontWeight:700, fontSize:14, color:"#222" }}>
+            {type==="income" ? "💰" : "📤"} {cat}
+          </div>
+          <div style={{ textAlign:"right", flexShrink:0, marginLeft:12 }}>
+            <div style={{ fontSize:13, fontWeight:800,
+              color: over?"#c62828": pct>=100&&type==="income"?"#2E7D32":"#333" }}>
               {fmtAmt(actual,currency)}
-              {budgeted>0 && <span style={{ fontWeight:400, color:"#aaa", fontSize:12 }}> / {fmtAmt(budgeted,currency)}</span>}
+              {budgeted>0&&<span style={{ fontWeight:400, color:"#bbb", fontSize:12 }}> / {fmtAmt(budgeted,currency)}</span>}
             </div>
-            {pct !== null && <div style={{ fontSize:11, color: over?"#e53935": pct>=100&&type==="income"?"#2E7D32":"#888", fontWeight:700 }}>{Math.round(pct)}%</div>}
+            {pct!==null&&<div style={{ fontSize:11, fontWeight:700,
+              color:over?"#e53935":pct>=100&&type==="income"?"#2E7D32":"#888" }}>{Math.round(pct)}%</div>}
           </div>
         </div>
-        {pct !== null && (
-          <div style={{ height:6, background:"#f0f0f0", borderRadius:99, overflow:"hidden" }}>
+        {pct!==null&&(
+          <div style={{ height:7, background:"#f0f0f0", borderRadius:99, overflow:"hidden" }}>
             <div style={{ height:"100%", borderRadius:99, width:`${pct}%`, background:barColor, transition:"width 0.5s" }}/>
           </div>
         )}
-        {budgeted===0 && actual>0 && <div style={{ fontSize:11, color:"#bbb", marginTop:3 }}>No limit set · {fmtAmt(actual,currency)} spent</div>}
-        {over && <div style={{ fontSize:11, color:"#e53935", marginTop:4, fontWeight:700 }}>⚠️ Over by {fmtAmt(actual-budgeted,currency)}</div>}
+        {over&&<div style={{ fontSize:11, color:"#e53935", fontWeight:700, marginTop:4 }}>⚠️ Over by {fmtAmt(actual-budgeted,currency)}</div>}
+        {near&&!over&&<div style={{ fontSize:11, color:"#f57c00", fontWeight:700, marginTop:4 }}>⚠️ {fmtAmt(budgeted-actual,currency)} remaining</div>}
+        {type==="income"&&pct!==null&&pct>=100&&<div style={{ fontSize:11, color:"#2E7D32", fontWeight:700, marginTop:4 }}>🎉 Target met!</div>}
       </div>
     );
   };
@@ -2534,23 +2691,27 @@ function BudgetDetail({ budget, entries, currency, p, bg, isDesktop, onBack, onE
       paddingBottom:isDesktop?48:`calc(${S.navH}px + env(safe-area-inset-bottom,0px) + 16px)` }}>
 
       {/* Header */}
-      <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:20 }}>
-        <div style={{ display:"flex", alignItems:"center", gap:12 }}>
-          <button onClick={onBack} style={{ background:"#f0f0f0", border:"none", borderRadius:11, padding:"8px 14px", cursor:"pointer", fontWeight:800, fontSize:14, color:"#555" }}>← Back</button>
+      <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:18 }}>
+        <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+          <button onClick={onBack} style={{ background:"#f0f0f0", border:"none", borderRadius:11,
+            padding:"8px 14px", cursor:"pointer", fontWeight:800, fontSize:14, color:"#555" }}>← Back</button>
           <div style={{ fontWeight:900, fontSize:isDesktop?20:16, color:"#1a1a1a", letterSpacing:-.3 }}>{budget.name}</div>
         </div>
         <div style={{ display:"flex", gap:8 }}>
-          <button onClick={()=>onEdit(budget)} style={{ background:`${p}15`, border:`1.5px solid ${p}`, color:p, borderRadius:11, padding:"7px 14px", cursor:"pointer", fontWeight:800, fontSize:13 }}>✏️ Edit</button>
-          <button onClick={()=>{if(window.confirm("Delete this budget?")) onDelete(budget.id);}} style={{ background:"#FFF3F3", border:"1.5px solid #ffcdd2", color:"#c62828", borderRadius:11, padding:"7px 12px", cursor:"pointer", fontSize:14 }}>🗑️</button>
+          <button onClick={()=>onEdit(budget)} style={{ background:`${p}15`, border:`1.5px solid ${p}`, color:p,
+            borderRadius:11, padding:"7px 14px", cursor:"pointer", fontWeight:800, fontSize:13 }}>✏️ Edit</button>
+          <button onClick={()=>{if(window.confirm("Delete this budget?")) onDelete(budget.id);}}
+            style={{ background:"#FFF3F3", border:"1.5px solid #ffcdd2", color:"#c62828",
+              borderRadius:11, padding:"7px 12px", cursor:"pointer", fontSize:14 }}>🗑️</button>
         </div>
       </div>
 
       {/* Hero card */}
-      <div style={{ background:bg, borderRadius:20, padding:"22px 24px", color:"#fff", marginBottom:20,
+      <div style={{ background:bg, borderRadius:20, padding:"20px 22px", color:"#fff", marginBottom:18,
         boxShadow:`0 8px 28px ${p}40` }}>
-        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:16 }}>
+        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:14 }}>
           <div>
-            <div style={{ fontSize:11, opacity:.7, textTransform:"uppercase", letterSpacing:1.5, marginBottom:4 }}>
+            <div style={{ fontSize:10, opacity:.7, textTransform:"uppercase", letterSpacing:1.5, marginBottom:3 }}>
               {isActive?"Active Budget": isPast?"Completed": "Upcoming"}
             </div>
             <div style={{ fontSize:11, opacity:.65 }}>{fmtDate(budget.startDate+"T12:00:00")} → {fmtDate(budget.endDate+"T12:00:00")}</div>
@@ -2559,25 +2720,17 @@ function BudgetDetail({ budget, entries, currency, p, bg, isDesktop, onBack, onE
             {isActive ? `Day ${elapsedDays} of ${totalDays}` : isPast ? `${totalDays} days` : `Starts in ${Math.ceil((new Date(budget.startDate)-new Date())/864e5)} days`}
           </div>
         </div>
-
-        {/* KPI strip */}
-        <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:0, background:"rgba(0,0,0,0.15)", borderRadius:14, overflow:"hidden" }}>
-          {[
-            ["Net Budget", fmtAmt(netBudget, currency)],
-            ["Net Actual", fmtAmt(netActual, currency)],
-            ["Variance",   fmtAmt(netActual - netBudget, currency)],
-          ].map(([lbl,val],i)=>(
-            <div key={lbl} style={{ padding:"12px 14px", borderRight:i<2?"1px solid rgba(255,255,255,0.15)":undefined }}>
-              <div style={{ fontSize:9, opacity:.6, textTransform:"uppercase", letterSpacing:1, marginBottom:4 }}>{lbl}</div>
-              <div style={{ fontWeight:900, fontSize:14 }}>{val}</div>
+        <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", background:"rgba(0,0,0,0.15)", borderRadius:13, overflow:"hidden" }}>
+          {[["Budgeted Net", fmtAmt(netBudget,currency)],["Actual Net",fmtAmt(netActual,currency)],["Variance",fmtAmt(netActual-netBudget,currency)]].map(([lbl,val],i)=>(
+            <div key={lbl} style={{ padding:"11px 12px", borderRight:i<2?"1px solid rgba(255,255,255,0.15)":undefined }}>
+              <div style={{ fontSize:9, opacity:.6, textTransform:"uppercase", letterSpacing:.8, marginBottom:3 }}>{lbl}</div>
+              <div style={{ fontWeight:900, fontSize:13 }}>{val}</div>
             </div>
           ))}
         </div>
-
-        {/* Time progress */}
-        {isActive && (
-          <div style={{ marginTop:14 }}>
-            <div style={{ display:"flex", justifyContent:"space-between", fontSize:11, opacity:.7, marginBottom:5 }}>
+        {isActive&&(
+          <div style={{ marginTop:12 }}>
+            <div style={{ display:"flex", justifyContent:"space-between", fontSize:11, opacity:.7, marginBottom:4 }}>
               <span>Time elapsed</span><span>{timePct}%</span>
             </div>
             <div style={{ height:5, background:"rgba(0,0,0,0.2)", borderRadius:99 }}>
@@ -2587,78 +2740,153 @@ function BudgetDetail({ budget, entries, currency, p, bg, isDesktop, onBack, onE
         )}
       </div>
 
-      {/* Overall progress */}
-      {(expPct !== null || incPct !== null) && (
-        <div className="lb-section" style={{ marginBottom:16, padding:isDesktop?"22px 24px":"16px 18px" }}>
-          <div style={{ fontWeight:800, fontSize:15, color:"#1a1a1a", marginBottom:16 }}>Overall Performance</div>
-          {incPct !== null && (
+      {/* ── INCOME SECTION ─────────────────────────────────── */}
+      {budgetedIncCats.length > 0 && (
+        <div className="lb-section" style={{ marginBottom:14, padding:isDesktop?"22px 24px":"16px 18px" }}>
+          <div style={{ fontWeight:900, fontSize:15, color:"#1a1a1a", marginBottom:4 }}>💰 Income Performance</div>
+          {budgetInc > 0 && (
             <div style={{ marginBottom:16 }}>
-              <div style={{ display:"flex", justifyContent:"space-between", fontSize:13, marginBottom:6 }}>
-                <span style={{ fontWeight:700 }}>💰 Income Target</span>
-                <span style={{ fontWeight:800, color: incMet?"#2E7D32":"#555" }}>{Math.round(incPct)}% — {fmtAmt(actualInc,currency)} of {fmtAmt(budget.totalIncome,currency)}</span>
+              <div style={{ display:"flex", justifyContent:"space-between", fontSize:12, color:"#888", marginBottom:5 }}>
+                <span>Overall income target</span>
+                <span style={{ fontWeight:800, color:incMet?"#2E7D32":"#555" }}>
+                  {Math.round(incPct||0)}% · {fmtAmt(actualBudgetedInc,currency)} of {fmtAmt(budgetInc,currency)}
+                </span>
               </div>
-              <div style={{ height:10, background:"#f0f0f0", borderRadius:99, overflow:"hidden" }}>
-                <div style={{ height:"100%", borderRadius:99, width:`${incPct}%`, background: incMet?"#25D366":"#128C7E", transition:"width 0.6s" }}/>
+              <div style={{ height:9, background:"#f0f0f0", borderRadius:99, overflow:"hidden" }}>
+                <div style={{ height:"100%", borderRadius:99, width:`${incPct||0}%`,
+                  background:incMet?"#25D366":"#128C7E", transition:"width 0.6s" }}/>
               </div>
-              {incMet && <div style={{ fontSize:11, color:"#2E7D32", fontWeight:700, marginTop:5 }}>🎉 Income target met!</div>}
-              {!incMet && <div style={{ fontSize:11, color:"#888", marginTop:5 }}>{fmtAmt(budget.totalIncome-actualInc,currency)} remaining to reach target</div>}
+              {incMet
+                ? <div style={{ fontSize:11, color:"#2E7D32", fontWeight:800, marginTop:5 }}>🎉 Overall income target met!</div>
+                : <div style={{ fontSize:11, color:"#888", marginTop:5 }}>{fmtAmt(budgetInc-actualBudgetedInc,currency)} still to reach target</div>}
             </div>
           )}
-          {expPct !== null && (
-            <div>
-              <div style={{ display:"flex", justifyContent:"space-between", fontSize:13, marginBottom:6 }}>
-                <span style={{ fontWeight:700 }}>📤 Expense Limit</span>
-                <span style={{ fontWeight:800, color: expOver?"#c62828":"#555" }}>{Math.round(expPct)}% — {fmtAmt(actualExp,currency)} of {fmtAmt(budget.totalExpense,currency)}</span>
+          <div style={{ fontSize:11, fontWeight:800, color:"#aaa", textTransform:"uppercase", letterSpacing:1, marginBottom:10 }}>By Category</div>
+          {budgetedIncCats.map(cat=>(
+            <CatRow key={cat} cat={cat} budgeted={incCatBudgets[cat]||0} actual={catActualInc[cat]||0} type="income"/>
+          ))}
+        </div>
+      )}
+
+      {/* ── EXPENSE SECTION ────────────────────────────────── */}
+      {budgetedExpCats.length > 0 && (
+        <div className="lb-section" style={{ marginBottom:14, padding:isDesktop?"22px 24px":"16px 18px" }}>
+          <div style={{ fontWeight:900, fontSize:15, color:"#1a1a1a", marginBottom:4 }}>📤 Expense Performance</div>
+          {budgetExp > 0 && (
+            <div style={{ marginBottom:16 }}>
+              <div style={{ display:"flex", justifyContent:"space-between", fontSize:12, color:"#888", marginBottom:5 }}>
+                <span>Overall expense limit</span>
+                <span style={{ fontWeight:800, color:expOver?"#c62828":"#555" }}>
+                  {Math.round(expPct||0)}% · {fmtAmt(actualBudgetedExp,currency)} of {fmtAmt(budgetExp,currency)}
+                </span>
               </div>
-              <div style={{ height:10, background:"#f0f0f0", borderRadius:99, overflow:"hidden" }}>
-                <div style={{ height:"100%", borderRadius:99, width:`${expPct}%`, background: expOver?"#ef5350":"#FF9800", transition:"width 0.6s" }}/>
+              <div style={{ height:9, background:"#f0f0f0", borderRadius:99, overflow:"hidden" }}>
+                <div style={{ height:"100%", borderRadius:99, width:`${expPct||0}%`,
+                  background:expOver?"#ef5350":"#FF9800", transition:"width 0.6s" }}/>
               </div>
-              {expOver ? <div style={{ fontSize:11, color:"#c62828", fontWeight:800, marginTop:5 }}>⚠️ Over budget by {fmtAmt(actualExp-budget.totalExpense,currency)}</div>
-                       : <div style={{ fontSize:11, color:"#888", marginTop:5 }}>{fmtAmt(budget.totalExpense-actualExp,currency)} remaining</div>}
+              {expOver
+                ? <div style={{ fontSize:11, color:"#c62828", fontWeight:800, marginTop:5 }}>⚠️ Over budget by {fmtAmt(actualBudgetedExp-budgetExp,currency)}</div>
+                : <div style={{ fontSize:11, color:"#888", marginTop:5 }}>{fmtAmt(budgetExp-actualBudgetedExp,currency)} remaining</div>}
             </div>
           )}
+          <div style={{ fontSize:11, fontWeight:800, color:"#aaa", textTransform:"uppercase", letterSpacing:1, marginBottom:10 }}>By Category</div>
+          {budgetedExpCats.map(cat=>(
+            <CatRow key={cat} cat={cat} budgeted={expCatBudgets[cat]||0} actual={catActualExp[cat]||0} type="expense"/>
+          ))}
         </div>
       )}
 
-      {/* Category breakdown — expenses */}
-      {allExpCats.length > 0 && (
-        <div className="lb-section" style={{ marginBottom:16, padding:isDesktop?"22px 24px":"16px 18px" }}>
-          <div style={{ fontWeight:800, fontSize:15, color:"#1a1a1a", marginBottom:18 }}>📤 Expense Categories</div>
-          {allExpCats.map(cat => <CatRow key={cat} cat={cat} type="expense"/>)}
+      {/* ── UNBUDGETED / OTHER FACTORS ─────────────────────── */}
+      {(unbudgetedIncCats.length > 0 || unbudgetedExpCats.length > 0) && (
+        <div className="lb-section" style={{ marginBottom:14, padding:isDesktop?"22px 24px":"16px 18px",
+          border:"1.5px dashed #e0e0e0", background:"#fafafa" }}>
+          <div style={{ fontWeight:900, fontSize:15, color:"#1a1a1a", marginBottom:4 }}>📎 Other Factors</div>
+          <div style={{ fontSize:12, color:"#888", lineHeight:1.65, marginBottom:14 }}>
+            The following transactions occurred during the budget period but were <strong>not included in your budget plan</strong>. They have influenced your overall financial position but fall outside the scope of this budget's targets.
+          </div>
+
+          {unbudgetedIncCats.length > 0 && (
+            <>
+              <div style={{ fontSize:11, fontWeight:800, color:"#2E7D32", textTransform:"uppercase",
+                letterSpacing:1, marginBottom:8 }}>💰 Unplanned Income</div>
+              {unbudgetedIncCats.map(cat=>(
+                <div key={cat} style={{ display:"flex", justifyContent:"space-between",
+                  padding:"9px 0", borderBottom:"1px solid #eee", alignItems:"center" }}>
+                  <span style={{ fontSize:13, color:"#444", fontWeight:600 }}>💰 {cat}</span>
+                  <span style={{ fontWeight:800, fontSize:13, color:"#2E7D32" }}>+{fmtAmt(catActualInc[cat]||0,currency)}</span>
+                </div>
+              ))}
+              <div style={{ display:"flex", justifyContent:"space-between", padding:"10px 0 4px",
+                fontSize:13, fontWeight:900, color:"#2E7D32" }}>
+                <span>Total unplanned income</span>
+                <span>+{fmtAmt(unbudgetedInc,currency)}</span>
+              </div>
+            </>
+          )}
+
+          {unbudgetedExpCats.length > 0 && (
+            <div style={{ marginTop: unbudgetedIncCats.length>0?14:0 }}>
+              <div style={{ fontSize:11, fontWeight:800, color:"#E65100", textTransform:"uppercase",
+                letterSpacing:1, marginBottom:8 }}>📤 Unplanned Expenses</div>
+              {unbudgetedExpCats.map(cat=>(
+                <div key={cat} style={{ display:"flex", justifyContent:"space-between",
+                  padding:"9px 0", borderBottom:"1px solid #eee", alignItems:"center" }}>
+                  <span style={{ fontSize:13, color:"#444", fontWeight:600 }}>📤 {cat}</span>
+                  <span style={{ fontWeight:800, fontSize:13, color:"#E65100" }}>-{fmtAmt(catActualExp[cat]||0,currency)}</span>
+                </div>
+              ))}
+              <div style={{ display:"flex", justifyContent:"space-between", padding:"10px 0 4px",
+                fontSize:13, fontWeight:900, color:"#E65100" }}>
+                <span>Total unplanned expenses</span>
+                <span>-{fmtAmt(unbudgetedExp,currency)}</span>
+              </div>
+            </div>
+          )}
+
+          {/* Net impact of other factors */}
+          <div style={{ marginTop:14, background:"#fff", borderRadius:12, padding:"12px 16px",
+            border:"1px solid #e0e0e0", display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+            <span style={{ fontSize:13, fontWeight:800, color:"#555" }}>Net impact of other factors</span>
+            <span style={{ fontSize:14, fontWeight:900,
+              color:(unbudgetedInc-unbudgetedExp)>=0?"#2E7D32":"#c62828" }}>
+              {(unbudgetedInc-unbudgetedExp)>=0?"+":""}{fmtAmt(unbudgetedInc-unbudgetedExp,currency)}
+            </span>
+          </div>
         </div>
       )}
 
-      {/* Category breakdown — income */}
-      {allIncCats.length > 0 && (
-        <div className="lb-section" style={{ marginBottom:16, padding:isDesktop?"22px 24px":"16px 18px" }}>
-          <div style={{ fontWeight:800, fontSize:15, color:"#1a1a1a", marginBottom:18 }}>💰 Income Categories</div>
-          {allIncCats.map(cat => <CatRow key={cat} cat={cat} type="income"/>)}
-        </div>
-      )}
-
-      {/* Transactions in this period */}
+      {/* ── TRANSACTIONS ────────────────────────────────────── */}
       {inRange.length > 0 && (
         <div className="lb-section" style={{ padding:isDesktop?"22px 24px":"16px 18px" }}>
-          <div style={{ fontWeight:800, fontSize:15, color:"#1a1a1a", marginBottom:14 }}>🧾 Transactions in Period ({inRange.length})</div>
-          {inRange.slice(0,10).map(e=>(
+          <div style={{ fontWeight:900, fontSize:15, color:"#1a1a1a", marginBottom:14 }}>
+            🧾 All Transactions in Period ({inRange.length})
+          </div>
+          {inRange.slice(0,12).map(e=>(
             <div key={e.id} style={{ display:"flex", justifyContent:"space-between", alignItems:"center",
-              padding:"10px 0", borderBottom:"1px solid #f5f5f5" }}>
+              padding:"9px 0", borderBottom:"1px solid #f5f5f5" }}>
               <div style={{ display:"flex", alignItems:"center", gap:10 }}>
-                <div style={{ width:32, height:32, borderRadius:"50%", background:e.type==="income"?"#E8F5E9":"#FFF3E0",
-                  display:"flex", alignItems:"center", justifyContent:"center", fontSize:14, flexShrink:0 }}>
+                <div style={{ width:30, height:30, borderRadius:"50%",
+                  background:e.type==="income"?"#E8F5E9":"#FFF3E0",
+                  display:"flex", alignItems:"center", justifyContent:"center", fontSize:13, flexShrink:0 }}>
                   {e.type==="income"?"💰":"📤"}
                 </div>
                 <div>
-                  <div style={{ fontWeight:700, fontSize:13 }}>{e.category}</div>
-                  <div style={{ fontSize:11, color:"#aaa" }}>{fmtDate(e.date)}{e.note && ` · ${e.note}`}</div>
+                  <div style={{ fontWeight:700, fontSize:13 }}>{e.category}
+                    {/* Flag unbudgeted */}
+                    {((e.type==="income"&&!budgetedIncCats.includes(e.category))||(e.type==="expense"&&!budgetedExpCats.includes(e.category)))&&(
+                      <span style={{ marginLeft:6, fontSize:10, background:"#f5f5f5", color:"#aaa",
+                        borderRadius:6, padding:"1px 6px", fontWeight:600 }}>unplanned</span>
+                    )}
+                  </div>
+                  <div style={{ fontSize:11, color:"#aaa" }}>{fmtDate(e.date)}{e.note&&` · ${e.note}`}</div>
                 </div>
               </div>
-              <div style={{ fontWeight:800, fontSize:14, color:e.type==="income"?"#2E7D32":"#E65100" }}>
+              <div style={{ fontWeight:800, fontSize:13, color:e.type==="income"?"#2E7D32":"#E65100" }}>
                 {e.type==="income"?"+":"-"}{fmtAmt(e.amount,currency)}
               </div>
             </div>
           ))}
-          {inRange.length > 10 && <div style={{ textAlign:"center", color:"#aaa", fontSize:13, paddingTop:12 }}>+{inRange.length-10} more transactions</div>}
+          {inRange.length>12&&<div style={{ textAlign:"center", color:"#aaa", fontSize:12, paddingTop:12 }}>+{inRange.length-12} more transactions</div>}
         </div>
       )}
     </div>
