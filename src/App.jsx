@@ -1976,9 +1976,339 @@ function AppCore({ user, onLogout }) {
           </div>
         )}
 
+        {/* ── SUPPORT CHAT WIDGET ── */}
+        <SupportWidget user={user} primaryColor={p}/>
+
       </div>{/* lb-shell-inner */}
       </div>{/* lb-shell */}
     </div>   /* lb-root */
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════
+// SUPPORT CHAT WIDGET — WhatsApp floating button
+// ═══════════════════════════════════════════════════════════════
+const SUPPORT_NUMBER = "2348152900802";
+
+const WA_ICON = (
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+  </svg>
+);
+
+const TOPICS = [
+  { emoji:"🐛", label:"Report a bug" },
+  { emoji:"❓", label:"I have a question" },
+  { emoji:"💡", label:"Feature request" },
+  { emoji:"💳", label:"Billing / account" },
+  { emoji:"🔒", label:"Login / access issue" },
+  { emoji:"💬", label:"Other" },
+];
+
+function SupportWidget({ user }) {
+  const [open,    setOpen]    = useState(false);
+  const [step,    setStep]    = useState("topic");  // "topic" | "message" | "sent"
+  const [topic,   setTopic]   = useState(null);
+  const [message, setMessage] = useState("");
+  const [focused, setFocused] = useState(false);
+  const [shake,   setShake]   = useState(false);
+  const [seen,    setSeen]    = useState(false);
+  const textRef  = useRef(null);
+  const panelRef = useRef(null);
+
+  // bottom offset: sit above mobile bottom nav (68px) with 16px gap
+  const bottomOffset = window.innerWidth < 1100 ? 84 : 24;
+
+  useEffect(() => {
+    if (open) {
+      setSeen(true);
+      if (step === "message") setTimeout(() => textRef.current?.focus(), 150);
+    }
+  }, [open, step]);
+
+  // Close on outside click
+  useEffect(() => {
+    if (!open) return;
+    const fn = (e) => { if (panelRef.current && !panelRef.current.contains(e.target)) setOpen(false); };
+    document.addEventListener("mousedown", fn);
+    return () => document.removeEventListener("mousedown", fn);
+  }, [open]);
+
+  const handleTopicSelect = (t) => { setTopic(t); setStep("message"); setTimeout(() => textRef.current?.focus(), 150); };
+
+  const handleSend = () => {
+    if (!message.trim()) {
+      setShake(true);
+      setTimeout(() => setShake(false), 500);
+      return;
+    }
+    const now = new Date().toLocaleString("en-NG", { dateStyle:"medium", timeStyle:"short" });
+    const lines = [
+      `👋 *New Support Message — LedgerBook Pro*`,
+      ``,
+      `🏷️ *Topic:* ${topic?.emoji} ${topic?.label}`,
+      ``,
+      `📝 *Message:*`,
+      message.trim(),
+      ``,
+      `━━━━━━━━━━━━━━━━━━━━`,
+      `👤 *Name:*    ${user?.name  || "Unknown"}`,
+      `📧 *Email:*   ${user?.email || "Unknown"}`,
+      `🆔 *User ID:* ${user?.id?.slice(0,14) || "Unknown"}`,
+      `🕐 *Sent:*    ${now}`,
+      `📱 *App:*     LedgerBook Pro`,
+    ];
+    window.open(`https://wa.me/${SUPPORT_NUMBER}?text=${encodeURIComponent(lines.join("\n"))}`, "_blank");
+    setStep("sent");
+  };
+
+  const handleReset = () => { setStep("topic"); setTopic(null); setMessage(""); };
+  const handleClose = () => { setOpen(false); };
+  const firstName   = user?.name?.split(" ")[0] || "there";
+
+  return (
+    <>
+      <style>{`
+        @keyframes lb-slide-up   { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
+        @keyframes lb-fade-in    { from{opacity:0} to{opacity:1} }
+        @keyframes lb-pulse-dot  { 0%,100%{transform:scale(1);opacity:1} 50%{transform:scale(1.4);opacity:.7} }
+        @keyframes lb-shake      { 0%,100%{transform:translateX(0)} 20%,60%{transform:translateX(-6px)} 40%,80%{transform:translateX(6px)} }
+        @keyframes lb-pop-in     { 0%{transform:scale(0.7);opacity:0} 70%{transform:scale(1.06)} 100%{transform:scale(1);opacity:1} }
+        @keyframes lb-badge-pop  { 0%{transform:scale(0)} 60%{transform:scale(1.2)} 100%{transform:scale(1)} }
+      `}</style>
+
+      {/* ── Chat panel ── */}
+      {open && (
+        <div ref={panelRef} style={{
+          position:"fixed", bottom: bottomOffset + 68, right:20, zIndex:600,
+          width: Math.min(340, window.innerWidth - 32),
+          borderRadius:22,
+          background:"#fff",
+          boxShadow:"0 20px 60px rgba(0,0,0,0.2), 0 4px 16px rgba(0,0,0,0.1)",
+          overflow:"hidden",
+          animation:"lb-slide-up 0.25s cubic-bezier(0.34,1.56,0.64,1)",
+        }}>
+
+          {/* Header */}
+          <div style={{ background:"linear-gradient(135deg, #075E54 0%, #128C7E 100%)", padding:"18px 20px 16px" }}>
+            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:12 }}>
+              <div style={{ display:"flex", alignItems:"center", gap:11 }}>
+                {/* Avatar */}
+                <div style={{ width:44, height:44, borderRadius:"50%", background:"#25D366",
+                  display:"flex", alignItems:"center", justifyContent:"center", fontSize:20,
+                  border:"2.5px solid rgba(255,255,255,0.4)", flexShrink:0, boxShadow:"0 2px 8px rgba(0,0,0,0.2)" }}>
+                  🧑‍💼
+                </div>
+                <div>
+                  <div style={{ fontWeight:900, fontSize:15, color:"#fff", letterSpacing:-.2 }}>LedgerBook Support</div>
+                  <div style={{ display:"flex", alignItems:"center", gap:5, marginTop:3 }}>
+                    <div style={{ width:7, height:7, borderRadius:"50%", background:"#25D366",
+                      animation:"lb-pulse-dot 2s ease-in-out infinite" }}/>
+                    <span style={{ fontSize:11, color:"rgba(255,255,255,0.75)" }}>Typically replies in a few hours</span>
+                  </div>
+                </div>
+              </div>
+              <button onClick={handleClose} style={{
+                background:"rgba(255,255,255,0.15)", border:"none", borderRadius:"50%",
+                width:30, height:30, cursor:"pointer", color:"#fff", fontSize:16,
+                display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0,
+              }}>✕</button>
+            </div>
+
+            {/* Step progress bar */}
+            <div style={{ display:"flex", gap:4 }}>
+              {["topic","message","sent"].map((s,i)=>(
+                <div key={s} style={{ flex:1, height:3, borderRadius:99,
+                  background: ["topic","message","sent"].indexOf(step) >= i
+                    ? "#25D366" : "rgba(255,255,255,0.2)",
+                  transition:"background 0.3s" }}/>
+              ))}
+            </div>
+          </div>
+
+          {/* Body */}
+          <div style={{ padding:"18px 20px 20px", maxHeight:460, overflowY:"auto" }}>
+
+            {/* ── Greeting bubble (always shown) ── */}
+            <div style={{ display:"flex", gap:9, marginBottom:16, alignItems:"flex-start",
+              animation:"lb-fade-in 0.3s ease" }}>
+              <div style={{ width:28, height:28, borderRadius:"50%", background:"#25D366",
+                display:"flex", alignItems:"center", justifyContent:"center", fontSize:13, flexShrink:0 }}>
+                🧑‍💼
+              </div>
+              <div style={{ background:"#f0f2f5", borderRadius:"4px 16px 16px 16px",
+                padding:"11px 14px", fontSize:13, color:"#333", lineHeight:1.55, maxWidth:230 }}>
+                {step === "sent"
+                  ? <>Thanks for reaching out! We've received your message and will reply to you on WhatsApp shortly. 🙏</>
+                  : <>Hi <strong>{firstName}</strong>! 👋 How can we help you today? Pick a topic to get started.</>
+                }
+              </div>
+            </div>
+
+            {/* ── STEP 1: Topic picker ── */}
+            {step === "topic" && (
+              <div style={{ animation:"lb-fade-in 0.2s ease" }}>
+                <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8, marginBottom:16 }}>
+                  {TOPICS.map(t => (
+                    <button key={t.label} onClick={() => handleTopicSelect(t)}
+                      style={{ display:"flex", alignItems:"center", gap:8, padding:"10px 12px",
+                        background:"#f7f7f7", border:"1.5px solid #ebebeb", borderRadius:13,
+                        cursor:"pointer", fontSize:12, fontWeight:700, color:"#333", textAlign:"left",
+                        transition:"all 0.15s" }}
+                      onMouseEnter={e => { e.currentTarget.style.background="#e8fdf0"; e.currentTarget.style.borderColor="#25D366"; }}
+                      onMouseLeave={e => { e.currentTarget.style.background="#f7f7f7"; e.currentTarget.style.borderColor="#ebebeb"; }}>
+                      <span style={{ fontSize:16 }}>{t.emoji}</span>
+                      <span style={{ lineHeight:1.3 }}>{t.label}</span>
+                    </button>
+                  ))}
+                </div>
+                {/* User info pill */}
+                <div style={{ background:"#f7f7f7", borderRadius:11, padding:"9px 13px", fontSize:11, color:"#aaa", display:"flex", gap:8, alignItems:"center" }}>
+                  <span>📎</span>
+                  <span>Your account info is attached automatically<br/>
+                    <span style={{ color:"#bbb" }}>{user?.name} · {user?.email}</span>
+                  </span>
+                </div>
+              </div>
+            )}
+
+            {/* ── STEP 2: Message input ── */}
+            {step === "message" && (
+              <div style={{ animation:"lb-fade-in 0.2s ease" }}>
+                {/* Selected topic badge */}
+                <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:14 }}>
+                  <button onClick={() => setStep("topic")}
+                    style={{ background:"none", border:"none", cursor:"pointer", fontSize:13, color:"#25D366", fontWeight:700, padding:0 }}>
+                    ← Back
+                  </button>
+                  <div style={{ background:"#e8fdf0", border:"1.5px solid #25D36640", borderRadius:22,
+                    padding:"5px 12px", fontSize:12, fontWeight:800, color:"#128C7E",
+                    display:"flex", alignItems:"center", gap:5 }}>
+                    {topic?.emoji} {topic?.label}
+                  </div>
+                </div>
+
+                {/* Textarea */}
+                <textarea
+                  ref={textRef}
+                  value={message}
+                  onChange={e => setMessage(e.target.value)}
+                  onFocus={() => setFocused(true)}
+                  onBlur={() => setFocused(false)}
+                  placeholder="Describe your issue in detail…"
+                  rows={4}
+                  style={{
+                    width:"100%", padding:"13px 15px",
+                    border:`2px solid ${focused ? "#25D366" : shake ? "#e53935" : "#e5e5e5"}`,
+                    borderRadius:15, fontSize:14, outline:"none", resize:"none",
+                    boxSizing:"border-box", fontFamily:"inherit", lineHeight:1.55,
+                    marginBottom:12, transition:"border-color 0.15s",
+                    background:"#fafafa",
+                    animation: shake ? "lb-shake 0.4s ease" : "none",
+                  }}
+                  onKeyDown={e => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) handleSend(); }}
+                />
+
+                {/* Account info preview */}
+                <div style={{ background:"#f7f7f7", borderRadius:11, padding:"9px 13px", fontSize:11, color:"#bbb", marginBottom:13, lineHeight:1.7 }}>
+                  📎 <strong style={{ color:"#aaa" }}>Will be sent with:</strong> {user?.name} · {user?.email}
+                </div>
+
+                {/* Send button */}
+                <button onClick={handleSend}
+                  style={{
+                    width:"100%", padding:"14px", border:"none", borderRadius:14,
+                    background: message.trim() ? "#25D366" : "#e5e5e5",
+                    color: message.trim() ? "#fff" : "#bbb",
+                    fontWeight:900, fontSize:15, cursor:"pointer",
+                    display:"flex", alignItems:"center", justifyContent:"center", gap:10,
+                    transition:"all 0.15s",
+                    boxShadow: message.trim() ? "0 4px 16px rgba(37,211,102,0.35)" : "none",
+                  }}>
+                  <span style={{ color: message.trim() ? "#fff" : "#bbb" }}>{WA_ICON}</span>
+                  Send via WhatsApp
+                </button>
+                <div style={{ textAlign:"center", fontSize:11, color:"#ccc", marginTop:8 }}>
+                  Ctrl+Enter to send · Opens WhatsApp
+                </div>
+              </div>
+            )}
+
+            {/* ── STEP 3: Sent confirmation ── */}
+            {step === "sent" && (
+              <div style={{ textAlign:"center", padding:"8px 0 4px", animation:"lb-pop-in 0.35s ease" }}>
+                <div style={{ fontSize:52, marginBottom:14 }}>✅</div>
+                <div style={{ fontWeight:900, fontSize:17, color:"#1a1a1a", marginBottom:8 }}>Message sent!</div>
+                <div style={{ fontSize:13, color:"#888", lineHeight:1.65, marginBottom:22 }}>
+                  WhatsApp opened with your message pre-filled. Send it there and we'll reply to you directly.
+                </div>
+                <div style={{ display:"flex", gap:9 }}>
+                  <button onClick={handleReset}
+                    style={{ flex:1, background:"#f0f0f0", border:"none", borderRadius:12, padding:"12px",
+                      fontSize:13, fontWeight:700, cursor:"pointer", color:"#555" }}>
+                    Send another
+                  </button>
+                  <button onClick={handleClose}
+                    style={{ flex:1, background:"#25D366", border:"none", borderRadius:12, padding:"12px",
+                      fontSize:13, fontWeight:900, cursor:"pointer", color:"#fff" }}>
+                    Done ✓
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ── Floating action button ── */}
+      <div style={{ position:"fixed", bottom: bottomOffset, right:20, zIndex:600,
+        display:"flex", flexDirection:"column", alignItems:"flex-end", gap:10 }}>
+
+        {/* Tooltip label — only when closed */}
+        {!open && !seen && (
+          <div style={{
+            background:"#1a1a1a", color:"#fff", fontSize:12, fontWeight:700,
+            padding:"7px 13px", borderRadius:20, whiteSpace:"nowrap",
+            boxShadow:"0 4px 16px rgba(0,0,0,0.18)",
+            animation:"lb-fade-in 0.4s ease 1.5s both",
+          }}>
+            💬 Need help? Chat with us
+            <div style={{ position:"absolute", right:18, bottom:-5, width:10, height:10,
+              background:"#1a1a1a", transform:"rotate(45deg)", borderRadius:2 }}/>
+          </div>
+        )}
+
+        {/* Button */}
+        <button
+          onClick={() => setOpen(o => !o)}
+          title="Chat with support"
+          style={{
+            width:58, height:58, borderRadius:"50%",
+            background: open ? "#075E54" : "#25D366",
+            border:"none", cursor:"pointer",
+            boxShadow:"0 6px 24px rgba(37,211,102,0.5), 0 2px 8px rgba(0,0,0,0.15)",
+            display:"flex", alignItems:"center", justifyContent:"center",
+            transition:"all 0.25s cubic-bezier(0.34,1.56,0.64,1)",
+            transform: open ? "rotate(90deg)" : "scale(1)",
+            color:"#fff",
+            position:"relative",
+          }}>
+          {open
+            ? <span style={{ fontSize:22, fontWeight:300 }}>✕</span>
+            : WA_ICON
+          }
+          {/* Unread badge — shown until first open */}
+          {!seen && !open && (
+            <div style={{
+              position:"absolute", top:-2, right:-2,
+              width:18, height:18, borderRadius:"50%",
+              background:"#FF3B30", border:"2.5px solid #fff",
+              animation:"lb-badge-pop 0.4s cubic-bezier(0.34,1.56,0.64,1) 2s both",
+            }}/>
+          )}
+        </button>
+      </div>
+    </>
   );
 }
 
