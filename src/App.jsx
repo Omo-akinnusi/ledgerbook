@@ -33,50 +33,59 @@ const GLOBAL_CSS = `
 
   /* ── Responsive layout system ── */
 
-  /* Mobile default: single column, bottom nav */
-  .lb-root        { display: flex; min-height: 100vh; background: #f0f0f0; }
-  .lb-sidebar     { display: none; }
-  .lb-shell       { flex: 1; display: flex; flex-direction: column; min-height: 100vh;
-                    background: #fff; width: 100%; max-width: 100%; }
-  .lb-content     { flex: 1; overflow-y: auto; }
-  .lb-bottom-nav  { display: flex; }
-  .lb-page-grid   { display: block; }
-  .lb-cards-grid  { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-  .lb-summary-grid{ display: grid; grid-template-columns: 1fr; gap: 0; }
+  /* Mobile default */
+  .lb-root         { display: flex; min-height: 100vh; background: #f0f0f0; }
+  .lb-sidebar      { display: none; }
+  .lb-shell        { flex: 1; display: flex; flex-direction: column; min-height: 100vh;
+                     background: #fff; width: 100%; max-width: 100%; }
+  .lb-content      { flex: 1; overflow-y: auto; }
+  .lb-bottom-nav   { display: flex; }
+  .lb-page-grid    { display: block; }
+  .lb-cards-grid   { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .lb-summary-grid { display: grid; grid-template-columns: 1fr; gap: 0; }
+  .lb-section      { background: transparent; border-radius: 0; padding: 0; box-shadow: none; margin-bottom: 0; }
 
-  /* Tablet (768px+): wider shell, still bottom nav */
+  /* Tablet (768px+) */
   @media (min-width: 768px) {
-    .lb-root      { justify-content: center; }
-    .lb-shell     { max-width: 720px; box-shadow: 0 0 0 1px rgba(0,0,0,0.07),
-                    0 8px 48px rgba(0,0,0,0.13); }
-    .lb-cards-grid{ grid-template-columns: 1fr 1fr; }
-    .lb-page-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    .lb-root         { justify-content: center; }
+    .lb-shell        { max-width: 720px; box-shadow: 0 0 0 1px rgba(0,0,0,0.07), 0 8px 48px rgba(0,0,0,0.13); }
+    .lb-cards-grid   { grid-template-columns: 1fr 1fr; }
+    .lb-page-grid    { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
     .lb-summary-grid { grid-template-columns: 1fr 1fr; gap: 20px; }
   }
 
-  /* Desktop (1100px+): sidebar nav, full-width content */
+  /* Desktop (1100px+) */
   @media (min-width: 1100px) {
-    .lb-root        { justify-content: stretch; align-items: stretch; background: #f4f5f7; }
-    .lb-sidebar     { display: flex; flex-direction: column; width: 240px; min-height: 100vh;
-                      position: sticky; top: 0; height: 100vh; flex-shrink: 0; }
-    .lb-shell       { flex: 1; max-width: 100%; box-shadow: none;
-                      background: #f4f5f7; border-radius: 0; }
-    .lb-shell-inner { max-width: 960px; margin: 0 auto; padding: 0 28px; }
-    .lb-content     { padding-bottom: 40px !important; }
-    .lb-bottom-nav  { display: none; }
-    .lb-header      { border-radius: 0 !important; position: sticky; top: 0; z-index: 10; }
-    .lb-cards-grid  { grid-template-columns: repeat(4, 1fr); }
-    .lb-page-grid   { grid-template-columns: 1fr 1fr; gap: 24px; }
-    .lb-summary-grid{ grid-template-columns: 1fr 1fr; gap: 24px; }
-    .lb-card        { border-radius: 16px; margin-bottom: 0; }
-    .lb-section     { background: #fff; border-radius: 18px; padding: 22px 24px;
-                      box-shadow: 0 1px 4px rgba(0,0,0,0.06); margin-bottom: 20px; }
+    .lb-root         { justify-content: flex-start; align-items: stretch; background: #eef0f4; }
+    .lb-sidebar      { display: flex; flex-direction: column; width: 260px; min-height: 100vh;
+                       position: sticky; top: 0; height: 100vh; flex-shrink: 0;
+                       box-shadow: 2px 0 16px rgba(0,0,0,0.10); z-index: 20; }
+    .lb-shell        { flex: 1; max-width: 100%; box-shadow: none; background: #eef0f4; }
+    .lb-shell-inner  { max-width: 1060px; margin: 0 auto; width: 100%; }
+    .lb-header       { margin: 0; border-radius: 0 !important; }
+    .lb-content      { padding: 28px 36px 48px !important; overflow-y: auto; }
+    .lb-bottom-nav   { display: none; }
+    .lb-cards-grid   { grid-template-columns: repeat(4, 1fr); gap: 16px; }
+    .lb-page-grid    { display: grid; grid-template-columns: 1.1fr 0.9fr; gap: 24px; }
+    .lb-summary-grid { grid-template-columns: 1fr 1fr; gap: 24px; }
+    .lb-section      { background: #fff; border-radius: 20px; padding: 24px 26px;
+                       box-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.04);
+                       margin-bottom: 20px; }
+    .lb-section-sm   { background: #fff; border-radius: 20px; padding: 20px 22px;
+                       box-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.04);
+                       margin-bottom: 16px; }
+    .lb-card-action  { border-radius: 18px !important; padding: 20px 18px !important; }
+    .lb-page-title   { font-size: 22px !important; font-weight: 900 !important;
+                       color: #1a1a1a !important; margin-bottom: 20px !important;
+                       letter-spacing: -0.5px !important; }
+    .lb-subheader    { background: transparent !important; border-bottom: none !important;
+                       padding-left: 0 !important; padding-right: 0 !important;
+                       padding-top: 0 !important; padding-bottom: 16px !important; }
   }
 
   @media (min-width: 1400px) {
-    .lb-sidebar     { width: 260px; }
-    .lb-shell-inner { max-width: 1100px; }
-    .lb-cards-grid  { grid-template-columns: repeat(4, 1fr); }
+    .lb-sidebar      { width: 280px; }
+    .lb-shell-inner  { max-width: 1200px; }
   }
 `;
 
@@ -1439,54 +1448,82 @@ function AppCore({ user, onLogout }) {
   const Sidebar = () => (
     <div className="lb-sidebar" style={{ background:bg, color:"#fff" }}>
       {/* Brand */}
-      <div style={{ padding:"28px 24px 20px" }}>
-        <div style={{ display:"flex", alignItems:"center", gap:12, marginBottom:6 }}>
+      <div style={{ padding:"32px 24px 24px" }}>
+        <div style={{ display:"flex", alignItems:"center", gap:13, marginBottom:20 }}>
           {branding.logoType==="image"&&branding.logoImage
-            ?<img src={branding.logoImage} alt="logo" style={{ width:44, height:44, borderRadius:12, objectFit:"cover", border:"2px solid rgba(255,255,255,0.4)" }}/>
-            :<div style={{ width:44, height:44, borderRadius:12, background:"rgba(255,255,255,0.18)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:24 }}>{branding.logo}</div>
+            ?<img src={branding.logoImage} alt="logo" style={{ width:48, height:48, borderRadius:14, objectFit:"cover", border:"2px solid rgba(255,255,255,0.35)" }}/>
+            :<div style={{ width:48, height:48, borderRadius:14, background:"rgba(255,255,255,0.18)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:26, flexShrink:0 }}>{branding.logo}</div>
           }
-          <div>
-            <div style={{ fontWeight:900, fontSize:15, letterSpacing:-.2 }}>{branding.businessName}</div>
-            <div style={{ fontSize:11, opacity:.65, marginTop:2 }}>{branding.tagline}</div>
+          <div style={{ minWidth:0 }}>
+            <div style={{ fontWeight:900, fontSize:15, letterSpacing:-.3, lineHeight:1.2, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{branding.businessName}</div>
+            <div style={{ fontSize:11, opacity:.6, marginTop:3 }}>{branding.tagline}</div>
           </div>
         </div>
-        <div style={{ marginTop:14, background:"rgba(0,0,0,0.2)", borderRadius:10, padding:"10px 14px" }}>
-          <div style={{ fontSize:10, opacity:.6, textTransform:"uppercase", letterSpacing:1, marginBottom:3 }}>Net Balance</div>
-          <div style={{ fontWeight:900, fontSize:18 }}>{fmtAmt(allInc-allExp,currency)}</div>
+        {/* Balance pill */}
+        <div style={{ background:"rgba(0,0,0,0.18)", borderRadius:14, padding:"14px 18px", backdropFilter:"blur(8px)" }}>
+          <div style={{ fontSize:10, opacity:.55, textTransform:"uppercase", letterSpacing:1.2, marginBottom:5 }}>Net Balance</div>
+          <div style={{ fontWeight:900, fontSize:22, letterSpacing:-.5 }}>{fmtAmt(allInc-allExp,currency)}</div>
+          <div style={{ display:"flex", gap:16, marginTop:10 }}>
+            <div>
+              <div style={{ fontSize:9, opacity:.5, textTransform:"uppercase", letterSpacing:.8, marginBottom:2 }}>Income</div>
+              <div style={{ fontSize:12, fontWeight:700, opacity:.85 }}>{fmtAmt(allInc,currency)}</div>
+            </div>
+            <div style={{ width:1, background:"rgba(255,255,255,0.15)" }}/>
+            <div>
+              <div style={{ fontSize:9, opacity:.5, textTransform:"uppercase", letterSpacing:.8, marginBottom:2 }}>Expenses</div>
+              <div style={{ fontSize:12, fontWeight:700, opacity:.85 }}>{fmtAmt(allExp,currency)}</div>
+            </div>
+          </div>
         </div>
       </div>
 
+      {/* Divider */}
+      <div style={{ height:1, background:"rgba(255,255,255,0.1)", margin:"0 20px" }}/>
+
       {/* Nav links */}
-      <nav style={{ flex:1, padding:"4px 12px" }}>
+      <nav style={{ flex:1, padding:"16px 14px" }}>
+        <div style={{ fontSize:10, opacity:.45, textTransform:"uppercase", letterSpacing:1.5, padding:"0 10px", marginBottom:8 }}>Navigation</div>
         {NAV_ITEMS.map(({id,icon,label})=>(
           <button key={id} onClick={()=>setView(id)}
-            style={{ width:"100%", display:"flex", alignItems:"center", gap:12, padding:"12px 14px", borderRadius:12,
-              marginBottom:4, border:"none", cursor:"pointer", textAlign:"left", fontSize:14, fontWeight:view===id?800:500,
-              background:view===id?"rgba(255,255,255,0.2)":"transparent",
-              color:view===id?"#fff":"rgba(255,255,255,0.7)" }}>
-            <span style={{ fontSize:18, width:24, textAlign:"center" }}>{icon}</span>
+            style={{ width:"100%", display:"flex", alignItems:"center", gap:13, padding:"12px 14px", borderRadius:14,
+              marginBottom:3, border:"none", cursor:"pointer", textAlign:"left", fontSize:14,
+              fontWeight:view===id?800:500, transition:"all 0.15s",
+              background:view===id?"rgba(255,255,255,0.22)":"transparent",
+              color:view===id?"#fff":"rgba(255,255,255,0.65)" }}>
+            <span style={{ fontSize:17, width:22, textAlign:"center", flexShrink:0 }}>{icon}</span>
+            {label}
+            {view===id&&<div style={{ marginLeft:"auto", width:6, height:6, borderRadius:"50%", background:"#fff" }}/>}
+          </button>
+        ))}
+
+        {/* Divider */}
+        <div style={{ height:1, background:"rgba(255,255,255,0.1)", margin:"14px 4px" }}/>
+        <div style={{ fontSize:10, opacity:.45, textTransform:"uppercase", letterSpacing:1.5, padding:"0 10px", marginBottom:8 }}>Tools</div>
+        {[["⌨️","Quick Entry",()=>setShowKB(true)],["💬","WhatsApp Share",()=>setShowWA(true)],["⚙️","Settings",()=>setShowSt(true)]].map(([icon,label,fn])=>(
+          <button key={label} onClick={fn}
+            style={{ width:"100%", display:"flex", alignItems:"center", gap:13, padding:"11px 14px", borderRadius:14,
+              marginBottom:3, border:"none", cursor:"pointer", textAlign:"left", fontSize:13, fontWeight:500,
+              background:"transparent", color:"rgba(255,255,255,0.6)", transition:"all 0.15s" }}>
+            <span style={{ fontSize:16, width:22, textAlign:"center", flexShrink:0 }}>{icon}</span>
             {label}
           </button>
         ))}
       </nav>
 
-      {/* Sidebar actions */}
-      <div style={{ padding:"12px 12px 28px", borderTop:"1px solid rgba(255,255,255,0.12)", marginTop:"auto" }}>
-        {[["⌨️","Quick Entry",()=>setShowKB(true)],["💬","WhatsApp",()=>setShowWA(true)],["⚙️","Settings",()=>setShowSt(true)]].map(([icon,label,fn])=>(
-          <button key={label} onClick={fn}
-            style={{ width:"100%", display:"flex", alignItems:"center", gap:12, padding:"11px 14px", borderRadius:12,
-              marginBottom:4, border:"none", cursor:"pointer", textAlign:"left", fontSize:13, fontWeight:500,
-              background:"rgba(255,255,255,0.1)", color:"rgba(255,255,255,0.8)" }}>
-            <span style={{ fontSize:16, width:24, textAlign:"center" }}>{icon}</span>
-            {label}
-          </button>
-        ))}
+      {/* Footer — user + signout */}
+      <div style={{ padding:"16px 14px 28px", borderTop:"1px solid rgba(255,255,255,0.1)" }}>
+        <div style={{ display:"flex", alignItems:"center", gap:11, padding:"12px 14px", borderRadius:14, background:"rgba(0,0,0,0.15)", marginBottom:10 }}>
+          <div style={{ width:34, height:34, borderRadius:"50%", background:"rgba(255,255,255,0.2)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:16, flexShrink:0 }}>👤</div>
+          <div style={{ minWidth:0, flex:1 }}>
+            <div style={{ fontWeight:700, fontSize:13, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{user.name}</div>
+            <div style={{ fontSize:10, opacity:.5, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", marginTop:1 }}>{user.email}</div>
+          </div>
+        </div>
         <button onClick={onLogout}
-          style={{ width:"100%", display:"flex", alignItems:"center", gap:12, padding:"11px 14px", borderRadius:12,
-            marginTop:6, border:"1px solid rgba(255,255,255,0.2)", cursor:"pointer", textAlign:"left", fontSize:13,
-            background:"transparent", color:"rgba(255,255,255,0.55)" }}>
-          <span style={{ fontSize:16, width:24, textAlign:"center" }}>🚪</span>
-          Sign Out
+          style={{ width:"100%", display:"flex", alignItems:"center", justifyContent:"center", gap:8, padding:"11px 14px", borderRadius:12,
+            border:"1px solid rgba(255,255,255,0.18)", cursor:"pointer", fontSize:13, fontWeight:600,
+            background:"transparent", color:"rgba(255,255,255,0.5)", transition:"all 0.15s" }}>
+          🚪 Sign Out
         </button>
       </div>
     </div>
@@ -1505,103 +1542,117 @@ function AppCore({ user, onLogout }) {
         {/* ── HEADER ── */}
         <div className="lb-header" style={{
           background:bg,
-          paddingLeft:S.px, paddingRight:S.px,
-          paddingTop:isDesktop?16:`max(16px, calc(env(safe-area-inset-top,0px) + 16px))`,
-          paddingBottom:14,
+          paddingLeft: isDesktop ? 36 : S.px,
+          paddingRight: isDesktop ? 36 : S.px,
+          paddingTop:isDesktop?0:`max(16px, calc(env(safe-area-inset-top,0px) + 16px))`,
+          paddingBottom: isDesktop ? 0 : 14,
           position:"sticky", top:0, zIndex:10,
         }}>
-          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+          <div style={{
+            display:"flex", alignItems:"center", justifyContent:"space-between",
+            height: isDesktop ? 64 : "auto",
+            maxWidth: isDesktop ? 1060 : "100%",
+            margin: isDesktop ? "0 auto" : 0,
+          }}>
             <div style={{ display:"flex", alignItems:"center", gap:12 }}>
               {!isDesktop&&(branding.logoType==="image"&&branding.logoImage
                 ?<img src={branding.logoImage} alt="logo" style={{ width:40, height:40, borderRadius:12, objectFit:"cover", border:"2px solid rgba(255,255,255,0.4)", flexShrink:0 }}/>
                 :<div style={{ width:40, height:40, borderRadius:12, background:"rgba(255,255,255,0.2)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:22, flexShrink:0 }}>{branding.logo}</div>
               )}
               <div style={{ minWidth:0 }}>
-                <div style={{ fontWeight:900, fontSize:isDesktop?18:16, color:"#fff", letterSpacing:.1, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>
-                  {isDesktop ? NAV_ITEMS.find(n=>n.id===view)?.label || branding.businessName : branding.businessName}
+                <div style={{ fontWeight:900, fontSize:isDesktop?20:16, color:"#fff", letterSpacing:isDesktop?-.5:.1, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>
+                  {isDesktop ? (NAV_ITEMS.find(n=>n.id===view)?.label || branding.businessName) : branding.businessName}
                 </div>
                 {!isDesktop&&<div style={{ fontSize:11, color:"rgba(255,255,255,0.72)", marginTop:1 }}>{branding.tagline}</div>}
+                {isDesktop&&<div style={{ fontSize:12, color:"rgba(255,255,255,0.55)", marginTop:1 }}>
+                  {new Date().toLocaleDateString("en-NG",{weekday:"long", day:"numeric", month:"long", year:"numeric"})}
+                </div>}
               </div>
             </div>
-            <div style={{ display:"flex", gap:7, flexShrink:0 }}>
-              {(isDesktop
-                ? [["📊","Export CSV",()=>{exportCSV(entries,currency,branding,"All Time");showToast("📊 CSV downloaded!","#1b5e20");}],
-                   ["🖨️","PDF Report",()=>{exportPDF(dateFilt,currency,branding,rLabel,entries);showToast("🖨️ Opening PDF…","#1a237e");}]]
-                : [["⌨️",()=>setShowKB(true),"Quick Entry"],["💬",()=>setShowWA(true),"WhatsApp"],["⚙️",()=>setShowSt(true),"Settings"]]
-              ).map(([icon,fnOrLabel,fn])=>(
-                <button key={icon} onClick={isDesktop?fnOrLabel:fn} title={isDesktop?fnOrLabel:""}
+            <div style={{ display:"flex", gap:8, flexShrink:0 }}>
+              {isDesktop ? [
+                ["📊","Export CSV",()=>{exportCSV(entries,currency,branding,"All Time");showToast("📊 CSV downloaded!","#1b5e20");}],
+                ["🖨️","PDF Report",()=>{exportPDF(dateFilt,currency,branding,rLabel,entries);showToast("🖨️ Opening PDF…","#1a237e");}],
+              ].map(([icon,label,fn])=>(
+                <button key={label} onClick={fn}
+                  style={{ background:"rgba(255,255,255,0.18)", border:"1px solid rgba(255,255,255,0.25)", borderRadius:11, color:"#fff",
+                    padding:"9px 16px", cursor:"pointer", fontSize:13, fontWeight:700,
+                    display:"flex", alignItems:"center", gap:7, backdropFilter:"blur(4px)" }}>
+                  {icon} {label}
+                </button>
+              )) : [["⌨️",()=>setShowKB(true),"Quick Entry"],["💬",()=>setShowWA(true),"WhatsApp"],["⚙️",()=>setShowSt(true),"Settings"]].map(([icon,fn,title])=>(
+                <button key={title} onClick={fn} title={title}
                   style={{ background:"rgba(255,255,255,0.18)", border:"none", borderRadius:10, color:"#fff",
-                    padding:isDesktop?"8px 14px":"0", width:isDesktop?"auto":36, height:36,
-                    cursor:"pointer", fontSize:isDesktop?13:15, fontWeight:isDesktop?700:400,
-                    display:"flex", alignItems:"center", justifyContent:"center", gap:isDesktop?6:0 }}>
-                  {icon}{isDesktop&&` ${fnOrLabel}`}
+                    width:36, height:36, cursor:"pointer", fontSize:15, display:"flex", alignItems:"center", justifyContent:"center" }}>
+                  {icon}
                 </button>
               ))}
-              {!isDesktop||true ? null : null}
             </div>
           </div>
         </div>
 
         {/* ══ HOME ══ */}
         {view==="home"&&(
-          <div className="lb-content" style={{ flex:1, overflowY:"auto", paddingBottom:isDesktop?40:`calc(${S.navH}px + env(safe-area-inset-bottom,0px) + 8px)` }}>
-            <div style={{ paddingLeft:S.px, paddingRight:S.px, paddingTop:20, paddingBottom:6 }}>
+          <div className="lb-content" style={{ flex:1, overflowY:"auto", paddingBottom:isDesktop?48:`calc(${S.navH}px + env(safe-area-inset-bottom,0px) + 8px)`,
+            padding: isDesktop ? "28px 36px 48px" : undefined }}>
+            <div style={{ paddingLeft: isDesktop?0:S.px, paddingRight: isDesktop?0:S.px, paddingTop: isDesktop?0:20 }}>
 
               {/* Balance card */}
-              <div style={{ background:bg, borderRadius:20, padding:"22px 22px 18px", color:"#fff", boxShadow:`0 8px 28px ${p}50`, marginBottom:16 }}>
-                <div style={{ fontSize:11, opacity:.8, textTransform:"uppercase", letterSpacing:1.5, marginBottom:4 }}>Net Balance · All Time</div>
-                <div style={{ fontSize:isDesktop?40:34, fontWeight:900, letterSpacing:-1 }}>{fmtAmt(allInc-allExp,currency)}</div>
-                <div style={{ display:"flex", marginTop:18, background:"rgba(0,0,0,0.15)", borderRadius:12, overflow:"hidden" }}>
-                  <div style={{ flex:1, padding:"11px 16px" }}>
-                    <div style={{ fontSize:10, opacity:.7, marginBottom:2 }}>📥 INCOME</div>
-                    <div style={{ fontWeight:700, fontSize:14 }}>{fmtAmt(allInc,currency)}</div>
+              <div style={{ background:bg, borderRadius:isDesktop?22:20, padding: isDesktop?"28px 32px 24px":"22px 22px 18px",
+                color:"#fff", boxShadow:`0 8px 32px ${p}45`, marginBottom:isDesktop?24:16 }}>
+                <div style={{ fontSize:11, opacity:.7, textTransform:"uppercase", letterSpacing:1.8, marginBottom:6 }}>Net Balance · All Time</div>
+                <div style={{ fontSize:isDesktop?44:34, fontWeight:900, letterSpacing:-1.5, marginBottom:isDesktop?20:16 }}>{fmtAmt(allInc-allExp,currency)}</div>
+                <div style={{ display:"flex", background:"rgba(0,0,0,0.15)", borderRadius:14, overflow:"hidden" }}>
+                  <div style={{ flex:1, padding: isDesktop?"14px 20px":"11px 16px" }}>
+                    <div style={{ fontSize:10, opacity:.65, marginBottom:3, textTransform:"uppercase", letterSpacing:1 }}>📥 Income</div>
+                    <div style={{ fontWeight:800, fontSize:isDesktop?16:14 }}>{fmtAmt(allInc,currency)}</div>
                   </div>
                   <div style={{ width:1, background:"rgba(255,255,255,0.15)" }}/>
-                  <div style={{ flex:1, padding:"11px 16px" }}>
-                    <div style={{ fontSize:10, opacity:.7, marginBottom:2 }}>📤 EXPENSE</div>
-                    <div style={{ fontWeight:700, fontSize:14 }}>{fmtAmt(allExp,currency)}</div>
+                  <div style={{ flex:1, padding: isDesktop?"14px 20px":"11px 16px" }}>
+                    <div style={{ fontSize:10, opacity:.65, marginBottom:3, textTransform:"uppercase", letterSpacing:1 }}>📤 Expenses</div>
+                    <div style={{ fontWeight:800, fontSize:isDesktop?16:14 }}>{fmtAmt(allExp,currency)}</div>
                   </div>
                   {isDesktop&&<>
                     <div style={{ width:1, background:"rgba(255,255,255,0.15)" }}/>
-                    <div style={{ flex:1, padding:"11px 16px" }}>
-                      <div style={{ fontSize:10, opacity:.7, marginBottom:2 }}>📈 MARGIN</div>
-                      <div style={{ fontWeight:700, fontSize:14 }}>{allInc>0?((( allInc-allExp)/allInc)*100).toFixed(1):0}%</div>
+                    <div style={{ flex:1, padding:"14px 20px" }}>
+                      <div style={{ fontSize:10, opacity:.65, marginBottom:3, textTransform:"uppercase", letterSpacing:1 }}>📈 Margin</div>
+                      <div style={{ fontWeight:800, fontSize:16 }}>{allInc>0?((( allInc-allExp)/allInc)*100).toFixed(1):0}%</div>
                     </div>
                     <div style={{ width:1, background:"rgba(255,255,255,0.15)" }}/>
-                    <div style={{ flex:1, padding:"11px 16px" }}>
-                      <div style={{ fontSize:10, opacity:.7, marginBottom:2 }}>🧾 ENTRIES</div>
-                      <div style={{ fontWeight:700, fontSize:14 }}>{entries.length}</div>
+                    <div style={{ flex:1, padding:"14px 20px" }}>
+                      <div style={{ fontSize:10, opacity:.65, marginBottom:3, textTransform:"uppercase", letterSpacing:1 }}>🧾 Entries</div>
+                      <div style={{ fontWeight:800, fontSize:16 }}>{entries.length}</div>
                     </div>
                   </>}
                 </div>
               </div>
 
-              {/* Quick Actions + Exports in responsive grid */}
-              <div className="lb-cards-grid" style={{ marginBottom:16 }}>
-                <button onClick={()=>{setForm({type:"income",amount:"",category:"",note:""});setView("add");}}
+              {/* Quick Actions grid */}
+              <div className="lb-cards-grid" style={{ marginBottom:isDesktop?24:16 }}>
+                <button className="lb-card-action" onClick={()=>{setForm({type:"income",amount:"",category:"",note:""});setView("add");}}
                   style={{ background:"#F0FBF4", border:"2px solid #25D366", borderRadius:16, padding:"16px 14px", cursor:"pointer", textAlign:"left" }}>
-                  <div style={{ fontSize:24 }}>➕</div>
-                  <div style={{ fontWeight:800, color:"#1B5E20", fontSize:14, marginTop:6 }}>Add Income</div>
-                  <div style={{ fontSize:11, color:"#4CAF50", marginTop:2 }}>Sales, service, payment</div>
+                  <div style={{ fontSize:isDesktop?28:24, marginBottom:isDesktop?10:6 }}>➕</div>
+                  <div style={{ fontWeight:800, color:"#1B5E20", fontSize:isDesktop?15:14 }}>Add Income</div>
+                  <div style={{ fontSize:11, color:"#4CAF50", marginTop:3 }}>Sales, service, payment</div>
                 </button>
-                <button onClick={()=>{setForm({type:"expense",amount:"",category:"",note:""});setView("add");}}
+                <button className="lb-card-action" onClick={()=>{setForm({type:"expense",amount:"",category:"",note:""});setView("add");}}
                   style={{ background:"#FFF8F0", border:"2px solid #FF9800", borderRadius:16, padding:"16px 14px", cursor:"pointer", textAlign:"left" }}>
-                  <div style={{ fontSize:24 }}>➖</div>
-                  <div style={{ fontWeight:800, color:"#E65100", fontSize:14, marginTop:6 }}>Add Expense</div>
-                  <div style={{ fontSize:11, color:"#FF9800", marginTop:2 }}>Cost, bill, purchase</div>
+                  <div style={{ fontSize:isDesktop?28:24, marginBottom:isDesktop?10:6 }}>➖</div>
+                  <div style={{ fontWeight:800, color:"#E65100", fontSize:isDesktop?15:14 }}>Add Expense</div>
+                  <div style={{ fontSize:11, color:"#FF9800", marginTop:3 }}>Cost, bill, purchase</div>
                 </button>
                 {isDesktop&&<>
-                  <button onClick={()=>{exportCSV(entries,currency,branding,"All Time");showToast("📊 CSV downloaded!","#1b5e20");}}
+                  <button className="lb-card-action" onClick={()=>{exportCSV(entries,currency,branding,"All Time");showToast("📊 CSV downloaded!","#1b5e20");}}
                     style={{ background:"#F0FBF0", border:"2px solid #C8E6C9", borderRadius:16, padding:"16px 14px", cursor:"pointer", textAlign:"left" }}>
-                    <div style={{ fontSize:24 }}>📊</div>
-                    <div style={{ fontWeight:800, color:"#2E7D32", fontSize:14, marginTop:6 }}>Export CSV</div>
-                    <div style={{ fontSize:11, color:"#66BB6A", marginTop:2 }}>Download spreadsheet</div>
+                    <div style={{ fontSize:28, marginBottom:10 }}>📊</div>
+                    <div style={{ fontWeight:800, color:"#2E7D32", fontSize:15 }}>Export CSV</div>
+                    <div style={{ fontSize:11, color:"#66BB6A", marginTop:3 }}>Download spreadsheet</div>
                   </button>
-                  <button onClick={()=>{exportPDF(dateFilt,currency,branding,rLabel,entries);showToast("🖨️ Opening PDF…","#1a237e");}}
+                  <button className="lb-card-action" onClick={()=>{exportPDF(dateFilt,currency,branding,rLabel,entries);showToast("🖨️ Opening PDF…","#1a237e");}}
                     style={{ background:"#F3F0FF", border:"2px solid #C5CAE9", borderRadius:16, padding:"16px 14px", cursor:"pointer", textAlign:"left" }}>
-                    <div style={{ fontSize:24 }}>🖨️</div>
-                    <div style={{ fontWeight:800, color:"#283593", fontSize:14, marginTop:6 }}>PDF Report</div>
-                    <div style={{ fontSize:11, color:"#7986CB", marginTop:2 }}>Income statement</div>
+                    <div style={{ fontSize:28, marginBottom:10 }}>🖨️</div>
+                    <div style={{ fontWeight:800, color:"#283593", fontSize:15 }}>PDF Report</div>
+                    <div style={{ fontSize:11, color:"#7986CB", marginTop:3 }}>Income statement</div>
                   </button>
                 </>}
               </div>
@@ -1618,28 +1669,31 @@ function AppCore({ user, onLogout }) {
                 </button>
               </div>}
 
-              {/* Recent Transactions */}
+              {/* Recent Transactions + Charts */}
               <div className="lb-page-grid">
-                <div>
-                  <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:12 }}>
-                    <div style={{ fontWeight:900, fontSize:15, color:p }}>Recent Transactions</div>
-                    <button onClick={()=>setView("history")} style={{ background:"none", border:"none", color:p, fontSize:13, cursor:"pointer", fontWeight:700 }}>View All →</button>
+                {/* Left — transactions */}
+                <div className="lb-section">
+                  <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:16 }}>
+                    <div style={{ fontWeight:900, fontSize:isDesktop?16:15, color:isDesktop?"#1a1a1a":p }}>Recent Transactions</div>
+                    <button onClick={()=>setView("history")} style={{ background:"none", border:`1.5px solid ${p}`, color:p, fontSize:12, cursor:"pointer", fontWeight:700, borderRadius:20, padding:"5px 14px" }}>View All →</button>
                   </div>
                   {entries.slice(0,isDesktop?8:6).map(e=><TxRow key={e.id} entry={e} currency={currency} onDelete={handleDel} p={p}/>)}
                   {entries.length===0&&(
-                    <div style={{ textAlign:"center", padding:"36px 0", color:"#ccc", fontSize:14, lineHeight:2 }}>
+                    <div style={{ textAlign:"center", padding:"40px 0", color:"#ccc", fontSize:14, lineHeight:2 }}>
                       <div style={{ fontSize:40, marginBottom:8 }}>📭</div>
                       No entries yet. Add your first transaction!
                     </div>
                   )}
                 </div>
+
+                {/* Right — charts (desktop only) */}
                 {isDesktop&&<div>
-                  <div style={{ fontWeight:900, fontSize:15, color:p, marginBottom:12 }}>Income vs Expenses</div>
-                  <div style={{ background:"#fff", borderRadius:16, padding:18, marginBottom:16, boxShadow:"0 1px 4px rgba(0,0,0,0.06)" }}>
+                  <div className="lb-section" style={{ marginBottom:16 }}>
+                    <div style={{ fontWeight:800, fontSize:14, color:"#1a1a1a", marginBottom:14 }}>💰 Income by Category</div>
                     <CatChart entries={entries} currency={currency} type="income" color="#25D366"/>
                   </div>
-                  <div style={{ fontWeight:900, fontSize:15, color:p, marginBottom:12 }}>Top Expense Categories</div>
-                  <div style={{ background:"#fff", borderRadius:16, padding:18, boxShadow:"0 1px 4px rgba(0,0,0,0.06)" }}>
+                  <div className="lb-section">
+                    <div style={{ fontWeight:800, fontSize:14, color:"#1a1a1a", marginBottom:14 }}>📤 Expenses by Category</div>
                     <CatChart entries={entries} currency={currency} type="expense" color="#FF9800"/>
                   </div>
                 </div>}
@@ -1651,66 +1705,77 @@ function AppCore({ user, onLogout }) {
 
         {/* ══ ADD ENTRY ══ */}
         {view==="add"&&(
-          <div style={{ flex:1, overflowY:"auto", paddingLeft:S.px, paddingRight:S.px, paddingTop:24, paddingBottom:`calc(${S.navH}px + env(safe-area-inset-bottom,0px) + 24px)` }}>
-            <div style={{ fontWeight:900, fontSize:17, color:p, marginBottom:18 }}>
-              {form.type==="income"?"➕ Record Income":"➖ Record Expense"}
-            </div>
-            <div style={{ display:"flex", background:"#f2f2f2", borderRadius:14, padding:4, marginBottom:18 }}>
-              {["income","expense"].map(t=>(
-                <button key={t} onClick={()=>setForm(f=>({...f,type:t,category:""}))}
-                  style={{ flex:1, padding:"11px", border:"none", borderRadius:11, fontWeight:800, fontSize:13, cursor:"pointer",
-                    background:form.type===t?(t==="income"?"#25D366":"#FF9800"):"transparent", color:form.type===t?"#fff":"#888" }}>
-                  {t==="income"?"💰 Income":"📤 Expense"}
+          <div style={{ flex:1, overflowY:"auto",
+            paddingLeft: isDesktop?0:S.px, paddingRight: isDesktop?0:S.px,
+            paddingTop: isDesktop?28:24,
+            paddingBottom: isDesktop?48:`calc(${S.navH}px + env(safe-area-inset-bottom,0px) + 24px)`,
+            padding: isDesktop ? "28px 36px 48px" : undefined }}>
+            <div style={{ maxWidth: isDesktop?560:undefined, margin: isDesktop?"0 auto":undefined }}>
+              {isDesktop&&<div style={{ fontWeight:900, fontSize:22, color:"#1a1a1a", marginBottom:24, letterSpacing:-.5 }}>
+                {form.type==="income"?"➕ Record Income":"➖ Record Expense"}
+              </div>}
+              <div className="lb-section" style={{ padding: isDesktop?"28px 32px":undefined }}>
+                {!isDesktop&&<div style={{ fontWeight:900, fontSize:17, color:p, marginBottom:18 }}>
+                  {form.type==="income"?"➕ Record Income":"➖ Record Expense"}
+                </div>}
+                <div style={{ display:"flex", background:"#f2f2f2", borderRadius:14, padding:4, marginBottom:22 }}>
+                  {["income","expense"].map(t=>(
+                    <button key={t} onClick={()=>setForm(f=>({...f,type:t,category:""}))}
+                      style={{ flex:1, padding:"12px", border:"none", borderRadius:11, fontWeight:800, fontSize:14, cursor:"pointer",
+                        background:form.type===t?(t==="income"?"#25D366":"#FF9800"):"transparent", color:form.type===t?"#fff":"#888" }}>
+                      {t==="income"?"💰 Income":"📤 Expense"}
+                    </button>
+                  ))}
+                </div>
+                <FLabel>Amount ({currency.symbol})</FLabel>
+                <input type="number" placeholder="0" value={form.amount} onChange={e=>setForm(f=>({...f,amount:e.target.value}))}
+                  style={{ width:"100%", padding:"16px 18px", border:`2.5px solid ${form.amount?p:"#e5e5e5"}`, borderRadius:14, fontSize:isDesktop?32:28,
+                    fontWeight:900, color:form.type==="income"?"#1B5E20":"#E65100", outline:"none", marginBottom:22, boxSizing:"border-box", background:"#fafafa" }}/>
+                <FLabel>Category</FLabel>
+                <div style={{ display:"flex", flexWrap:"wrap", gap:9, marginBottom:22 }}>
+                  {cats.map(c=>(
+                    <button key={c} onClick={()=>setForm(f=>({...f,category:c}))}
+                      style={{ padding:"9px 16px", borderRadius:22, border:`2px solid ${form.category===c?p:"#e0e0e0"}`,
+                        background:form.category===c?`${p}15`:"#fff", fontWeight:form.category===c?800:400,
+                        color:form.category===c?p:"#666", fontSize:13, cursor:"pointer" }}>
+                      {c}
+                    </button>
+                  ))}
+                </div>
+                <FLabel>Note (optional)</FLabel>
+                <input type="text" placeholder="Customer name, description…" value={form.note} onChange={e=>setForm(f=>({...f,note:e.target.value}))}
+                  style={{ width:"100%", padding:"14px 16px", border:"2px solid #e5e5e5", borderRadius:14, fontSize:15, outline:"none", marginBottom:24, boxSizing:"border-box", background:"#fafafa" }}/>
+                <button onClick={handleAdd}
+                  style={{ width:"100%", padding:"17px", background:form.type==="income"?"#25D366":"#FF9800", color:"#fff",
+                    border:"none", borderRadius:16, fontSize:17, fontWeight:900, cursor:"pointer",
+                    boxShadow:`0 4px 20px ${form.type==="income"?"#25D36640":"#FF980040"}` }}>
+                  Save Entry
                 </button>
-              ))}
+              </div>
             </div>
-            <FLabel>Amount ({currency.symbol})</FLabel>
-            <input type="number" placeholder="0" value={form.amount} onChange={e=>setForm(f=>({...f,amount:e.target.value}))}
-              style={{ width:"100%", padding:"14px 16px", border:`2.5px solid ${form.amount?p:"#e5e5e5"}`, borderRadius:14, fontSize:28,
-                fontWeight:900, color:form.type==="income"?"#1B5E20":"#E65100", outline:"none", marginBottom:18, boxSizing:"border-box", background:"#fafafa" }}/>
-            <FLabel>Category</FLabel>
-            <div style={{ display:"flex", flexWrap:"wrap", gap:8, marginBottom:18 }}>
-              {cats.map(c=>(
-                <button key={c} onClick={()=>setForm(f=>({...f,category:c}))}
-                  style={{ padding:"8px 15px", borderRadius:22, border:`2px solid ${form.category===c?p:"#e0e0e0"}`,
-                    background:form.category===c?`${p}15`:"#fff", fontWeight:form.category===c?800:400,
-                    color:form.category===c?p:"#666", fontSize:13, cursor:"pointer" }}>
-                  {c}
-                </button>
-              ))}
-            </div>
-            <FLabel>Note (optional)</FLabel>
-            <input type="text" placeholder="Customer name, description…" value={form.note} onChange={e=>setForm(f=>({...f,note:e.target.value}))}
-              style={{ width:"100%", padding:"13px 16px", border:"2px solid #e5e5e5", borderRadius:14, fontSize:15, outline:"none", marginBottom:22, boxSizing:"border-box", background:"#fafafa" }}/>
-            <button onClick={handleAdd}
-              style={{ width:"100%", padding:"16px", background:form.type==="income"?"#25D366":"#FF9800", color:"#fff",
-                border:"none", borderRadius:16, fontSize:17, fontWeight:900, cursor:"pointer",
-                boxShadow:`0 4px 20px ${form.type==="income"?"#25D36640":"#FF980040"}` }}>
-              Save Entry
-            </button>
           </div>
         )}
 
         {/* ══ HISTORY ══ */}
         {view==="history"&&(
-          <div style={{ flex:1, display:"flex", flexDirection:"column", overflow:"hidden" }}>
-            {/* Sticky sub-header */}
-            <div style={{ paddingLeft:S.px, paddingRight:S.px, paddingTop:18, paddingBottom:12, borderBottom:"1px solid #f0f0f0", background:"#fff", flexShrink:0 }}>
+          <div style={{ flex:1, display:"flex", flexDirection:"column", overflow:"hidden",
+            padding: isDesktop ? "28px 36px 0" : undefined }}>
+            {/* Sub-header */}
+            <div className="lb-subheader" style={{ paddingLeft:S.px, paddingRight:S.px, paddingTop:18, paddingBottom:12, borderBottom: isDesktop?"none":"1px solid #f0f0f0", background: isDesktop?"transparent":"#fff", flexShrink:0 }}>
+              {isDesktop&&<div style={{ fontWeight:900, fontSize:22, color:"#1a1a1a", marginBottom:18, letterSpacing:-.5 }}>Transaction History</div>}
               <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:12 }}>
-                <div style={{ fontWeight:900, fontSize:15, color:p }}>Transaction History</div>
+                {!isDesktop&&<div style={{ fontWeight:900, fontSize:15, color:p }}>Transaction History</div>}
                 <FilterBadge preset={datePreset} dateRange={dateRange} onClick={()=>setShowDP(true)} primaryColor={p}/>
               </div>
-              {/* Type filter tabs */}
-              <div style={{ display:"flex", background:"#f2f2f2", borderRadius:12, padding:3 }}>
+              <div style={{ display:"flex", background: isDesktop?"#fff":"#f2f2f2", borderRadius:12, padding:3, boxShadow: isDesktop?"0 1px 3px rgba(0,0,0,0.07)":undefined }}>
                 {[["all","All"],["income","💰 Income"],["expense","📤 Expense"]].map(([f,l])=>(
                   <button key={f} onClick={()=>setTxFilter(f)}
-                    style={{ flex:1, padding:"8px 4px", border:"none", borderRadius:10, fontSize:12, fontWeight:700, cursor:"pointer",
+                    style={{ flex:1, padding:"9px 4px", border:"none", borderRadius:10, fontSize:13, fontWeight:700, cursor:"pointer",
                       background:txFilter===f?p:"transparent", color:txFilter===f?"#fff":"#888" }}>
                     {l}
                   </button>
                 ))}
               </div>
-              {/* Active filter badge */}
               {datePreset!=="all"&&(
                 <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center",
                   background:`${p}10`, borderRadius:11, padding:"9px 13px", marginTop:10 }}>
@@ -1718,49 +1783,58 @@ function AppCore({ user, onLogout }) {
                   <button onClick={()=>handleDateChange("all",{from:"",to:""})} style={{ background:"none", border:"none", color:p, cursor:"pointer", fontSize:12, fontWeight:800 }}>Clear ✕</button>
                 </div>
               )}
-              {/* Export filtered */}
               {datePreset!=="all"&&histFilt.length>0&&(
                 <div style={{ display:"flex", gap:9, marginTop:10 }}>
                   <button onClick={()=>{exportCSV(histFilt,currency,branding,rLabel);showToast("📊 Exported!","#1b5e20");}}
-                    style={{ flex:1, padding:"8px", background:"#F0FBF0", border:"1.5px solid #C8E6C9", borderRadius:10, fontSize:11, fontWeight:700, cursor:"pointer", color:"#2E7D32" }}>
+                    style={{ flex:1, padding:"9px", background:"#F0FBF0", border:"1.5px solid #C8E6C9", borderRadius:10, fontSize:12, fontWeight:700, cursor:"pointer", color:"#2E7D32" }}>
                     📊 CSV
                   </button>
                   <button onClick={()=>{exportPDF(histFilt,currency,branding,rLabel,entries);showToast("🖨️ Opening…","#1a237e");}}
-                    style={{ flex:1, padding:"8px", background:"#F3F0FF", border:"1.5px solid #C5CAE9", borderRadius:10, fontSize:11, fontWeight:700, cursor:"pointer", color:"#283593" }}>
+                    style={{ flex:1, padding:"9px", background:"#F3F0FF", border:"1.5px solid #C5CAE9", borderRadius:10, fontSize:12, fontWeight:700, cursor:"pointer", color:"#283593" }}>
                     🖨️ PDF
                   </button>
                 </div>
               )}
             </div>
             {/* Scrollable list */}
-            <div style={{ flex:1, overflowY:"auto", paddingLeft:S.px, paddingRight:S.px, paddingTop:14, paddingBottom:isDesktop?40:`calc(${S.navH}px + env(safe-area-inset-bottom,0px) + 10px)` }}>
-              {Object.keys(grouped).sort((a,b)=>b.localeCompare(a)).map(day=>(
-                <div key={day}>
-                  <div style={{ fontSize:11, color:"#bbb", fontWeight:700, textTransform:"uppercase", letterSpacing:.5, margin:"10px 0 7px" }}>
-                    {fmtDate(day+"T12:00:00")}
+            <div style={{ flex:1, overflowY:"auto",
+              paddingLeft: isDesktop?0:S.px, paddingRight: isDesktop?0:S.px,
+              paddingTop:14,
+              paddingBottom:isDesktop?40:`calc(${S.navH}px + env(safe-area-inset-bottom,0px) + 10px)` }}>
+              <div className={isDesktop?"lb-section":""} style={{ padding: isDesktop?"24px 26px":undefined }}>
+                {Object.keys(grouped).sort((a,b)=>b.localeCompare(a)).map(day=>(
+                  <div key={day}>
+                    <div style={{ fontSize:11, color:"#bbb", fontWeight:700, textTransform:"uppercase", letterSpacing:.5, margin:"10px 0 7px" }}>
+                      {fmtDate(day+"T12:00:00")}
+                    </div>
+                    {grouped[day].map(e=><TxRow key={e.id} entry={e} currency={currency} onDelete={handleDel} p={p}/>)}
                   </div>
-                  {grouped[day].map(e=><TxRow key={e.id} entry={e} currency={currency} onDelete={handleDel} p={p}/>)}
-                </div>
-              ))}
-              {histFilt.length===0&&(
-                <div style={{ textAlign:"center", color:"#ccc", marginTop:48, fontSize:14, lineHeight:2 }}>
-                  <div style={{ fontSize:40, marginBottom:8 }}>📭</div>
-                  <div>No transactions found</div>
-                  {datePreset!=="all"&&<div style={{ fontSize:12, marginTop:6 }}>
-                    <button onClick={()=>handleDateChange("all",{from:"",to:""})} style={{ background:"none", border:"none", color:p, cursor:"pointer", fontWeight:700, fontSize:13 }}>Clear date filter</button>
-                  </div>}
-                </div>
-              )}
+                ))}
+                {histFilt.length===0&&(
+                  <div style={{ textAlign:"center", color:"#ccc", marginTop:48, fontSize:14, lineHeight:2 }}>
+                    <div style={{ fontSize:40, marginBottom:8 }}>📭</div>
+                    <div>No transactions found</div>
+                    {datePreset!=="all"&&<div style={{ fontSize:12, marginTop:6 }}>
+                      <button onClick={()=>handleDateChange("all",{from:"",to:""})} style={{ background:"none", border:"none", color:p, cursor:"pointer", fontWeight:700, fontSize:13 }}>Clear date filter</button>
+                    </div>}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         )}
 
+
         {/* ══ SUMMARY ══ */}
         {view==="summary"&&(
-          <div style={{ flex:1, display:"flex", flexDirection:"column", overflow:"hidden" }}>
-            <div style={{ paddingLeft:S.px, paddingRight:S.px, paddingTop:18, paddingBottom:12, borderBottom:"1px solid #f0f0f0", background:"#fff", flexShrink:0 }}>
+          <div style={{ flex:1, display:"flex", flexDirection:"column", overflow:"hidden",
+            padding: isDesktop ? "28px 36px 0" : undefined }}>
+            {/* Sub-header */}
+            <div style={{ paddingLeft: isDesktop?0:S.px, paddingRight: isDesktop?0:S.px, paddingTop: isDesktop?0:18, paddingBottom:12,
+              borderBottom: isDesktop?"none":"1px solid #f0f0f0", background: isDesktop?"transparent":"#fff", flexShrink:0 }}>
+              {isDesktop&&<div style={{ fontWeight:900, fontSize:22, color:"#1a1a1a", marginBottom:18, letterSpacing:-.5 }}>Business Summary</div>}
               <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:10 }}>
-                <div style={{ fontWeight:900, fontSize:15, color:p }}>Business Summary</div>
+                {!isDesktop&&<div style={{ fontWeight:900, fontSize:15, color:p }}>Business Summary</div>}
                 <FilterBadge preset={datePreset} dateRange={dateRange} onClick={()=>setShowDP(true)} primaryColor={p}/>
               </div>
               {datePreset!=="all"&&(
@@ -1771,39 +1845,54 @@ function AppCore({ user, onLogout }) {
                 </div>
               )}
             </div>
-            <div style={{ flex:1, overflowY:"auto", paddingLeft:S.px, paddingRight:S.px, paddingTop:18, paddingBottom:`calc(${S.navH}px + env(safe-area-inset-bottom,0px) + 10px)` }}>
-              {/* P&L card */}
-              <div style={{ background:bg, borderRadius:20, padding:"20px 22px", marginBottom:16, color:"#fff" }}>
-                <div style={{ fontSize:11, opacity:.8, textTransform:"uppercase", letterSpacing:1, marginBottom:4 }}>Profit & Loss · {rLabel}</div>
-                <div style={{ fontSize:30, fontWeight:900, letterSpacing:-.5, marginBottom:16 }}>{fmtAmt(balance,currency)}</div>
-                <div style={{ display:"flex", justifyContent:"space-between", fontSize:13 }}>
-                  <div><div style={{ opacity:.7, fontSize:10, marginBottom:2 }}>REVENUE</div><div style={{ fontWeight:700 }}>{fmtAmt(totalInc,currency)}</div></div>
-                  <div><div style={{ opacity:.7, fontSize:10, marginBottom:2 }}>EXPENSES</div><div style={{ fontWeight:700 }}>{fmtAmt(totalExp,currency)}</div></div>
-                  <div><div style={{ opacity:.7, fontSize:10, marginBottom:2 }}>MARGIN</div><div style={{ fontWeight:700 }}>{totalInc>0?Math.round((balance/totalInc)*100):0}%</div></div>
+
+            <div style={{ flex:1, overflowY:"auto",
+              paddingLeft: isDesktop?0:S.px, paddingRight: isDesktop?0:S.px,
+              paddingTop: isDesktop?0:18,
+              paddingBottom: isDesktop?48:`calc(${S.navH}px + env(safe-area-inset-bottom,0px) + 10px)` }}>
+
+              {/* P&L hero card */}
+              <div style={{ background:bg, borderRadius:isDesktop?22:20, padding: isDesktop?"28px 32px":"20px 22px", marginBottom:isDesktop?24:16, color:"#fff",
+                boxShadow:`0 8px 32px ${p}40` }}>
+                <div style={{ fontSize:11, opacity:.7, textTransform:"uppercase", letterSpacing:1.8, marginBottom:6 }}>Profit & Loss · {rLabel}</div>
+                <div style={{ fontSize:isDesktop?40:30, fontWeight:900, letterSpacing:-1, marginBottom:isDesktop?20:16 }}>{fmtAmt(balance,currency)}</div>
+                <div style={{ display:"flex", gap:0, background:"rgba(0,0,0,0.15)", borderRadius:14, overflow:"hidden" }}>
+                  {[["REVENUE",fmtAmt(totalInc,currency)],["EXPENSES",fmtAmt(totalExp,currency)],["MARGIN",(totalInc>0?Math.round((balance/totalInc)*100):0)+"%"]].map(([label,val],i)=>(
+                    <div key={label} style={{ flex:1, padding: isDesktop?"14px 20px":"11px 14px", borderRight: i<2?"1px solid rgba(255,255,255,0.15)":undefined }}>
+                      <div style={{ fontSize:9, opacity:.6, textTransform:"uppercase", letterSpacing:1.2, marginBottom:4 }}>{label}</div>
+                      <div style={{ fontWeight:800, fontSize:isDesktop?15:13 }}>{val}</div>
+                    </div>
+                  ))}
                 </div>
               </div>
-              <div style={{ background:"#fafafa", borderRadius:16, padding:18, marginBottom:14 }}>
-                <div style={{ fontWeight:800, color:"#333", marginBottom:13, fontSize:14 }}>💰 Income Breakdown</div>
-                <CatChart entries={dateFilt} currency={currency} type="income" color="#25D366"/>
+
+              {/* Charts grid */}
+              <div className="lb-summary-grid" style={{ marginBottom: isDesktop?24:0 }}>
+                <div className="lb-section" style={{ marginBottom: isDesktop?0:14 }}>
+                  <div style={{ fontWeight:800, color: isDesktop?"#1a1a1a":"#333", marginBottom:14, fontSize:14 }}>💰 Income Breakdown</div>
+                  <CatChart entries={dateFilt} currency={currency} type="income" color="#25D366"/>
+                </div>
+                <div className="lb-section" style={{ marginBottom: isDesktop?0:14 }}>
+                  <div style={{ fontWeight:800, color: isDesktop?"#1a1a1a":"#333", marginBottom:14, fontSize:14 }}>📤 Expense Breakdown</div>
+                  <CatChart entries={dateFilt} currency={currency} type="expense" color="#FF9800"/>
+                </div>
               </div>
-              <div style={{ background:"#fafafa", borderRadius:16, padding:18, marginBottom:14 }}>
-                <div style={{ fontWeight:800, color:"#333", marginBottom:13, fontSize:14 }}>📤 Expense Breakdown</div>
-                <CatChart entries={dateFilt} currency={currency} type="expense" color="#FF9800"/>
-              </div>
-              <div style={{ display:"flex", gap:10, marginBottom:12 }}>
+
+              {/* Action buttons */}
+              <div style={{ display:"flex", gap:12, marginTop: isDesktop?0:4, marginBottom:12, flexWrap:"wrap" }}>
                 <button onClick={()=>{exportCSV(dateFilt,currency,branding,rLabel);showToast("📊 CSV downloaded!","#1b5e20");}}
-                  style={{ flex:1, padding:"13px", background:"#F0FBF0", border:"1.5px solid #C8E6C9", borderRadius:14, fontWeight:700, cursor:"pointer", fontSize:13, color:"#2E7D32" }}>
+                  style={{ flex:1, minWidth:140, padding:"13px", background:"#F0FBF0", border:"1.5px solid #C8E6C9", borderRadius:14, fontWeight:700, cursor:"pointer", fontSize:13, color:"#2E7D32" }}>
                   📊 Export CSV
                 </button>
                 <button onClick={()=>{exportPDF(dateFilt,currency,branding,rLabel,entries);showToast("🖨️ Opening PDF…","#1a237e");}}
-                  style={{ flex:1, padding:"13px", background:"#F3F0FF", border:"1.5px solid #C5CAE9", borderRadius:14, fontWeight:700, cursor:"pointer", fontSize:13, color:"#283593" }}>
+                  style={{ flex:1, minWidth:140, padding:"13px", background:"#F3F0FF", border:"1.5px solid #C5CAE9", borderRadius:14, fontWeight:700, cursor:"pointer", fontSize:13, color:"#283593" }}>
                   🖨️ PDF Report
                 </button>
+                <button onClick={()=>setShowWA(true)}
+                  style={{ flex:1, minWidth:140, padding:"13px", background:"#25D366", color:"#fff", border:"none", borderRadius:14, fontSize:13, fontWeight:900, cursor:"pointer" }}>
+                  💬 WhatsApp
+                </button>
               </div>
-              <button onClick={()=>setShowWA(true)}
-                style={{ width:"100%", padding:"15px", background:"#25D366", color:"#fff", border:"none", borderRadius:16, fontSize:15, fontWeight:900, cursor:"pointer" }}>
-                💬 Share on WhatsApp
-              </button>
             </div>
           </div>
         )}
