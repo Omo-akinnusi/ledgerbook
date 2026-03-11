@@ -347,7 +347,7 @@ const exportPDF = (entries, currency, branding, rangeLabel, allEntries) => {
   <div class="cover-name">${branding.businessName}</div>
   <div class="cover-tag">${branding.tagline}</div>
   <div class="cover-meta">
-    <div class="cover-meta-item"><label>Report Type</label><span>Statement of Comprehensive Income</span></div>
+    <div class="cover-meta-item"><label>Report Type</label><span>Income Statement</span></div>
     <div class="cover-meta-item"><label>Period</label><span>${rangeLabel||"All Time"}</span></div>
     <div class="cover-meta-item"><label>Prepared</label><span>${dateStr}</span></div>
     <div class="cover-meta-item"><label>Currency</label><span>${currency.code} — ${currency.name}</span></div>
@@ -374,7 +374,7 @@ const exportPDF = (entries, currency, branding, rangeLabel, allEntries) => {
 </div>
 
 <!-- ═══ STATEMENT OF COMPREHENSIVE INCOME ══════════════════════ -->
-<div class="section-title">Statement of Comprehensive Income</div>
+<div class="section-title">Income Statement</div>
 <div class="section-body">
   <table class="stmt">
     <colgroup><col style="width:55%"><col style="width:10%"><col style="width:35%"></colgroup>
@@ -418,12 +418,12 @@ const exportPDF = (entries, currency, branding, rangeLabel, allEntries) => {
         <td class="amt">${bal<0?"(":""}${f(Math.abs(bal))}${bal<0?")":""}</td>
       </tr>
 
-      <!-- Other Comprehensive Income -->
+      <!-- Other Income / Adjustments -->
       <tr class="spacer"><td colspan="3"></td></tr>
-      <tr><td class="label" style="color:#888;font-style:italic">Other Comprehensive Income</td><td></td><td class="amt" style="color:#aaa">—</td></tr>
+      <tr><td class="label" style="color:#888;font-style:italic">Other Income / Adjustments</td><td></td><td class="amt" style="color:#aaa">—</td></tr>
       <tr class="spacer"><td colspan="3"></td></tr>
       <tr class="total">
-        <td class="label"><strong>Total Comprehensive Income for the Period</strong></td>
+        <td class="label"><strong>Total Net Income for the Period</strong></td>
         <td></td>
         <td class="amt">${bal<0?"(":""}${f(Math.abs(bal))}${bal<0?")":""}</td>
       </tr>
