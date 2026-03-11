@@ -30,7 +30,74 @@ const GLOBAL_CSS = `
   input[type="number"] { -moz-appearance: textfield; }
   button { -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
   input, button { font-family: inherit; }
+
+  /* ── Responsive layout system ── */
+
+  /* Mobile default: single column, bottom nav */
+  .lb-root        { display: flex; min-height: 100vh; background: #f0f0f0; }
+  .lb-sidebar     { display: none; }
+  .lb-shell       { flex: 1; display: flex; flex-direction: column; min-height: 100vh;
+                    background: #fff; width: 100%; max-width: 100%; }
+  .lb-content     { flex: 1; overflow-y: auto; }
+  .lb-bottom-nav  { display: flex; }
+  .lb-page-grid   { display: block; }
+  .lb-cards-grid  { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .lb-summary-grid{ display: grid; grid-template-columns: 1fr; gap: 0; }
+
+  /* Tablet (768px+): wider shell, still bottom nav */
+  @media (min-width: 768px) {
+    .lb-root      { justify-content: center; }
+    .lb-shell     { max-width: 720px; box-shadow: 0 0 0 1px rgba(0,0,0,0.07),
+                    0 8px 48px rgba(0,0,0,0.13); }
+    .lb-cards-grid{ grid-template-columns: 1fr 1fr; }
+    .lb-page-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    .lb-summary-grid { grid-template-columns: 1fr 1fr; gap: 20px; }
+  }
+
+  /* Desktop (1100px+): sidebar nav, full-width content */
+  @media (min-width: 1100px) {
+    .lb-root        { justify-content: stretch; align-items: stretch; background: #f4f5f7; }
+    .lb-sidebar     { display: flex; flex-direction: column; width: 240px; min-height: 100vh;
+                      position: sticky; top: 0; height: 100vh; flex-shrink: 0; }
+    .lb-shell       { flex: 1; max-width: 100%; box-shadow: none;
+                      background: #f4f5f7; border-radius: 0; }
+    .lb-shell-inner { max-width: 960px; margin: 0 auto; padding: 0 28px; }
+    .lb-content     { padding-bottom: 40px !important; }
+    .lb-bottom-nav  { display: none; }
+    .lb-header      { border-radius: 0 !important; position: sticky; top: 0; z-index: 10; }
+    .lb-cards-grid  { grid-template-columns: repeat(4, 1fr); }
+    .lb-page-grid   { grid-template-columns: 1fr 1fr; gap: 24px; }
+    .lb-summary-grid{ grid-template-columns: 1fr 1fr; gap: 24px; }
+    .lb-card        { border-radius: 16px; margin-bottom: 0; }
+    .lb-section     { background: #fff; border-radius: 18px; padding: 22px 24px;
+                      box-shadow: 0 1px 4px rgba(0,0,0,0.06); margin-bottom: 20px; }
+  }
+
+  @media (min-width: 1400px) {
+    .lb-sidebar     { width: 260px; }
+    .lb-shell-inner { max-width: 1100px; }
+    .lb-cards-grid  { grid-template-columns: repeat(4, 1fr); }
+  }
 `;
+
+// Track window width for responsive decisions in JS
+function useBreakpoint() {
+  const [bp, setBp] = useState(() => {
+    if (typeof window === "undefined") return "mobile";
+    if (window.innerWidth >= 1100) return "desktop";
+    if (window.innerWidth >= 768)  return "tablet";
+    return "mobile";
+  });
+  useEffect(() => {
+    const fn = () => {
+      const w = window.innerWidth;
+      setBp(w >= 1100 ? "desktop" : w >= 768 ? "tablet" : "mobile");
+    };
+    window.addEventListener("resize", fn);
+    return () => window.removeEventListener("resize", fn);
+  }, []);
+  return bp;
+}
 
 function GlobalStyles() {
   useEffect(() => {
@@ -1341,6 +1408,11 @@ function AppCore({ user, onLogout }) {
     setShowKB(false);
   };
 
+  // ── Responsive breakpoint ────────────────────────────────────
+  const bp = useBreakpoint();
+  const isDesktop = bp === "desktop";
+  const isTablet  = bp === "tablet";
+
   // ── Loading screen while Firestore data loads ────────────────
   if (loading) return (
     <div style={{ minHeight:"100vh", background:"#075E54", display:"flex", flexDirection:"column",
@@ -1355,60 +1427,130 @@ function AppCore({ user, onLogout }) {
   // Shared inner padding style
   const PX = { paddingLeft:S.px, paddingRight:S.px };
 
-  return (
-    <div style={{ fontFamily:"'Segoe UI',system-ui,sans-serif", background:"#e8e8e8", minHeight:"100vh",
-      display:"flex", justifyContent:"center", alignItems:"flex-start" }}>
+  // ── Sidebar nav items ────────────────────────────────────────
+  const NAV_ITEMS = [
+    { id:"home",    icon:"🏠", label:"Home"    },
+    { id:"add",     icon:"➕", label:"Add Entry"},
+    { id:"history", icon:"📋", label:"History" },
+    { id:"summary", icon:"📊", label:"Summary" },
+  ];
 
-      {/* App Shell — centers on desktop, full safe-width on mobile */}
-      <div style={{
-        width:"100%", maxWidth:480, minHeight:"100vh", background:"#fff",
-        display:"flex", flexDirection:"column", position:"relative",
-        /* Side shadow only visible on desktop where there's bg showing */
-        boxShadow:"0 0 0 1px rgba(0,0,0,0.06), 0 8px 40px rgba(0,0,0,0.14)",
-        /* Ensure content never bleeds into notch/rounded corners on any device */
-        paddingLeft:"env(safe-area-inset-left, 0px)",
-        paddingRight:"env(safe-area-inset-right, 0px)",
-      }}>
+  // ── Sidebar (desktop only) ───────────────────────────────────
+  const Sidebar = () => (
+    <div className="lb-sidebar" style={{ background:bg, color:"#fff" }}>
+      {/* Brand */}
+      <div style={{ padding:"28px 24px 20px" }}>
+        <div style={{ display:"flex", alignItems:"center", gap:12, marginBottom:6 }}>
+          {branding.logoType==="image"&&branding.logoImage
+            ?<img src={branding.logoImage} alt="logo" style={{ width:44, height:44, borderRadius:12, objectFit:"cover", border:"2px solid rgba(255,255,255,0.4)" }}/>
+            :<div style={{ width:44, height:44, borderRadius:12, background:"rgba(255,255,255,0.18)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:24 }}>{branding.logo}</div>
+          }
+          <div>
+            <div style={{ fontWeight:900, fontSize:15, letterSpacing:-.2 }}>{branding.businessName}</div>
+            <div style={{ fontSize:11, opacity:.65, marginTop:2 }}>{branding.tagline}</div>
+          </div>
+        </div>
+        <div style={{ marginTop:14, background:"rgba(0,0,0,0.2)", borderRadius:10, padding:"10px 14px" }}>
+          <div style={{ fontSize:10, opacity:.6, textTransform:"uppercase", letterSpacing:1, marginBottom:3 }}>Net Balance</div>
+          <div style={{ fontWeight:900, fontSize:18 }}>{fmtAmt(allInc-allExp,currency)}</div>
+        </div>
+      </div>
+
+      {/* Nav links */}
+      <nav style={{ flex:1, padding:"4px 12px" }}>
+        {NAV_ITEMS.map(({id,icon,label})=>(
+          <button key={id} onClick={()=>setView(id)}
+            style={{ width:"100%", display:"flex", alignItems:"center", gap:12, padding:"12px 14px", borderRadius:12,
+              marginBottom:4, border:"none", cursor:"pointer", textAlign:"left", fontSize:14, fontWeight:view===id?800:500,
+              background:view===id?"rgba(255,255,255,0.2)":"transparent",
+              color:view===id?"#fff":"rgba(255,255,255,0.7)" }}>
+            <span style={{ fontSize:18, width:24, textAlign:"center" }}>{icon}</span>
+            {label}
+          </button>
+        ))}
+      </nav>
+
+      {/* Sidebar actions */}
+      <div style={{ padding:"12px 12px 28px", borderTop:"1px solid rgba(255,255,255,0.12)", marginTop:"auto" }}>
+        {[["⌨️","Quick Entry",()=>setShowKB(true)],["💬","WhatsApp",()=>setShowWA(true)],["⚙️","Settings",()=>setShowSt(true)]].map(([icon,label,fn])=>(
+          <button key={label} onClick={fn}
+            style={{ width:"100%", display:"flex", alignItems:"center", gap:12, padding:"11px 14px", borderRadius:12,
+              marginBottom:4, border:"none", cursor:"pointer", textAlign:"left", fontSize:13, fontWeight:500,
+              background:"rgba(255,255,255,0.1)", color:"rgba(255,255,255,0.8)" }}>
+            <span style={{ fontSize:16, width:24, textAlign:"center" }}>{icon}</span>
+            {label}
+          </button>
+        ))}
+        <button onClick={onLogout}
+          style={{ width:"100%", display:"flex", alignItems:"center", gap:12, padding:"11px 14px", borderRadius:12,
+            marginTop:6, border:"1px solid rgba(255,255,255,0.2)", cursor:"pointer", textAlign:"left", fontSize:13,
+            background:"transparent", color:"rgba(255,255,255,0.55)" }}>
+          <span style={{ fontSize:16, width:24, textAlign:"center" }}>🚪</span>
+          Sign Out
+        </button>
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="lb-root" style={{ fontFamily:"'Segoe UI',system-ui,sans-serif" }}>
+
+      {/* ── SIDEBAR (desktop) ── */}
+      <Sidebar/>
+
+      {/* ── MAIN SHELL ── */}
+      <div className="lb-shell">
+      <div className="lb-shell-inner" style={{ display:"flex", flexDirection:"column", minHeight:"100vh" }}>
 
         {/* ── HEADER ── */}
-        <div style={{
+        <div className="lb-header" style={{
           background:bg,
           paddingLeft:S.px, paddingRight:S.px,
-          paddingTop:`max(16px, calc(env(safe-area-inset-top,0px) + 16px))`,
+          paddingTop:isDesktop?16:`max(16px, calc(env(safe-area-inset-top,0px) + 16px))`,
           paddingBottom:14,
           position:"sticky", top:0, zIndex:10,
         }}>
           <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
             <div style={{ display:"flex", alignItems:"center", gap:12 }}>
-              {branding.logoType==="image"&&branding.logoImage
+              {!isDesktop&&(branding.logoType==="image"&&branding.logoImage
                 ?<img src={branding.logoImage} alt="logo" style={{ width:40, height:40, borderRadius:12, objectFit:"cover", border:"2px solid rgba(255,255,255,0.4)", flexShrink:0 }}/>
                 :<div style={{ width:40, height:40, borderRadius:12, background:"rgba(255,255,255,0.2)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:22, flexShrink:0 }}>{branding.logo}</div>
-              }
+              )}
               <div style={{ minWidth:0 }}>
-                <div style={{ fontWeight:900, fontSize:16, color:"#fff", letterSpacing:.1, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{branding.businessName}</div>
-                <div style={{ fontSize:11, color:"rgba(255,255,255,0.72)", marginTop:1 }}>{branding.tagline}</div>
+                <div style={{ fontWeight:900, fontSize:isDesktop?18:16, color:"#fff", letterSpacing:.1, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>
+                  {isDesktop ? NAV_ITEMS.find(n=>n.id===view)?.label || branding.businessName : branding.businessName}
+                </div>
+                {!isDesktop&&<div style={{ fontSize:11, color:"rgba(255,255,255,0.72)", marginTop:1 }}>{branding.tagline}</div>}
               </div>
             </div>
             <div style={{ display:"flex", gap:7, flexShrink:0 }}>
-              {[["⌨️",()=>setShowKB(true),"Quick Entry"],["💬",()=>setShowWA(true),"WhatsApp"],["⚙️",()=>setShowSt(true),"Settings"]].map(([icon,fn,title])=>(
-                <button key={title} onClick={fn} title={title}
+              {(isDesktop
+                ? [["📊","Export CSV",()=>{exportCSV(entries,currency,branding,"All Time");showToast("📊 CSV downloaded!","#1b5e20");}],
+                   ["🖨️","PDF Report",()=>{exportPDF(dateFilt,currency,branding,rLabel,entries);showToast("🖨️ Opening PDF…","#1a237e");}]]
+                : [["⌨️",()=>setShowKB(true),"Quick Entry"],["💬",()=>setShowWA(true),"WhatsApp"],["⚙️",()=>setShowSt(true),"Settings"]]
+              ).map(([icon,fnOrLabel,fn])=>(
+                <button key={icon} onClick={isDesktop?fnOrLabel:fn} title={isDesktop?fnOrLabel:""}
                   style={{ background:"rgba(255,255,255,0.18)", border:"none", borderRadius:10, color:"#fff",
-                    width:36, height:36, cursor:"pointer", fontSize:15, display:"flex", alignItems:"center", justifyContent:"center" }}>
-                  {icon}
+                    padding:isDesktop?"8px 14px":"0", width:isDesktop?"auto":36, height:36,
+                    cursor:"pointer", fontSize:isDesktop?13:15, fontWeight:isDesktop?700:400,
+                    display:"flex", alignItems:"center", justifyContent:"center", gap:isDesktop?6:0 }}>
+                  {icon}{isDesktop&&` ${fnOrLabel}`}
                 </button>
               ))}
+              {!isDesktop||true ? null : null}
             </div>
           </div>
         </div>
 
         {/* ══ HOME ══ */}
         {view==="home"&&(
-          <div style={{ flex:1, overflowY:"auto", paddingBottom:`calc(${S.navH}px + env(safe-area-inset-bottom,0px) + 8px)` }}>
-            {/* Balance card */}
+          <div className="lb-content" style={{ flex:1, overflowY:"auto", paddingBottom:isDesktop?40:`calc(${S.navH}px + env(safe-area-inset-bottom,0px) + 8px)` }}>
             <div style={{ paddingLeft:S.px, paddingRight:S.px, paddingTop:20, paddingBottom:6 }}>
-              <div style={{ background:bg, borderRadius:20, padding:"22px 22px 18px", color:"#fff", boxShadow:`0 8px 28px ${p}50` }}>
+
+              {/* Balance card */}
+              <div style={{ background:bg, borderRadius:20, padding:"22px 22px 18px", color:"#fff", boxShadow:`0 8px 28px ${p}50`, marginBottom:16 }}>
                 <div style={{ fontSize:11, opacity:.8, textTransform:"uppercase", letterSpacing:1.5, marginBottom:4 }}>Net Balance · All Time</div>
-                <div style={{ fontSize:34, fontWeight:900, letterSpacing:-1 }}>{fmtAmt(allInc-allExp,currency)}</div>
+                <div style={{ fontSize:isDesktop?40:34, fontWeight:900, letterSpacing:-1 }}>{fmtAmt(allInc-allExp,currency)}</div>
                 <div style={{ display:"flex", marginTop:18, background:"rgba(0,0,0,0.15)", borderRadius:12, overflow:"hidden" }}>
                   <div style={{ flex:1, padding:"11px 16px" }}>
                     <div style={{ fontSize:10, opacity:.7, marginBottom:2 }}>📥 INCOME</div>
@@ -1419,51 +1561,90 @@ function AppCore({ user, onLogout }) {
                     <div style={{ fontSize:10, opacity:.7, marginBottom:2 }}>📤 EXPENSE</div>
                     <div style={{ fontWeight:700, fontSize:14 }}>{fmtAmt(allExp,currency)}</div>
                   </div>
+                  {isDesktop&&<>
+                    <div style={{ width:1, background:"rgba(255,255,255,0.15)" }}/>
+                    <div style={{ flex:1, padding:"11px 16px" }}>
+                      <div style={{ fontSize:10, opacity:.7, marginBottom:2 }}>📈 MARGIN</div>
+                      <div style={{ fontWeight:700, fontSize:14 }}>{allInc>0?((( allInc-allExp)/allInc)*100).toFixed(1):0}%</div>
+                    </div>
+                    <div style={{ width:1, background:"rgba(255,255,255,0.15)" }}/>
+                    <div style={{ flex:1, padding:"11px 16px" }}>
+                      <div style={{ fontSize:10, opacity:.7, marginBottom:2 }}>🧾 ENTRIES</div>
+                      <div style={{ fontWeight:700, fontSize:14 }}>{entries.length}</div>
+                    </div>
+                  </>}
                 </div>
               </div>
-            </div>
 
-            {/* Quick Actions */}
-            <div style={{ paddingLeft:S.px, paddingRight:S.px, paddingTop:14, paddingBottom:0, display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
-              <button onClick={()=>{setForm({type:"income",amount:"",category:"",note:""});setView("add");}}
-                style={{ background:"#F0FBF4", border:"2px solid #25D366", borderRadius:16, padding:"16px 14px", cursor:"pointer", textAlign:"left" }}>
-                <div style={{ fontSize:24 }}>➕</div>
-                <div style={{ fontWeight:800, color:"#1B5E20", fontSize:14, marginTop:6 }}>Add Income</div>
-                <div style={{ fontSize:11, color:"#4CAF50", marginTop:2 }}>Sales, service, payment</div>
-              </button>
-              <button onClick={()=>{setForm({type:"expense",amount:"",category:"",note:""});setView("add");}}
-                style={{ background:"#FFF8F0", border:"2px solid #FF9800", borderRadius:16, padding:"16px 14px", cursor:"pointer", textAlign:"left" }}>
-                <div style={{ fontSize:24 }}>➖</div>
-                <div style={{ fontWeight:800, color:"#E65100", fontSize:14, marginTop:6 }}>Add Expense</div>
-                <div style={{ fontSize:11, color:"#FF9800", marginTop:2 }}>Cost, bill, purchase</div>
-              </button>
-            </div>
-
-            {/* Export row */}
-            <div style={{ paddingLeft:S.px, paddingRight:S.px, paddingTop:12, paddingBottom:0, display:"flex", gap:10 }}>
-              <button onClick={()=>{exportCSV(entries,currency,branding,"All Time");showToast("📊 CSV downloaded!","#1b5e20");}}
-                style={{ flex:1, padding:"10px", background:"#F0FBF0", border:"1.5px solid #C8E6C9", borderRadius:12, fontSize:12, fontWeight:700, cursor:"pointer", color:"#2E7D32" }}>
-                📊 Export CSV
-              </button>
-              <button onClick={()=>{exportPDF(entries,currency,branding,"All Time",entries);showToast("🖨️ Opening PDF…","#1a237e");}}
-                style={{ flex:1, padding:"10px", background:"#F3F0FF", border:"1.5px solid #C5CAE9", borderRadius:12, fontSize:12, fontWeight:700, cursor:"pointer", color:"#283593" }}>
-                🖨️ PDF Report
-              </button>
-            </div>
-
-            {/* Recent Transactions */}
-            <div style={{ paddingLeft:S.px, paddingRight:S.px, paddingTop:22, paddingBottom:8 }}>
-              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:12 }}>
-                <div style={{ fontWeight:900, fontSize:15, color:p }}>Recent Transactions</div>
-                <button onClick={()=>setView("history")} style={{ background:"none", border:"none", color:p, fontSize:13, cursor:"pointer", fontWeight:700 }}>View All →</button>
+              {/* Quick Actions + Exports in responsive grid */}
+              <div className="lb-cards-grid" style={{ marginBottom:16 }}>
+                <button onClick={()=>{setForm({type:"income",amount:"",category:"",note:""});setView("add");}}
+                  style={{ background:"#F0FBF4", border:"2px solid #25D366", borderRadius:16, padding:"16px 14px", cursor:"pointer", textAlign:"left" }}>
+                  <div style={{ fontSize:24 }}>➕</div>
+                  <div style={{ fontWeight:800, color:"#1B5E20", fontSize:14, marginTop:6 }}>Add Income</div>
+                  <div style={{ fontSize:11, color:"#4CAF50", marginTop:2 }}>Sales, service, payment</div>
+                </button>
+                <button onClick={()=>{setForm({type:"expense",amount:"",category:"",note:""});setView("add");}}
+                  style={{ background:"#FFF8F0", border:"2px solid #FF9800", borderRadius:16, padding:"16px 14px", cursor:"pointer", textAlign:"left" }}>
+                  <div style={{ fontSize:24 }}>➖</div>
+                  <div style={{ fontWeight:800, color:"#E65100", fontSize:14, marginTop:6 }}>Add Expense</div>
+                  <div style={{ fontSize:11, color:"#FF9800", marginTop:2 }}>Cost, bill, purchase</div>
+                </button>
+                {isDesktop&&<>
+                  <button onClick={()=>{exportCSV(entries,currency,branding,"All Time");showToast("📊 CSV downloaded!","#1b5e20");}}
+                    style={{ background:"#F0FBF0", border:"2px solid #C8E6C9", borderRadius:16, padding:"16px 14px", cursor:"pointer", textAlign:"left" }}>
+                    <div style={{ fontSize:24 }}>📊</div>
+                    <div style={{ fontWeight:800, color:"#2E7D32", fontSize:14, marginTop:6 }}>Export CSV</div>
+                    <div style={{ fontSize:11, color:"#66BB6A", marginTop:2 }}>Download spreadsheet</div>
+                  </button>
+                  <button onClick={()=>{exportPDF(dateFilt,currency,branding,rLabel,entries);showToast("🖨️ Opening PDF…","#1a237e");}}
+                    style={{ background:"#F3F0FF", border:"2px solid #C5CAE9", borderRadius:16, padding:"16px 14px", cursor:"pointer", textAlign:"left" }}>
+                    <div style={{ fontSize:24 }}>🖨️</div>
+                    <div style={{ fontWeight:800, color:"#283593", fontSize:14, marginTop:6 }}>PDF Report</div>
+                    <div style={{ fontSize:11, color:"#7986CB", marginTop:2 }}>Income statement</div>
+                  </button>
+                </>}
               </div>
-              {entries.slice(0,6).map(e=><TxRow key={e.id} entry={e} currency={currency} onDelete={handleDel} p={p}/>)}
-              {entries.length===0&&(
-                <div style={{ textAlign:"center", padding:"36px 0", color:"#ccc", fontSize:14, lineHeight:2 }}>
-                  <div style={{ fontSize:40, marginBottom:8 }}>📭</div>
-                  No entries yet. Add your first transaction!
+
+              {/* Export row — mobile/tablet only */}
+              {!isDesktop&&<div style={{ display:"flex", gap:10, marginBottom:16 }}>
+                <button onClick={()=>{exportCSV(entries,currency,branding,"All Time");showToast("📊 CSV downloaded!","#1b5e20");}}
+                  style={{ flex:1, padding:"10px", background:"#F0FBF0", border:"1.5px solid #C8E6C9", borderRadius:12, fontSize:12, fontWeight:700, cursor:"pointer", color:"#2E7D32" }}>
+                  📊 Export CSV
+                </button>
+                <button onClick={()=>{exportPDF(entries,currency,branding,"All Time",entries);showToast("🖨️ Opening PDF…","#1a237e");}}
+                  style={{ flex:1, padding:"10px", background:"#F3F0FF", border:"1.5px solid #C5CAE9", borderRadius:12, fontSize:12, fontWeight:700, cursor:"pointer", color:"#283593" }}>
+                  🖨️ PDF Report
+                </button>
+              </div>}
+
+              {/* Recent Transactions */}
+              <div className="lb-page-grid">
+                <div>
+                  <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:12 }}>
+                    <div style={{ fontWeight:900, fontSize:15, color:p }}>Recent Transactions</div>
+                    <button onClick={()=>setView("history")} style={{ background:"none", border:"none", color:p, fontSize:13, cursor:"pointer", fontWeight:700 }}>View All →</button>
+                  </div>
+                  {entries.slice(0,isDesktop?8:6).map(e=><TxRow key={e.id} entry={e} currency={currency} onDelete={handleDel} p={p}/>)}
+                  {entries.length===0&&(
+                    <div style={{ textAlign:"center", padding:"36px 0", color:"#ccc", fontSize:14, lineHeight:2 }}>
+                      <div style={{ fontSize:40, marginBottom:8 }}>📭</div>
+                      No entries yet. Add your first transaction!
+                    </div>
+                  )}
                 </div>
-              )}
+                {isDesktop&&<div>
+                  <div style={{ fontWeight:900, fontSize:15, color:p, marginBottom:12 }}>Income vs Expenses</div>
+                  <div style={{ background:"#fff", borderRadius:16, padding:18, marginBottom:16, boxShadow:"0 1px 4px rgba(0,0,0,0.06)" }}>
+                    <CatChart entries={entries} currency={currency} type="income" color="#25D366"/>
+                  </div>
+                  <div style={{ fontWeight:900, fontSize:15, color:p, marginBottom:12 }}>Top Expense Categories</div>
+                  <div style={{ background:"#fff", borderRadius:16, padding:18, boxShadow:"0 1px 4px rgba(0,0,0,0.06)" }}>
+                    <CatChart entries={entries} currency={currency} type="expense" color="#FF9800"/>
+                  </div>
+                </div>}
+              </div>
+
             </div>
           </div>
         )}
@@ -1552,7 +1733,7 @@ function AppCore({ user, onLogout }) {
               )}
             </div>
             {/* Scrollable list */}
-            <div style={{ flex:1, overflowY:"auto", paddingLeft:S.px, paddingRight:S.px, paddingTop:14, paddingBottom:`calc(${S.navH}px + env(safe-area-inset-bottom,0px) + 10px)` }}>
+            <div style={{ flex:1, overflowY:"auto", paddingLeft:S.px, paddingRight:S.px, paddingTop:14, paddingBottom:isDesktop?40:`calc(${S.navH}px + env(safe-area-inset-bottom,0px) + 10px)` }}>
               {Object.keys(grouped).sort((a,b)=>b.localeCompare(a)).map(day=>(
                 <div key={day}>
                   <div style={{ fontSize:11, color:"#bbb", fontWeight:700, textTransform:"uppercase", letterSpacing:.5, margin:"10px 0 7px" }}>
@@ -1627,9 +1808,9 @@ function AppCore({ user, onLogout }) {
           </div>
         )}
 
-        {/* ── BOTTOM NAV ── */}
-        <div style={{
-          background:"#fff", borderTop:"1px solid #ebebeb", display:"flex",
+        {/* ── BOTTOM NAV (mobile/tablet only) ── */}
+        <div className="lb-bottom-nav" style={{
+          background:"#fff", borderTop:"1px solid #ebebeb",
           position:"sticky", bottom:0, zIndex:10,
           paddingBottom:"env(safe-area-inset-bottom, 0px)",
         }}>
@@ -1690,15 +1871,17 @@ function AppCore({ user, onLogout }) {
 
         {/* Toast */}
         {toast&&(
-          <div style={{ position:"fixed", bottom:`calc(${S.navH + 12}px + env(safe-area-inset-bottom,0px))`,
+          <div style={{ position:"fixed", bottom:isDesktop?24:`calc(${S.navH + 12}px + env(safe-area-inset-bottom,0px))`,
             left:"50%", transform:"translateX(-50%)", background:toast.color, color:"#fff",
             padding:"11px 24px", borderRadius:24, fontWeight:700, fontSize:13,
             boxShadow:"0 4px 20px rgba(0,0,0,0.2)", zIndex:300, whiteSpace:"nowrap", pointerEvents:"none" }}>
             {toast.msg}
           </div>
         )}
-      </div>
-    </div>
+
+      </div>{/* lb-shell-inner */}
+      </div>{/* lb-shell */}
+    </div>   /* lb-root */
   );
 }
 
