@@ -181,40 +181,358 @@ const exportCSV = (entries, currency, branding, rangeLabel) => {
   setTimeout(()=>URL.revokeObjectURL(url),1000);
 };
 
-const exportPDF = (entries, currency, branding, rangeLabel) => {
-  const inc  = entries.filter(e=>e.type==="income").reduce((s,e)=>s+e.amount,0);
-  const exp  = entries.filter(e=>e.type==="expense").reduce((s,e)=>s+e.amount,0);
-  const bal  = inc - exp;
-  const hBg  = getBg(branding);
-  const rows = entries.map(e=>`<tr><td>${fmtDate(e.date)}</td><td><span class="${e.type}">${e.type}</span></td><td>${e.category}</td><td class="amt ${e.type}">${e.type==="income"?"+":"-"}${fmtAmt(e.amount,currency)}</td><td class="note">${e.note||"—"}</td></tr>`).join("");
-  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${branding.businessName} Report</title><style>
-*{box-sizing:border-box;margin:0;padding:0}body{font-family:Georgia,serif;background:#f9f9f9;color:#222;padding:32px}
-.hdr{background:${hBg};color:#fff;padding:28px 32px;border-radius:16px;margin-bottom:24px;-webkit-print-color-adjust:exact;print-color-adjust:exact}
-.hdr h1{font-size:24px;font-weight:900}.hdr p{opacity:.8;font-size:14px;margin-top:4px}.hdr .sub{font-size:12px;opacity:.65;margin-top:6px}
-.hdr .badge{display:inline-block;background:rgba(255,255,255,.2);padding:3px 10px;border-radius:8px;font-size:13px;font-weight:700;margin-top:6px}
-.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:24px}
-.card{background:#fff;border-radius:12px;padding:18px;border-top:4px solid;box-shadow:0 2px 8px rgba(0,0,0,.06)}
-.card.inc{border-color:#25D366}.card.exp{border-color:#FF9800}.card.bal{border-color:${branding.primaryColor}}
-.card label{font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#888}.card .v{font-size:22px;font-weight:900;margin-top:6px}
-.card.inc .v{color:#1b5e20}.card.exp .v{color:#e65100}.card.bal .v{color:${bal>=0?branding.primaryColor:"#c62828"}}
-table{width:100%;border-collapse:collapse;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.06)}
-th{text-align:left;padding:12px 14px;background:#f5f5f5;font-size:12px;color:#555;font-weight:700;text-transform:uppercase}
-td{padding:11px 14px;font-size:13px;border-bottom:1px solid #f0f0f0}tr:last-child td{border-bottom:none}
-span.income{background:#e8f5e9;color:#1b5e20;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:700}
-span.expense{background:#fff3e0;color:#e65100;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:700}
-.amt.income{color:#1b5e20;font-weight:700}.amt.expense{color:#e65100;font-weight:700}.note{color:#888;font-size:12px}
-.footer{text-align:center;color:#bbb;font-size:11px;margin-top:24px}
-@media print{body{padding:16px}}
-</style></head><body>
-<div class="hdr"><h1>${branding.logoType==="emoji"?branding.logo+" ":""}${branding.businessName}</h1><p>${branding.tagline}</p>${rangeLabel&&rangeLabel!=="All Time"?`<div class="badge">📅 ${rangeLabel}</div>`:""}<div class="sub">Generated: ${new Date().toLocaleDateString("en-NG",{dateStyle:"full"})}</div></div>
-<div class="cards"><div class="card inc"><label>Total Income</label><div class="v">${fmtAmt(inc,currency)}</div></div><div class="card exp"><label>Total Expenses</label><div class="v">${fmtAmt(exp,currency)}</div></div><div class="card bal"><label>Net Balance</label><div class="v">${fmtAmt(bal,currency)}</div></div></div>
-<table><thead><tr><th>Date</th><th>Type</th><th>Category</th><th>Amount</th><th>Note</th></tr></thead><tbody>${rows}</tbody></table>
-<div class="footer">LedgerBook Pro · ${entries.length} transactions${rangeLabel?" · "+rangeLabel:""}</div>
-<script>window.onload=()=>window.print()<\/script></body></html>`;
+const exportPDF = (entries, currency, branding, rangeLabel, allEntries) => {
+  // ── Core figures ─────────────────────────────────────────────
+  const inc = entries.filter(e=>e.type==="income").reduce((s,e)=>s+e.amount,0);
+  const exp = entries.filter(e=>e.type==="expense").reduce((s,e)=>s+e.amount,0);
+  const bal = inc - exp;
+  const margin = inc > 0 ? ((bal/inc)*100).toFixed(1) : "0.0";
+  const hBg = getBg(branding);
+  const pc  = branding.primaryColor;
+  const now = new Date();
+  const dateStr = now.toLocaleDateString("en-NG",{dateStyle:"full"});
+
+  // ── Revenue breakdown by category (Note 2) ───────────────────
+  const incByCat = {};
+  entries.filter(e=>e.type==="income").forEach(e=>{ incByCat[e.category]=(incByCat[e.category]||0)+e.amount; });
+  const incCatsSorted = Object.entries(incByCat).sort((a,b)=>b[1]-a[1]);
+  const topIncCat = incCatsSorted[0];
+
+  // ── Expense breakdown by category (Note 3) ───────────────────
+  const expByCat = {};
+  entries.filter(e=>e.type==="expense").forEach(e=>{ expByCat[e.category]=(expByCat[e.category]||0)+e.amount; });
+  const expCatsSorted = Object.entries(expByCat).sort((a,b)=>b[1]-a[1]);
+  const topExpCat = expCatsSorted[0];
+
+  // Separate cost of sales vs operating expenses (inventory = COGS)
+  const cogsCats = ["Inventory","Stock","Cost of Sales","Purchases","Raw Materials","COGS"];
+  const cogsExp  = entries.filter(e=>e.type==="expense" && cogsCats.some(c=>e.category.toLowerCase().includes(c.toLowerCase()))).reduce((s,e)=>s+e.amount,0);
+  const opExp    = exp - cogsExp;
+  const grossP   = inc - cogsExp;
+
+  // ── Top 10 transactions (Note 4) ─────────────────────────────
+  const top10 = [...entries].sort((a,b)=>b.amount-a.amount).slice(0,10);
+
+  // ── Period comparison (Note 5) ───────────────────────────────
+  // Compare current filtered period vs same-length prior period
+  const sortedDates = entries.map(e=>e.date).sort();
+  const periodStart = sortedDates[0] ? new Date(sortedDates[0]) : new Date(now.getFullYear(), now.getMonth(), 1);
+  const periodEnd   = now;
+  const periodDays  = Math.max(1, Math.round((periodEnd - periodStart) / 864e5));
+  const priorEnd    = new Date(periodStart); priorEnd.setDate(priorEnd.getDate()-1);
+  const priorStart  = new Date(priorEnd);    priorStart.setDate(priorStart.getDate() - periodDays);
+  const priorISO    = { from: priorStart.toISOString().slice(0,10), to: priorEnd.toISOString().slice(0,10) };
+  const priorEntries = (allEntries||entries).filter(e=>{
+    const d = e.date.slice(0,10);
+    return d >= priorISO.from && d <= priorISO.to;
+  });
+  const priorInc = priorEntries.filter(e=>e.type==="income").reduce((s,e)=>s+e.amount,0);
+  const priorExp = priorEntries.filter(e=>e.type==="expense").reduce((s,e)=>s+e.amount,0);
+  const priorBal = priorInc - priorExp;
+  const incChg   = priorInc>0 ? (((inc-priorInc)/priorInc)*100).toFixed(1) : null;
+  const expChg   = priorExp>0 ? (((exp-priorExp)/priorExp)*100).toFixed(1) : null;
+  const balChg   = priorBal!==0 ? (((bal-priorBal)/Math.abs(priorBal))*100).toFixed(1) : null;
+
+  // ── Auto-generated summary notes ─────────────────────────────
+  const revenueNote = incCatsSorted.length === 0
+    ? "No revenue was recorded in this period."
+    : `Revenue for the period totalled ${fmtAmt(inc,currency)}. ${topIncCat ? `The largest contributor was <strong>${topIncCat[0]}</strong> at ${fmtAmt(topIncCat[1],currency)} (${((topIncCat[1]/inc)*100).toFixed(0)}% of total revenue).` : ""} ${incCatsSorted.length > 1 ? `Revenue was generated across ${incCatsSorted.length} categories.` : ""}`;
+
+  const expenseNote = expCatsSorted.length === 0
+    ? "No expenses were recorded in this period."
+    : `Total operating costs amounted to ${fmtAmt(exp,currency)}. ${topExpCat ? `The highest cost category was <strong>${topExpCat[0]}</strong> at ${fmtAmt(topExpCat[1],currency)} (${((topExpCat[1]/exp)*100).toFixed(0)}% of total expenses).` : ""} ${cogsExp > 0 ? `Cost of sales accounted for ${fmtAmt(cogsExp,currency)}, yielding a gross profit of ${fmtAmt(grossP,currency)}.` : ""}`;
+
+  const compNote = priorInc === 0 && priorExp === 0
+    ? "No prior period data is available for comparison."
+    : `Compared to the prior period, revenue ${incChg !== null ? (Number(incChg)>=0 ? `<span class="up">increased by ${incChg}%</span>` : `<span class="dn">decreased by ${Math.abs(incChg)}%</span>`) : "changed"} and expenses ${expChg !== null ? (Number(expChg)>=0 ? `<span class="dn">increased by ${expChg}%</span>` : `<span class="up">decreased by ${Math.abs(expChg)}%</span>`) : "changed"}. Net profit ${balChg !== null ? (Number(balChg)>=0 ? `<span class="up">improved by ${balChg}%</span>` : `<span class="dn">declined by ${Math.abs(balChg)}%</span>`) : "changed"}.`;
+
+  // ── HTML helpers ──────────────────────────────────────────────
+  const f  = (n) => fmtAmt(n, currency);
+  const pct= (n,t) => t>0 ? `${((n/t)*100).toFixed(0)}%` : "—";
+  const chgBadge = (curr, prev) => {
+    if (!prev || prev===0) return "";
+    const d = (((curr-prev)/Math.abs(prev))*100).toFixed(1);
+    return Number(d)>=0
+      ? `<span style="color:#1b5e20;font-size:11px;font-weight:700;margin-left:8px">▲ ${d}%</span>`
+      : `<span style="color:#c62828;font-size:11px;font-weight:700;margin-left:8px">▼ ${Math.abs(d)}%</span>`;
+  };
+
+  const noteRows = (items, total) => items.map(([cat,amt])=>`
+    <tr>
+      <td style="padding:10px 0;border-bottom:1px solid #f5f5f5;color:#333">${cat}</td>
+      <td style="padding:10px 0;border-bottom:1px solid #f5f5f5;text-align:right;color:#555;font-size:12px">${pct(amt,total)}</td>
+      <td style="padding:10px 0;border-bottom:1px solid #f5f5f5;text-align:right;font-weight:700;color:#222">${f(amt)}</td>
+    </tr>`).join("");
+
+  const top10Rows = top10.map((e,i)=>`
+    <tr>
+      <td style="padding:9px 0;border-bottom:1px solid #f5f5f5;color:#888;font-size:12px">${i+1}</td>
+      <td style="padding:9px 0;border-bottom:1px solid #f5f5f5;color:#333;font-size:13px">${fmtDate(e.date)}</td>
+      <td style="padding:9px 0;border-bottom:1px solid #f5f5f5"><span style="background:${e.type==="income"?"#e8f5e9":"#fff3e0"};color:${e.type==="income"?"#1b5e20":"#e65100"};padding:2px 8px;border-radius:8px;font-size:11px;font-weight:700">${e.type}</span></td>
+      <td style="padding:9px 0;border-bottom:1px solid #f5f5f5;color:#444;font-size:13px">${e.category}</td>
+      <td style="padding:9px 0;border-bottom:1px solid #f5f5f5;color:#888;font-size:12px;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${e.note||"—"}</td>
+      <td style="padding:9px 0;border-bottom:1px solid #f5f5f5;text-align:right;font-weight:800;color:${e.type==="income"?"#1b5e20":"#e65100"}">${e.type==="income"?"+":"-"}${f(e.amount)}</td>
+    </tr>`).join("");
+
+  const html = `<!DOCTYPE html><html lang="en"><head>
+<meta charset="UTF-8">
+<title>${branding.businessName} — Income Statement</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:Georgia,'Times New Roman',serif;background:#fff;color:#1a1a1a;font-size:13px;line-height:1.6}
+  @page{margin:18mm 16mm}
+  @media print{
+    body{padding:0}
+    .no-break{page-break-inside:avoid}
+    .page-break{page-break-before:always}
+  }
+  /* Cover header */
+  .cover{background:${hBg};color:#fff;padding:36px 40px 28px;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .cover-logo{font-size:38px;margin-bottom:10px}
+  .cover-name{font-size:28px;font-weight:900;letter-spacing:-.5px}
+  .cover-tag{font-size:14px;opacity:.75;margin-top:4px}
+  .cover-meta{margin-top:18px;padding-top:16px;border-top:1px solid rgba(255,255,255,.25);display:flex;gap:32px;flex-wrap:wrap}
+  .cover-meta-item label{font-size:10px;text-transform:uppercase;letter-spacing:1px;opacity:.6;display:block}
+  .cover-meta-item span{font-size:14px;font-weight:700}
+
+  /* Summary KPI bar */
+  .kpi-bar{display:grid;grid-template-columns:repeat(3,1fr);gap:0;border:1px solid #e8e8e8;border-radius:0 0 12px 12px;overflow:hidden;margin-bottom:32px}
+  .kpi{padding:18px 20px;border-right:1px solid #e8e8e8;background:#fafafa}
+  .kpi:last-child{border-right:none}
+  .kpi label{font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#888;font-family:'Segoe UI',sans-serif}
+  .kpi .val{font-size:20px;font-weight:900;margin-top:5px;font-family:'Segoe UI',sans-serif}
+  .kpi .sub{font-size:11px;color:#aaa;margin-top:2px;font-family:'Segoe UI',sans-serif}
+
+  /* Section titles */
+  .section-title{font-size:11px;text-transform:uppercase;letter-spacing:2px;color:${pc};font-weight:700;font-family:'Segoe UI',sans-serif;margin:28px 40px 0;padding-bottom:8px;border-bottom:2px solid ${pc}}
+  .section-body{margin:0 40px 8px;padding:0}
+
+  /* Main statement table */
+  .stmt{width:100%;border-collapse:collapse;font-family:Georgia,serif}
+  .stmt td{padding:9px 0;vertical-align:top}
+  .stmt .label{color:#333;padding-left:0}
+  .stmt .label.indent{padding-left:24px;color:#555;font-size:12.5px}
+  .stmt .note-ref{color:#aaa;font-size:11px;padding-left:8px}
+  .stmt .amt{text-align:right;font-weight:600;min-width:120px}
+  .stmt .subtotal td{border-top:1px solid #ccc;padding-top:10px;font-weight:700}
+  .stmt .total td{border-top:2px solid #222;border-bottom:2px solid #222;padding:10px 0;font-weight:900;font-size:14px}
+  .stmt .total .amt{color:${bal>=0?pc:"#c62828"}}
+  .stmt .spacer td{padding:5px 0}
+  .stmt .section-head td{padding-top:16px;padding-bottom:4px;font-weight:900;text-transform:uppercase;font-size:11px;letter-spacing:.5px;color:#888;font-family:'Segoe UI',sans-serif}
+
+  /* Note blocks */
+  .note-block{background:#fafafa;border-left:3px solid ${pc};padding:12px 16px;border-radius:0 8px 8px 0;margin:12px 0;font-size:12.5px;color:#444;line-height:1.65;font-family:'Segoe UI',sans-serif}
+  .note-block .up{color:#1b5e20;font-weight:700}
+  .note-block .dn{color:#c62828;font-weight:700}
+
+  /* Comparison table */
+  .comp-table{width:100%;border-collapse:collapse;font-family:'Segoe UI',sans-serif;font-size:13px}
+  .comp-table th{text-align:left;padding:10px 0;font-size:11px;text-transform:uppercase;letter-spacing:.8px;color:#888;border-bottom:1px solid #ddd;font-weight:700}
+  .comp-table th:not(:first-child){text-align:right}
+  .comp-table td{padding:10px 0;border-bottom:1px solid #f5f5f5;color:#333}
+  .comp-table td:not(:first-child){text-align:right;font-weight:600}
+  .comp-table .total-row td{border-top:2px solid #222;border-bottom:2px solid #222;font-weight:900;padding:11px 0}
+
+  /* Footer */
+  .doc-footer{margin:40px 40px 20px;padding-top:16px;border-top:1px solid #eee;display:flex;justify-content:space-between;align-items:center;font-family:'Segoe UI',sans-serif;font-size:11px;color:#bbb}
+
+  /* Page padding for screen */
+  @media screen{body{max-width:860px;margin:0 auto;padding-bottom:40px}}
+</style>
+</head><body>
+
+<!-- ═══ COVER HEADER ═══════════════════════════════════════════ -->
+<div class="cover">
+  ${branding.logoType==="emoji"?`<div class="cover-logo">${branding.logo}</div>`:""}
+  <div class="cover-name">${branding.businessName}</div>
+  <div class="cover-tag">${branding.tagline}</div>
+  <div class="cover-meta">
+    <div class="cover-meta-item"><label>Report Type</label><span>Statement of Comprehensive Income</span></div>
+    <div class="cover-meta-item"><label>Period</label><span>${rangeLabel||"All Time"}</span></div>
+    <div class="cover-meta-item"><label>Prepared</label><span>${dateStr}</span></div>
+    <div class="cover-meta-item"><label>Currency</label><span>${currency.code} — ${currency.name}</span></div>
+  </div>
+</div>
+
+<!-- ═══ KPI BAR ════════════════════════════════════════════════ -->
+<div class="kpi-bar">
+  <div class="kpi">
+    <label>Total Revenue</label>
+    <div class="val" style="color:#1b5e20">${f(inc)}</div>
+    <div class="sub">${entries.filter(e=>e.type==="income").length} income entries</div>
+  </div>
+  <div class="kpi">
+    <label>Total Expenses</label>
+    <div class="val" style="color:#e65100">${f(exp)}</div>
+    <div class="sub">${entries.filter(e=>e.type==="expense").length} expense entries</div>
+  </div>
+  <div class="kpi">
+    <label>Net Profit / (Loss)</label>
+    <div class="val" style="color:${bal>=0?pc:"#c62828"}">${bal<0?"(":""}${f(Math.abs(bal))}${bal<0?")":""}</div>
+    <div class="sub">Profit margin: ${margin}%</div>
+  </div>
+</div>
+
+<!-- ═══ STATEMENT OF COMPREHENSIVE INCOME ══════════════════════ -->
+<div class="section-title">Statement of Comprehensive Income</div>
+<div class="section-body">
+  <table class="stmt">
+    <colgroup><col style="width:55%"><col style="width:10%"><col style="width:35%"></colgroup>
+    <tbody>
+      <tr class="section-head"><td>Description</td><td class="note-ref" style="text-align:center">Note</td><td class="amt">Amount (${currency.code})</td></tr>
+
+      <!-- Revenue -->
+      <tr class="spacer"><td colspan="3"></td></tr>
+      <tr><td class="label"><strong>Revenue</strong></td><td class="note-ref" style="text-align:center">2</td><td class="amt" style="color:#1b5e20;font-weight:700">${f(inc)}</td></tr>
+      ${incCatsSorted.map(([cat,amt])=>`<tr><td class="label indent">${cat}</td><td></td><td class="amt" style="color:#555;font-size:12px;font-weight:400">${f(amt)}</td></tr>`).join("")}
+
+      <!-- Cost of Sales -->
+      ${cogsExp > 0 ? `
+      <tr class="spacer"><td colspan="3"></td></tr>
+      <tr><td class="label">Cost of Sales</td><td></td><td class="amt" style="color:#e65100">(${f(cogsExp)})</td></tr>
+      <tr class="subtotal"><td class="label"><strong>Gross Profit</strong></td><td></td><td class="amt" style="color:${grossP>=0?pc:"#c62828"};font-weight:900">${grossP<0?"(":""}${f(Math.abs(grossP))}${grossP<0?")":""}</td></tr>
+      ` : `
+      <tr class="spacer"><td colspan="3"></td></tr>
+      <tr class="subtotal"><td class="label"><strong>Gross Profit</strong></td><td></td><td class="amt" style="color:${inc>=0?pc:"#c62828"};font-weight:900">${f(inc)}</td></tr>
+      `}
+
+      <!-- Operating Expenses -->
+      <tr class="spacer"><td colspan="3"></td></tr>
+      <tr><td class="label"><strong>Operating Expenses</strong></td><td class="note-ref" style="text-align:center">3</td><td class="amt" style="color:#e65100;font-weight:700">(${f(cogsExp>0?opExp:exp)})</td></tr>
+      ${(cogsExp>0 ? expCatsSorted.filter(([cat])=>!cogsCats.some(c=>cat.toLowerCase().includes(c.toLowerCase()))) : expCatsSorted)
+        .map(([cat,amt])=>`<tr><td class="label indent">${cat}</td><td></td><td class="amt" style="color:#555;font-size:12px;font-weight:400">(${f(amt)})</td></tr>`).join("")}
+
+      <!-- Operating Profit -->
+      <tr class="spacer"><td colspan="3"></td></tr>
+      <tr class="subtotal"><td class="label"><strong>Operating Profit</strong></td><td></td><td class="amt" style="color:${bal>=0?pc:"#c62828"}">${bal<0?"(":""}${f(Math.abs(bal))}${bal<0?")":""}</td></tr>
+
+      <!-- Finance items placeholder -->
+      <tr class="spacer"><td colspan="3"></td></tr>
+      <tr><td class="label">Finance Income / (Costs)</td><td></td><td class="amt" style="color:#888">—</td></tr>
+
+      <!-- Profit for period -->
+      <tr class="spacer"><td colspan="3"></td></tr>
+      <tr class="total">
+        <td class="label"><strong>Profit / (Loss) for the Period</strong></td>
+        <td></td>
+        <td class="amt">${bal<0?"(":""}${f(Math.abs(bal))}${bal<0?")":""}</td>
+      </tr>
+
+      <!-- Other Comprehensive Income -->
+      <tr class="spacer"><td colspan="3"></td></tr>
+      <tr><td class="label" style="color:#888;font-style:italic">Other Comprehensive Income</td><td></td><td class="amt" style="color:#aaa">—</td></tr>
+      <tr class="spacer"><td colspan="3"></td></tr>
+      <tr class="total">
+        <td class="label"><strong>Total Comprehensive Income for the Period</strong></td>
+        <td></td>
+        <td class="amt">${bal<0?"(":""}${f(Math.abs(bal))}${bal<0?")":""}</td>
+      </tr>
+    </tbody>
+  </table>
+  <p style="font-size:11px;color:#aaa;margin-top:12px;font-family:'Segoe UI',sans-serif;font-style:italic">
+    Figures in ${currency.name} (${currency.code}). Prepared on a cash basis. Numbers in parentheses ( ) denote negative values.
+  </p>
+</div>
+
+<!-- ═══ NOTES TO THE FINANCIAL STATEMENTS ══════════════════════ -->
+<div class="section-title" style="margin-top:36px">Notes to the Financial Statements</div>
+<div class="section-body" style="padding-top:8px">
+
+  <!-- NOTE 2 — REVENUE -->
+  <div class="no-break" style="margin-bottom:24px">
+    <p style="font-weight:900;font-size:13px;margin-bottom:6px;font-family:'Segoe UI',sans-serif">Note 2 — Revenue</p>
+    <div class="note-block">${revenueNote}</div>
+    ${incCatsSorted.length > 0 ? `
+    <table style="width:100%;border-collapse:collapse;font-family:'Segoe UI',sans-serif">
+      <thead><tr>
+        <th style="text-align:left;padding:9px 0;font-size:11px;text-transform:uppercase;letter-spacing:.8px;color:#888;border-bottom:1px solid #ddd;font-weight:700">Category</th>
+        <th style="text-align:right;padding:9px 0;font-size:11px;text-transform:uppercase;letter-spacing:.8px;color:#888;border-bottom:1px solid #ddd;font-weight:700">% of Total</th>
+        <th style="text-align:right;padding:9px 0;font-size:11px;text-transform:uppercase;letter-spacing:.8px;color:#888;border-bottom:1px solid #ddd;font-weight:700">Amount</th>
+      </tr></thead>
+      <tbody>
+        ${noteRows(incCatsSorted, inc)}
+        <tr style="border-top:2px solid #222"><td style="padding:10px 0;font-weight:900">Total Revenue</td><td style="text-align:right;padding:10px 0;font-weight:700">100%</td><td style="text-align:right;padding:10px 0;font-weight:900;color:#1b5e20">${f(inc)}</td></tr>
+      </tbody>
+    </table>` : ""}
+  </div>
+
+  <!-- NOTE 3 — OPERATING EXPENSES -->
+  <div class="no-break" style="margin-bottom:24px">
+    <p style="font-weight:900;font-size:13px;margin-bottom:6px;font-family:'Segoe UI',sans-serif">Note 3 — Operating Expenses</p>
+    <div class="note-block">${expenseNote}</div>
+    ${expCatsSorted.length > 0 ? `
+    <table style="width:100%;border-collapse:collapse;font-family:'Segoe UI',sans-serif">
+      <thead><tr>
+        <th style="text-align:left;padding:9px 0;font-size:11px;text-transform:uppercase;letter-spacing:.8px;color:#888;border-bottom:1px solid #ddd;font-weight:700">Category</th>
+        <th style="text-align:right;padding:9px 0;font-size:11px;text-transform:uppercase;letter-spacing:.8px;color:#888;border-bottom:1px solid #ddd;font-weight:700">% of Total</th>
+        <th style="text-align:right;padding:9px 0;font-size:11px;text-transform:uppercase;letter-spacing:.8px;color:#888;border-bottom:1px solid #ddd;font-weight:700">Amount</th>
+      </tr></thead>
+      <tbody>
+        ${noteRows(expCatsSorted, exp)}
+        <tr style="border-top:2px solid #222"><td style="padding:10px 0;font-weight:900">Total Expenses</td><td style="text-align:right;padding:10px 0;font-weight:700">100%</td><td style="text-align:right;padding:10px 0;font-weight:900;color:#e65100">${f(exp)}</td></tr>
+      </tbody>
+    </table>` : ""}
+  </div>
+
+  <!-- NOTE 4 — TOP TRANSACTIONS -->
+  <div class="no-break page-break" style="margin-bottom:24px">
+    <p style="font-weight:900;font-size:13px;margin-bottom:6px;font-family:'Segoe UI',sans-serif">Note 4 — Significant Transactions</p>
+    <div class="note-block">The table below lists the top ${top10.length} transactions by value during the period, providing detail on the most material items affecting the financial position of the business.</div>
+    ${top10.length > 0 ? `
+    <table style="width:100%;border-collapse:collapse;font-family:'Segoe UI',sans-serif">
+      <thead><tr>
+        <th style="text-align:left;padding:9px 0;font-size:11px;text-transform:uppercase;letter-spacing:.8px;color:#888;border-bottom:1px solid #ddd;font-weight:700">#</th>
+        <th style="text-align:left;padding:9px 0;font-size:11px;text-transform:uppercase;letter-spacing:.8px;color:#888;border-bottom:1px solid #ddd;font-weight:700">Date</th>
+        <th style="text-align:left;padding:9px 0;font-size:11px;text-transform:uppercase;letter-spacing:.8px;color:#888;border-bottom:1px solid #ddd;font-weight:700">Type</th>
+        <th style="text-align:left;padding:9px 0;font-size:11px;text-transform:uppercase;letter-spacing:.8px;color:#888;border-bottom:1px solid #ddd;font-weight:700">Category</th>
+        <th style="text-align:left;padding:9px 0;font-size:11px;text-transform:uppercase;letter-spacing:.8px;color:#888;border-bottom:1px solid #ddd;font-weight:700">Note</th>
+        <th style="text-align:right;padding:9px 0;font-size:11px;text-transform:uppercase;letter-spacing:.8px;color:#888;border-bottom:1px solid #ddd;font-weight:700">Amount</th>
+      </tr></thead>
+      <tbody>${top10Rows}</tbody>
+    </table>` : `<p style="color:#aaa;font-style:italic;font-size:13px">No transactions in this period.</p>`}
+  </div>
+
+  <!-- NOTE 5 — PERIOD COMPARISON -->
+  <div class="no-break" style="margin-bottom:24px">
+    <p style="font-weight:900;font-size:13px;margin-bottom:6px;font-family:'Segoe UI',sans-serif">Note 5 — Comparative Period Analysis</p>
+    <div class="note-block">${compNote}</div>
+    <table class="comp-table">
+      <thead><tr>
+        <th>Line Item</th>
+        <th>Current Period</th>
+        <th>Prior Period</th>
+        <th>Change</th>
+      </tr></thead>
+      <tbody>
+        <tr><td>Revenue</td><td>${f(inc)}</td><td>${f(priorInc)}</td><td>${chgBadge(inc,priorInc)||"—"}</td></tr>
+        <tr><td>Total Expenses</td><td>${f(exp)}</td><td>${f(priorExp)}</td><td>${chgBadge(exp,priorExp)||"—"}</td></tr>
+        <tr class="total-row"><td><strong>Net Profit / (Loss)</strong></td><td style="color:${bal>=0?pc:"#c62828"}">${bal<0?"(":""}${f(Math.abs(bal))}${bal<0?")":""}</td><td style="color:${priorBal>=0?pc:"#c62828"}">${priorBal<0?"(":""}${f(Math.abs(priorBal))}${priorBal<0?")":""}</td><td>${chgBadge(bal,priorBal)||"—"}</td></tr>
+        <tr><td>Profit Margin</td><td>${margin}%</td><td>${priorInc>0?((priorBal/priorInc)*100).toFixed(1):"0.0"}%</td><td>—</td></tr>
+        <tr><td>No. of Transactions</td><td>${entries.length}</td><td>${priorEntries.length}</td><td>—</td></tr>
+      </tbody>
+    </table>
+    <p style="font-size:11px;color:#aaa;margin-top:10px;font-family:'Segoe UI',sans-serif;font-style:italic">Prior period covers an equivalent time window immediately preceding the current period.</p>
+  </div>
+
+</div><!-- end section-body -->
+
+<!-- ═══ FOOTER ═══════════════════════════════════════════════════ -->
+<div class="doc-footer">
+  <span>${branding.businessName} · Prepared by LedgerBook Pro</span>
+  <span>Generated: ${dateStr}</span>
+</div>
+
+<script>window.onload = () => window.print()<\/script>
+</body></html>`;
+
   const url = URL.createObjectURL(new Blob([html],{type:"text/html;charset=utf-8;"}));
   const w = window.open(url,"_blank");
-  if (!w) { const a=document.createElement("a"); a.href=url; a.download=`${branding.businessName.replace(/\s+/g,"_")}_report.html`; document.body.appendChild(a); a.click(); document.body.removeChild(a); }
-  setTimeout(()=>URL.revokeObjectURL(url),5000);
+  if (!w) {
+    const a = document.createElement("a");
+    a.href=url; a.download=`${branding.businessName.replace(/\s+/g,"_")}_income_statement.html`;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  }
+  setTimeout(()=>URL.revokeObjectURL(url),8000);
 };
 
 const buildWAReport = (entries, currency, branding, rangeLabel) => {
@@ -1127,7 +1445,7 @@ function AppCore({ user, onLogout }) {
                 style={{ flex:1, padding:"10px", background:"#F0FBF0", border:"1.5px solid #C8E6C9", borderRadius:12, fontSize:12, fontWeight:700, cursor:"pointer", color:"#2E7D32" }}>
                 📊 Export CSV
               </button>
-              <button onClick={()=>{exportPDF(entries,currency,branding,"All Time");showToast("🖨️ Opening PDF…","#1a237e");}}
+              <button onClick={()=>{exportPDF(entries,currency,branding,"All Time",entries);showToast("🖨️ Opening PDF…","#1a237e");}}
                 style={{ flex:1, padding:"10px", background:"#F3F0FF", border:"1.5px solid #C5CAE9", borderRadius:12, fontSize:12, fontWeight:700, cursor:"pointer", color:"#283593" }}>
                 🖨️ PDF Report
               </button>
@@ -1226,7 +1544,7 @@ function AppCore({ user, onLogout }) {
                     style={{ flex:1, padding:"8px", background:"#F0FBF0", border:"1.5px solid #C8E6C9", borderRadius:10, fontSize:11, fontWeight:700, cursor:"pointer", color:"#2E7D32" }}>
                     📊 CSV
                   </button>
-                  <button onClick={()=>{exportPDF(histFilt,currency,branding,rLabel);showToast("🖨️ Opening…","#1a237e");}}
+                  <button onClick={()=>{exportPDF(histFilt,currency,branding,rLabel,entries);showToast("🖨️ Opening…","#1a237e");}}
                     style={{ flex:1, padding:"8px", background:"#F3F0FF", border:"1.5px solid #C5CAE9", borderRadius:10, fontSize:11, fontWeight:700, cursor:"pointer", color:"#283593" }}>
                     🖨️ PDF
                   </button>
@@ -1296,7 +1614,7 @@ function AppCore({ user, onLogout }) {
                   style={{ flex:1, padding:"13px", background:"#F0FBF0", border:"1.5px solid #C8E6C9", borderRadius:14, fontWeight:700, cursor:"pointer", fontSize:13, color:"#2E7D32" }}>
                   📊 Export CSV
                 </button>
-                <button onClick={()=>{exportPDF(dateFilt,currency,branding,rLabel);showToast("🖨️ Opening PDF…","#1a237e");}}
+                <button onClick={()=>{exportPDF(dateFilt,currency,branding,rLabel,entries);showToast("🖨️ Opening PDF…","#1a237e");}}
                   style={{ flex:1, padding:"13px", background:"#F3F0FF", border:"1.5px solid #C5CAE9", borderRadius:14, fontWeight:700, cursor:"pointer", fontSize:13, color:"#283593" }}>
                   🖨️ PDF Report
                 </button>
