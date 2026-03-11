@@ -143,7 +143,12 @@ const userDoc   = (uid) => doc(db, "users", uid);
 // Settings doc: users/{uid}/settings/prefs
 const settingsDoc = (uid) => doc(db, "users", uid, "settings", "prefs");
 // Entries collection: users/{uid}/entries
-const entriesCol = (uid) => collection(db, "users", uid, "entries");
+const entriesCol  = (uid) => collection(db, "users", uid, "entries");
+// Budgets collection: users/{uid}/budgets
+const budgetsCol  = (uid) => collection(db, "users", uid, "budgets");
+const addBudget   = (uid, b) => addDoc(budgetsCol(uid), { ...b, createdAt: serverTimestamp() });
+const saveBudget  = (uid, id, b) => setDoc(doc(db, "users", uid, "budgets", id), b, { merge: true });
+const delBudget   = (uid, id) => deleteDoc(doc(db, "users", uid, "budgets", id));
 
 // Save/merge user profile
 const saveProfile = (uid, data) => setDoc(userDoc(uid), data, { merge: true });
@@ -258,7 +263,7 @@ const exportCSV = (entries, currency, branding, rangeLabel) => {
   setTimeout(()=>URL.revokeObjectURL(url),1000);
 };
 
-const exportPDF = (entries, currency, branding, rangeLabel, allEntries) => {
+const exportPDF = (entries, currency, branding, rangeLabel, allEntries, budgets = []) => {
   // ── Core figures ─────────────────────────────────────────────
   const inc = entries.filter(e=>e.type==="income").reduce((s,e)=>s+e.amount,0);
   const exp = entries.filter(e=>e.type==="expense").reduce((s,e)=>s+e.amount,0);
@@ -590,6 +595,90 @@ const exportPDF = (entries, currency, branding, rangeLabel, allEntries) => {
     </table>
     <p style="font-size:11px;color:#aaa;margin-top:10px;font-family:'Segoe UI',sans-serif;font-style:italic">Prior period covers an equivalent time window immediately preceding the current period.</p>
   </div>
+
+${(() => {
+  if (!budgets || budgets.length === 0) return "";
+  // Find budgets that overlap with the report period
+  const reportFrom = entries.length ? entries.map(e=>e.date.slice(0,10)).sort()[0] : null;
+  const reportTo   = toISO(new Date());
+  const relevant   = budgets.filter(b => reportFrom ? b.endDate >= reportFrom && b.startDate <= reportTo : true);
+  if (!relevant.length) return "";
+
+  const f2 = (n) => fmtAmt(n, currency);
+  const budgetRows = relevant.map(b => {
+    const bEntries  = (allEntries||entries).filter(e => e.date.slice(0,10) >= b.startDate && e.date.slice(0,10) <= b.endDate);
+    const actInc    = bEntries.filter(e=>e.type==="income").reduce((s,e)=>s+e.amount,0);
+    const actExp    = bEntries.filter(e=>e.type==="expense").reduce((s,e)=>s+e.amount,0);
+    const incPct    = b.totalIncome  > 0 ? ((actInc/b.totalIncome)*100).toFixed(1)  : "—";
+    const expPct    = b.totalExpense > 0 ? ((actExp/b.totalExpense)*100).toFixed(1) : "—";
+    const expOver   = b.totalExpense > 0 && actExp > b.totalExpense;
+    const incMet    = b.totalIncome  > 0 && actInc >= b.totalIncome;
+    const today     = toISO(new Date());
+    const status    = today < b.startDate ? "Upcoming" : today > b.endDate ? "Ended" : "Active";
+
+    // Category rows
+    const catBudgets = b.catBudgets || {};
+    const allCats    = [...new Set([...Object.keys(catBudgets), ...bEntries.map(e=>e.category)])];
+    const catRowsHtml = allCats.map(cat => {
+      const budgeted = catBudgets[cat] || 0;
+      const actual   = bEntries.filter(e=>e.category===cat).reduce((s,e)=>s+e.amount,0);
+      const pct      = budgeted > 0 ? ((actual/budgeted)*100).toFixed(1) : "—";
+      const over     = budgeted > 0 && actual > budgeted;
+      return `<tr>
+        <td style="padding-left:28px;color:#666;font-size:12px">${cat}</td>
+        <td style="font-size:12px">${budgeted > 0 ? f2(budgeted) : "—"}</td>
+        <td style="font-size:12px;color:${over?"#c62828":"inherit"}">${f2(actual)}</td>
+        <td style="font-size:12px;font-weight:700;color:${over?"#c62828":pct!=="—"&&parseFloat(pct)>=100?"#2E7D32":"inherit"}">${pct !== "—" ? pct+"%" : "—"}${over?" ⚠️":""}</td>
+        <td style="font-size:12px;color:${budgeted>0&&actual>budgeted?"#c62828":budgeted>0?"#2E7D32":"#888"}">${budgeted > 0 ? (actual > budgeted ? `–${f2(actual-budgeted)}` : `+${f2(budgeted-actual)}`) : "—"}</td>
+      </tr>`;
+    }).join("");
+
+    return `
+    <tr style="background:#f9f9f9">
+      <td colspan="5" style="padding:10px 14px;font-weight:900;font-size:13px;border-top:2px solid #e0e0e0">
+        ${b.name}
+        <span style="margin-left:10px;font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px;background:${status==="Active"?"#E8F5E9":status==="Ended"?"#F5F5F5":"#E3F2FD"};color:${status==="Active"?"#2E7D32":status==="Ended"?"#888":"#1565C0"}">
+          ${status}
+        </span>
+        <span style="margin-left:8px;font-size:11px;color:#aaa;font-weight:400">${b.startDate} → ${b.endDate}</span>
+      </td>
+    </tr>
+    <tr>
+      <td style="padding-left:14px;font-weight:700">Total Income</td>
+      <td>${b.totalIncome > 0 ? f2(b.totalIncome) : "—"}</td>
+      <td>${f2(actInc)}</td>
+      <td style="font-weight:700;color:${incMet?"#2E7D32":"inherit"}">${incPct !== "—" ? incPct+"%" : "—"}${incMet?" ✓":""}</td>
+      <td style="color:${actInc>=b.totalIncome&&b.totalIncome>0?"#2E7D32":"#888"}">${b.totalIncome > 0 ? (actInc >= b.totalIncome ? `+${f2(actInc-b.totalIncome)}` : `–${f2(b.totalIncome-actInc)}`) : "—"}</td>
+    </tr>
+    <tr>
+      <td style="padding-left:14px;font-weight:700">Total Expenses</td>
+      <td>${b.totalExpense > 0 ? f2(b.totalExpense) : "—"}</td>
+      <td style="color:${expOver?"#c62828":"inherit"}">${f2(actExp)}</td>
+      <td style="font-weight:700;color:${expOver?"#c62828":"inherit"}">${expPct !== "—" ? expPct+"%" : "—"}${expOver?" ⚠️":""}</td>
+      <td style="color:${expOver?"#c62828":"#2E7D32"}">${b.totalExpense > 0 ? (actExp > b.totalExpense ? `–${f2(actExp-b.totalExpense)} over` : `+${f2(b.totalExpense-actExp)} left`) : "—"}</td>
+    </tr>
+    ${catRowsHtml}`;
+  }).join("");
+
+  return `
+  <div class="section-wrap" style="page-break-before:always">
+    <div class="section-header">Note 6 — Budget Performance</div>
+    <div class="section-body">
+      <p style="font-weight:900;font-size:13px;margin-bottom:6px;font-family:'Segoe UI',sans-serif">Budget vs Actual Analysis</p>
+      <div class="note-block">The following table compares budgeted targets against actual performance for all budgets overlapping the reporting period. Variances shown in green indicate favourable performance; red indicates an overspend or shortfall.</div>
+      <table class="comp-table">
+        <thead><tr>
+          <th>Category</th>
+          <th>Budget</th>
+          <th>Actual</th>
+          <th>% Used</th>
+          <th>Variance</th>
+        </tr></thead>
+        <tbody>${budgetRows}</tbody>
+      </table>
+    </div>
+  </div>`;
+})()}
 
 </div><!-- end section-body -->
 
@@ -1354,12 +1443,16 @@ function AppCore({ user, onLogout }) {
   const [waPhone,   setWaPhone]   = useState("");
   const [datePreset,setDatePreset]= useState("all");
   const [dateRange, setDateRange] = useState({from:"",to:""});
+  const [budgets,   setBudgets]   = useState([]);
+  const [budgetView,setBudgetView]= useState("list"); // "list"|"create"|"detail"
+  const [activeBudget,setActiveBudget] = useState(null); // budget being viewed/edited
 
   const handleDateChange = (preset,range) => { setDatePreset(preset); setDateRange(range); };
 
   // ── Load settings from Firestore once on mount ───────────────
   useEffect(() => {
     let unsubEntries;
+    let unsubBudgets;
     const loadData = async () => {
       try {
         // Load settings (branding, currency, categories)
@@ -1381,13 +1474,20 @@ function AppCore({ user, onLogout }) {
           Sentry.captureException(err, { tags: { operation: "entries_snapshot" } });
           setLoading(false);
         });
+        // Real-time listener for budgets
+        const qb = query(budgetsCol(uid), orderBy("createdAt", "desc"));
+        unsubBudgets = onSnapshot(qb, (snapshot) => {
+          setBudgets(snapshot.docs.map(d => ({ id: d.id, ...d.data() })));
+        }, (err) => {
+          Sentry.captureException(err, { tags: { operation: "budgets_snapshot" } });
+        });
       } catch(e) {
         Sentry.captureException(e, { tags: { operation: "load_user_data" } });
         setLoading(false);
       }
     };
     loadData();
-    return () => { if (unsubEntries) unsubEntries(); };
+    return () => { if (unsubEntries) unsubEntries(); if (unsubBudgets) unsubBudgets(); };
   }, [uid]);
 
   // ── Save settings to Firestore whenever they change ──────────
@@ -1475,6 +1575,7 @@ function AppCore({ user, onLogout }) {
     { id:"home",    icon:"🏠", label:"Home"    },
     { id:"add",     icon:"➕", label:"Add Entry"},
     { id:"history", icon:"📋", label:"History" },
+    { id:"budget",  icon:"🎯", label:"Budget"  },
     { id:"summary", icon:"📊", label:"Summary" },
   ];
 
@@ -1606,7 +1707,7 @@ function AppCore({ user, onLogout }) {
             <div style={{ display:"flex", gap:8, flexShrink:0 }}>
               {isDesktop ? [
                 ["📊","Export CSV",()=>{exportCSV(entries,currency,branding,"All Time");showToast("📊 CSV downloaded!","#1b5e20");}],
-                ["🖨️","PDF Report",()=>{exportPDF(dateFilt,currency,branding,rLabel,entries);showToast("🖨️ Opening PDF…","#1a237e");}],
+                ["🖨️","PDF Report",()=>{exportPDF(dateFilt,currency,branding,rLabel,entries,budgets);showToast("🖨️ Opening PDF…","#1a237e");}],
               ].map(([icon,label,fn])=>(
                 <button key={label} onClick={fn}
                   style={{ background:"rgba(255,255,255,0.18)", border:"1px solid rgba(255,255,255,0.25)", borderRadius:11, color:"#fff",
@@ -1682,7 +1783,7 @@ function AppCore({ user, onLogout }) {
                     <div style={{ fontWeight:800, color:"#2E7D32", fontSize:15 }}>Export CSV</div>
                     <div style={{ fontSize:11, color:"#66BB6A", marginTop:3 }}>Download spreadsheet</div>
                   </button>
-                  <button className="lb-card-action" onClick={()=>{exportPDF(dateFilt,currency,branding,rLabel,entries);showToast("🖨️ Opening PDF…","#1a237e");}}
+                  <button className="lb-card-action" onClick={()=>{exportPDF(dateFilt,currency,branding,rLabel,entries,budgets);showToast("🖨️ Opening PDF…","#1a237e");}}
                     style={{ background:"#F3F0FF", border:"2px solid #C5CAE9", borderRadius:16, padding:"16px 14px", cursor:"pointer", textAlign:"left" }}>
                     <div style={{ fontSize:28, marginBottom:10 }}>🖨️</div>
                     <div style={{ fontWeight:800, color:"#283593", fontSize:15 }}>PDF Report</div>
@@ -1697,7 +1798,7 @@ function AppCore({ user, onLogout }) {
                   style={{ flex:1, padding:"10px", background:"#F0FBF0", border:"1.5px solid #C8E6C9", borderRadius:12, fontSize:12, fontWeight:700, cursor:"pointer", color:"#2E7D32" }}>
                   📊 Export CSV
                 </button>
-                <button onClick={()=>{exportPDF(entries,currency,branding,"All Time",entries);showToast("🖨️ Opening PDF…","#1a237e");}}
+                <button onClick={()=>{exportPDF(entries,currency,branding,"All Time",entries,budgets);showToast("🖨️ Opening PDF…","#1a237e");}}
                   style={{ flex:1, padding:"10px", background:"#F3F0FF", border:"1.5px solid #C5CAE9", borderRadius:12, fontSize:12, fontWeight:700, cursor:"pointer", color:"#283593" }}>
                   🖨️ PDF Report
                 </button>
@@ -1823,7 +1924,7 @@ function AppCore({ user, onLogout }) {
                     style={{ flex:1, padding:"9px", background:"#F0FBF0", border:"1.5px solid #C8E6C9", borderRadius:10, fontSize:12, fontWeight:700, cursor:"pointer", color:"#2E7D32" }}>
                     📊 CSV
                   </button>
-                  <button onClick={()=>{exportPDF(histFilt,currency,branding,rLabel,entries);showToast("🖨️ Opening…","#1a237e");}}
+                  <button onClick={()=>{exportPDF(histFilt,currency,branding,rLabel,entries,budgets);showToast("🖨️ Opening…","#1a237e");}}
                     style={{ flex:1, padding:"9px", background:"#F3F0FF", border:"1.5px solid #C5CAE9", borderRadius:10, fontSize:12, fontWeight:700, cursor:"pointer", color:"#283593" }}>
                     🖨️ PDF
                   </button>
@@ -1859,6 +1960,16 @@ function AppCore({ user, onLogout }) {
         )}
 
 
+        {/* ══ BUDGET ══ */}
+        {view==="budget"&&(
+          <div style={{ flex:1, display:"flex", flexDirection:"column", overflow:"hidden",
+            padding: isDesktop ? "28px 36px 0" : undefined }}>
+            {budgetView==="list"   && <BudgetList   budgets={budgets} entries={entries} currency={currency} p={p} isDesktop={isDesktop} uid={uid} onNew={()=>{ setActiveBudget(null); setBudgetView("create"); }} onView={(b)=>{ setActiveBudget(b); setBudgetView("detail"); }} onDelete={async(id)=>{ await delBudget(uid,id); showToast("Budget deleted","#888"); }} showToast={showToast}/>}
+            {budgetView==="create" && <BudgetCreate  budget={activeBudget} expCats={expCats} incCats={incCats} currency={currency} p={p} isDesktop={isDesktop} uid={uid} onSave={async(b)=>{ try { if(b.id){ await saveBudget(uid,b.id,b); showToast("✅ Budget updated!",p); } else { await addBudget(uid,b); showToast("✅ Budget created!",p); } setBudgetView("list"); } catch(e){ Sentry.captureException(e); showToast("❌ Failed to save","#c62828"); }}} onBack={()=>setBudgetView("list")}/>}
+            {budgetView==="detail" && <BudgetDetail  budget={activeBudget} entries={entries} currency={currency} p={p} bg={bg} isDesktop={isDesktop} onBack={()=>setBudgetView("list")} onEdit={(b)=>{ setActiveBudget(b); setBudgetView("create"); }} onDelete={async(id)=>{ await delBudget(uid,id); setBudgetView("list"); showToast("Budget deleted","#888"); }}/>}
+          </div>
+        )}
+
         {/* ══ SUMMARY ══ */}
         {view==="summary"&&(
           <div style={{ flex:1, display:"flex", flexDirection:"column", overflow:"hidden",
@@ -1884,6 +1995,66 @@ function AppCore({ user, onLogout }) {
               paddingLeft: isDesktop?0:S.px, paddingRight: isDesktop?0:S.px,
               paddingTop: isDesktop?0:18,
               paddingBottom: isDesktop?48:`calc(${S.navH}px + env(safe-area-inset-bottom,0px) + 10px)` }}>
+
+              {/* Active budget widget */}
+              {(() => {
+                const today = toISO(new Date());
+                const active = budgets.filter(b => b.startDate <= today && b.endDate >= today);
+                if (!active.length) return null;
+                return (
+                  <div style={{ marginBottom: isDesktop?24:16 }}>
+                    <div style={{ fontWeight:800, fontSize:14, color:isDesktop?"#1a1a1a":p, marginBottom:10 }}>🎯 Active Budgets</div>
+                    {active.map(b => {
+                      const bEntries = entries.filter(e => e.date.slice(0,10) >= b.startDate && e.date.slice(0,10) <= b.endDate);
+                      const actualExp = bEntries.filter(e=>e.type==="expense").reduce((s,e)=>s+e.amount,0);
+                      const actualInc = bEntries.filter(e=>e.type==="income").reduce((s,e)=>s+e.amount,0);
+                      const expPct = b.totalExpense > 0 ? Math.min(100,(actualExp/b.totalExpense)*100) : 0;
+                      const incPct = b.totalIncome  > 0 ? Math.min(100,(actualInc/b.totalIncome)*100)  : 0;
+                      const expOver = actualExp > b.totalExpense && b.totalExpense > 0;
+                      const incMet  = actualInc >= b.totalIncome && b.totalIncome > 0;
+                      return (
+                        <div key={b.id} className="lb-section" style={{ marginBottom:12, cursor:"pointer", padding: isDesktop?"22px 24px":"14px 16px" }}
+                          onClick={()=>{ setActiveBudget(b); setBudgetView("detail"); setView("budget"); }}>
+                          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:12 }}>
+                            <div>
+                              <div style={{ fontWeight:900, fontSize:15, color:"#1a1a1a" }}>{b.name}</div>
+                              <div style={{ fontSize:11, color:"#999", marginTop:2 }}>{fmtDate(b.startDate+"T12:00:00")} → {fmtDate(b.endDate+"T12:00:00")}</div>
+                            </div>
+                            <div style={{ fontSize:11, fontWeight:800, padding:"4px 10px", borderRadius:20,
+                              background: expOver?"#FFEBEE":"#E8F5E9", color: expOver?"#c62828":"#2E7D32" }}>
+                              {expOver ? "⚠️ Over budget" : "✅ On track"}
+                            </div>
+                          </div>
+                          {b.totalExpense > 0 && (
+                            <div style={{ marginBottom:10 }}>
+                              <div style={{ display:"flex", justifyContent:"space-between", fontSize:12, color:"#555", marginBottom:5 }}>
+                                <span>📤 Expenses</span>
+                                <span style={{ fontWeight:700, color: expOver?"#c62828":"#333" }}>{Math.round(expPct)}% — {fmtAmt(actualExp,currency)} of {fmtAmt(b.totalExpense,currency)}</span>
+                              </div>
+                              <div style={{ height:8, background:"#f0f0f0", borderRadius:99, overflow:"hidden" }}>
+                                <div style={{ height:"100%", borderRadius:99, width:`${expPct}%`,
+                                  background: expOver?"#ef5350":"#FF9800", transition:"width 0.5s" }}/>
+                              </div>
+                            </div>
+                          )}
+                          {b.totalIncome > 0 && (
+                            <div>
+                              <div style={{ display:"flex", justifyContent:"space-between", fontSize:12, color:"#555", marginBottom:5 }}>
+                                <span>💰 Income</span>
+                                <span style={{ fontWeight:700, color: incMet?"#2E7D32":"#333" }}>{Math.round(incPct)}% — {fmtAmt(actualInc,currency)} of {fmtAmt(b.totalIncome,currency)}</span>
+                              </div>
+                              <div style={{ height:8, background:"#f0f0f0", borderRadius:99, overflow:"hidden" }}>
+                                <div style={{ height:"100%", borderRadius:99, width:`${incPct}%`,
+                                  background: incMet?"#25D366":"#128C7E", transition:"width 0.5s" }}/>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+              })()}
 
               {/* P&L hero card */}
               <div style={{ background:bg, borderRadius:isDesktop?22:20, padding: isDesktop?"28px 32px":"20px 22px", marginBottom:isDesktop?24:16, color:"#fff",
@@ -1918,7 +2089,7 @@ function AppCore({ user, onLogout }) {
                   style={{ flex:1, minWidth:140, padding:"13px", background:"#F0FBF0", border:"1.5px solid #C8E6C9", borderRadius:14, fontWeight:700, cursor:"pointer", fontSize:13, color:"#2E7D32" }}>
                   📊 Export CSV
                 </button>
-                <button onClick={()=>{exportPDF(dateFilt,currency,branding,rLabel,entries);showToast("🖨️ Opening PDF…","#1a237e");}}
+                <button onClick={()=>{exportPDF(dateFilt,currency,branding,rLabel,entries,budgets);showToast("🖨️ Opening PDF…","#1a237e");}}
                   style={{ flex:1, minWidth:140, padding:"13px", background:"#F3F0FF", border:"1.5px solid #C5CAE9", borderRadius:14, fontWeight:700, cursor:"pointer", fontSize:13, color:"#283593" }}>
                   🖨️ PDF Report
                 </button>
@@ -1941,6 +2112,7 @@ function AppCore({ user, onLogout }) {
             {id:"home",   icon:"🏠", label:"Home"},
             {id:"add",    icon:"➕", label:"Add"},
             {id:"history",icon:"📋", label:"History"},
+            {id:"budget", icon:"🎯", label:"Budget"},
             {id:"summary",icon:"📊", label:"Summary"},
           ].map(tab=>(
             <button key={tab.id} onClick={()=>{ if(tab.id==="add")setForm({type:"income",amount:"",category:"",note:""}); setView(tab.id); }}
@@ -2017,3 +2189,479 @@ function AppCore({ user, onLogout }) {
 function FLabel({ children }) {
   return <div style={{ fontSize:11, fontWeight:800, color:"#999", textTransform:"uppercase", letterSpacing:.5, marginBottom:8 }}>{children}</div>;
 }
+
+// ═══════════════════════════════════════════════════════════════
+// BUDGET — helper
+// ═══════════════════════════════════════════════════════════════
+const calcBudgetStats = (budget, entries) => {
+  const inRange = entries.filter(e =>
+    e.date.slice(0,10) >= budget.startDate && e.date.slice(0,10) <= budget.endDate
+  );
+  const actualInc = inRange.filter(e=>e.type==="income").reduce((s,e)=>s+e.amount, 0);
+  const actualExp = inRange.filter(e=>e.type==="expense").reduce((s,e)=>s+e.amount, 0);
+
+  // Per-category actual spend
+  const catActual = {};
+  inRange.forEach(e => { catActual[e.category] = (catActual[e.category]||0) + e.amount; });
+
+  const today = toISO(new Date());
+  const totalDays = Math.max(1, Math.ceil((new Date(budget.endDate) - new Date(budget.startDate)) / 864e5) + 1);
+  const elapsedDays = Math.min(totalDays, Math.max(0, Math.ceil((new Date(Math.min(new Date(today), new Date(budget.endDate))) - new Date(budget.startDate)) / 864e5) + 1));
+  const pctTimeElapsed = elapsedDays / totalDays;
+
+  const isActive  = today >= budget.startDate && today <= budget.endDate;
+  const isPast    = today > budget.endDate;
+  const isFuture  = today < budget.startDate;
+
+  return { actualInc, actualExp, catActual, totalDays, elapsedDays, pctTimeElapsed, inRange, isActive, isPast, isFuture };
+};
+
+// ═══════════════════════════════════════════════════════════════
+// BUDGET LIST
+// ═══════════════════════════════════════════════════════════════
+function BudgetList({ budgets, entries, currency, p, isDesktop, onNew, onView, onDelete }) {
+  const today = toISO(new Date());
+  const active = budgets.filter(b => b.startDate <= today && b.endDate >= today);
+  const past   = budgets.filter(b => b.endDate < today);
+  const future = budgets.filter(b => b.startDate > today);
+
+  const BudgetCard = ({ b }) => {
+    const { actualExp, actualInc, pctTimeElapsed, isActive, isPast } = calcBudgetStats(b, entries);
+    const expPct   = b.totalExpense > 0 ? Math.min(100,(actualExp/b.totalExpense)*100) : null;
+    const incPct   = b.totalIncome  > 0 ? Math.min(100,(actualInc/b.totalIncome)*100)  : null;
+    const expOver  = b.totalExpense > 0 && actualExp > b.totalExpense;
+    const timePct  = Math.round(pctTimeElapsed * 100);
+
+    return (
+      <div onClick={()=>onView(b)} style={{ background:"#fff", borderRadius:18, padding:"18px 20px", marginBottom:12,
+        boxShadow:"0 2px 8px rgba(0,0,0,0.06)", border:`1.5px solid ${expOver?"#ffcdd2":"#f0f0f0"}`,
+        cursor:"pointer", transition:"box-shadow 0.15s" }}>
+        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:12 }}>
+          <div style={{ flex:1, minWidth:0 }}>
+            <div style={{ fontWeight:900, fontSize:15, color:"#1a1a1a", marginBottom:3 }}>{b.name}</div>
+            <div style={{ fontSize:11, color:"#aaa" }}>{fmtDate(b.startDate+"T12:00:00")} → {fmtDate(b.endDate+"T12:00:00")}</div>
+          </div>
+          <div style={{ display:"flex", gap:6, alignItems:"center", flexShrink:0, marginLeft:10 }}>
+            <span style={{ fontSize:11, fontWeight:800, padding:"3px 10px", borderRadius:20,
+              background: expOver?"#FFEBEE": isActive?"#E8F5E9": isPast?"#F5F5F5":"#E3F2FD",
+              color: expOver?"#c62828": isActive?"#2E7D32": isPast?"#888":"#1565C0" }}>
+              {expOver?"⚠️ Over": isActive?"🟢 Active": isPast?"✅ Ended":"⏳ Upcoming"}
+            </span>
+            <button onClick={e=>{e.stopPropagation(); if(window.confirm("Delete this budget?")) onDelete(b.id);}}
+              style={{ background:"none", border:"none", cursor:"pointer", fontSize:16, color:"#ccc", padding:4 }}>🗑️</button>
+          </div>
+        </div>
+
+        {/* Progress bars */}
+        {expPct !== null && (
+          <div style={{ marginBottom:8 }}>
+            <div style={{ display:"flex", justifyContent:"space-between", fontSize:11, color:"#888", marginBottom:4 }}>
+              <span>📤 Expenses</span>
+              <span style={{ fontWeight:700, color: expOver?"#c62828":"#555" }}>{Math.round(expPct)}% of {fmtAmt(b.totalExpense,currency)}</span>
+            </div>
+            <div style={{ height:7, background:"#f0f0f0", borderRadius:99, overflow:"hidden" }}>
+              <div style={{ height:"100%", borderRadius:99, width:`${expPct}%`, background: expOver?"#ef5350":"#FF9800", transition:"width 0.6s" }}/>
+            </div>
+          </div>
+        )}
+        {incPct !== null && (
+          <div style={{ marginBottom: isActive?8:0 }}>
+            <div style={{ display:"flex", justifyContent:"space-between", fontSize:11, color:"#888", marginBottom:4 }}>
+              <span>💰 Income</span>
+              <span style={{ fontWeight:700, color: incPct>=100?"#2E7D32":"#555" }}>{Math.round(incPct)}% of {fmtAmt(b.totalIncome,currency)}</span>
+            </div>
+            <div style={{ height:7, background:"#f0f0f0", borderRadius:99, overflow:"hidden" }}>
+              <div style={{ height:"100%", borderRadius:99, width:`${incPct}%`, background: incPct>=100?"#25D366":"#128C7E", transition:"width 0.6s" }}/>
+            </div>
+          </div>
+        )}
+        {isActive && (
+          <div style={{ marginTop:10, display:"flex", justifyContent:"space-between", fontSize:11, color:"#bbb" }}>
+            <span>⏱ {timePct}% of period elapsed</span>
+            <span style={{ color: expOver?"#e53935":expPct!=null&&expPct>timePct?"#ff9800":"#aaa" }}>
+              {expOver ? "Over budget!" : expPct!=null&&expPct>timePct ? "Spending ahead of pace" : "On track"}
+            </span>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  return (
+    <div style={{ flex:1, overflowY:"auto", paddingLeft:isDesktop?0:S.px, paddingRight:isDesktop?0:S.px,
+      paddingTop:isDesktop?0:20, paddingBottom:isDesktop?48:`calc(${S.navH}px + env(safe-area-inset-bottom,0px) + 16px)` }}>
+      {isDesktop&&<div style={{ fontWeight:900, fontSize:22, color:"#1a1a1a", marginBottom:24, letterSpacing:-.5 }}>🎯 Budgets</div>}
+
+      {/* Create button */}
+      <button onClick={onNew} style={{ width:"100%", padding:"15px", background:p, color:"#fff", border:"none",
+        borderRadius:16, fontSize:15, fontWeight:900, cursor:"pointer", marginBottom:24,
+        boxShadow:`0 4px 16px ${p}50`, display:"flex", alignItems:"center", justifyContent:"center", gap:8 }}>
+        ＋ Create New Budget
+      </button>
+
+      {budgets.length === 0 && (
+        <div style={{ textAlign:"center", padding:"48px 24px", color:"#ccc" }}>
+          <div style={{ fontSize:52, marginBottom:16 }}>🎯</div>
+          <div style={{ fontWeight:800, fontSize:16, color:"#999", marginBottom:8 }}>No budgets yet</div>
+          <div style={{ fontSize:13, lineHeight:1.7 }}>Create your first budget to start tracking your spending against targets.</div>
+        </div>
+      )}
+
+      {active.length > 0 && <>
+        <div style={{ fontSize:11, fontWeight:800, textTransform:"uppercase", letterSpacing:1.2, color:"#aaa", marginBottom:10 }}>Active</div>
+        {active.map(b=><BudgetCard key={b.id} b={b}/>)}
+      </>}
+      {future.length > 0 && <>
+        <div style={{ fontSize:11, fontWeight:800, textTransform:"uppercase", letterSpacing:1.2, color:"#aaa", marginBottom:10, marginTop:active.length?16:0 }}>Upcoming</div>
+        {future.map(b=><BudgetCard key={b.id} b={b}/>)}
+      </>}
+      {past.length > 0 && <>
+        <div style={{ fontSize:11, fontWeight:800, textTransform:"uppercase", letterSpacing:1.2, color:"#aaa", marginBottom:10, marginTop:(active.length||future.length)?16:0 }}>Past</div>
+        {past.map(b=><BudgetCard key={b.id} b={b}/>)}
+      </>}
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════
+// BUDGET CREATE / EDIT
+// ═══════════════════════════════════════════════════════════════
+function BudgetCreate({ budget, expCats, incCats, currency, p, isDesktop, onSave, onBack }) {
+  const isEdit = !!budget;
+  const [name,      setName]      = useState(budget?.name || "");
+  const [startDate, setStartDate] = useState(budget?.startDate || toISO(new Date()));
+  const [endDate,   setEndDate]   = useState(budget?.endDate || "");
+  const [totInc,    setTotInc]    = useState(budget?.totalIncome  != null ? String(budget.totalIncome)  : "");
+  const [totExp,    setTotExp]    = useState(budget?.totalExpense != null ? String(budget.totalExpense) : "");
+  const [catBudgets,setCatBudgets]= useState(budget?.catBudgets || {}); // { catName: amount }
+  const [tab,       setTab]       = useState("overall"); // "overall" | "income" | "expense"
+  const [saving,    setSaving]    = useState(false);
+
+  const setCat = (cat, val) => setCatBudgets(prev => ({ ...prev, [cat]: val === "" ? "" : parseFloat(val)||0 }));
+
+  const handleSave = async () => {
+    if (!name.trim())      return alert("Please enter a budget name.");
+    if (!startDate)        return alert("Please select a start date.");
+    if (!endDate)          return alert("Please select an end date.");
+    if (endDate < startDate) return alert("End date must be after start date.");
+    setSaving(true);
+    const clean = {};
+    Object.entries(catBudgets).forEach(([k,v]) => { if (v !== "" && v > 0) clean[k] = Number(v); });
+    await onSave({
+      ...(isEdit ? { id: budget.id } : {}),
+      name: name.trim(), startDate, endDate,
+      totalIncome:  totInc  !== "" ? parseFloat(totInc)  : 0,
+      totalExpense: totExp  !== "" ? parseFloat(totExp)  : 0,
+      catBudgets: clean,
+    });
+    setSaving(false);
+  };
+
+  const inputStyle = { width:"100%", padding:"13px 15px", border:"2px solid #e5e5e5", borderRadius:13,
+    fontSize:15, outline:"none", marginBottom:16, boxSizing:"border-box", background:"#fafafa", fontFamily:"inherit" };
+  const labelStyle = { fontSize:11, fontWeight:800, color:"#999", textTransform:"uppercase", letterSpacing:.5, marginBottom:7, display:"block" };
+
+  return (
+    <div style={{ flex:1, overflowY:"auto",
+      paddingLeft:isDesktop?0:S.px, paddingRight:isDesktop?0:S.px,
+      paddingTop:isDesktop?0:20,
+      paddingBottom:isDesktop?48:`calc(${S.navH}px + env(safe-area-inset-bottom,0px) + 16px)` }}>
+
+      {/* Header */}
+      <div style={{ display:"flex", alignItems:"center", gap:12, marginBottom:24 }}>
+        <button onClick={onBack} style={{ background:"#f0f0f0", border:"none", borderRadius:11, padding:"8px 14px", cursor:"pointer", fontWeight:800, fontSize:14, color:"#555" }}>← Back</button>
+        <div style={{ fontWeight:900, fontSize: isDesktop?22:18, color:"#1a1a1a", letterSpacing:-.3 }}>
+          {isEdit ? "Edit Budget" : "Create Budget"}
+        </div>
+      </div>
+
+      <div style={{ maxWidth: isDesktop?580:undefined }}>
+
+        {/* Tabs */}
+        <div style={{ display:"flex", background:"#f2f2f2", borderRadius:14, padding:4, marginBottom:22 }}>
+          {[["overall","📋 Overview"],["income","💰 Income"],["expense","📤 Expenses"]].map(([id,lbl])=>(
+            <button key={id} onClick={()=>setTab(id)}
+              style={{ flex:1, padding:"10px 6px", border:"none", borderRadius:11, fontSize:13, fontWeight:700, cursor:"pointer",
+                background:tab===id?p:"transparent", color:tab===id?"#fff":"#888" }}>
+              {lbl}
+            </button>
+          ))}
+        </div>
+
+        {/* ── OVERVIEW TAB ── */}
+        {tab==="overall" && (
+          <div className="lb-section" style={{ padding: isDesktop?"26px 28px":"18px 20px" }}>
+            <label style={labelStyle}>Budget Name</label>
+            <input value={name} onChange={e=>setName(e.target.value)} placeholder="e.g. Q2 2026 Budget"
+              style={inputStyle}/>
+
+            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:14, marginBottom:4 }}>
+              <div>
+                <label style={labelStyle}>Start Date</label>
+                <input type="date" value={startDate} onChange={e=>setStartDate(e.target.value)}
+                  style={{...inputStyle, marginBottom:0}}/>
+              </div>
+              <div>
+                <label style={labelStyle}>End Date</label>
+                <input type="date" value={endDate} min={startDate||undefined} onChange={e=>setEndDate(e.target.value)}
+                  style={{...inputStyle, marginBottom:0}}/>
+              </div>
+            </div>
+            {startDate&&endDate&&endDate>=startDate&&(
+              <div style={{ background:`${p}12`, borderRadius:10, padding:"9px 14px", fontSize:12, color:p, fontWeight:700, marginTop:12, marginBottom:16 }}>
+                📅 {Math.ceil((new Date(endDate)-new Date(startDate))/864e5)+1} days · {fmtDate(startDate+"T12:00:00")} → {fmtDate(endDate+"T12:00:00")}
+              </div>
+            )}
+
+            <label style={{...labelStyle, marginTop:8}}>Total Income Target ({currency.symbol})</label>
+            <input type="number" placeholder="0 — leave blank to skip" value={totInc} onChange={e=>setTotInc(e.target.value)}
+              style={inputStyle}/>
+
+            <label style={labelStyle}>Total Expense Limit ({currency.symbol})</label>
+            <input type="number" placeholder="0 — leave blank to skip" value={totExp} onChange={e=>setTotExp(e.target.value)}
+              style={{...inputStyle, marginBottom:0}}/>
+          </div>
+        )}
+
+        {/* ── INCOME CATEGORIES TAB ── */}
+        {tab==="income" && (
+          <div className="lb-section" style={{ padding: isDesktop?"26px 28px":"18px 20px" }}>
+            <div style={{ fontSize:13, color:"#888", marginBottom:18, lineHeight:1.6 }}>
+              Set individual income targets per category. Leave blank to skip tracking for that category.
+            </div>
+            {incCats.map(cat=>(
+              <div key={cat} style={{ display:"flex", alignItems:"center", gap:12, marginBottom:14 }}>
+                <div style={{ flex:1, fontWeight:700, fontSize:14, color:"#333" }}>💰 {cat}</div>
+                <div style={{ position:"relative", width:160, flexShrink:0 }}>
+                  <span style={{ position:"absolute", left:12, top:"50%", transform:"translateY(-50%)", fontSize:13, color:"#888", fontWeight:700 }}>{currency.symbol}</span>
+                  <input type="number" placeholder="—" value={catBudgets[cat]??""} onChange={e=>setCat(cat,e.target.value)}
+                    style={{ width:"100%", padding:"10px 12px 10px 28px", border:"2px solid #e5e5e5", borderRadius:11, fontSize:14, outline:"none", boxSizing:"border-box" }}/>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* ── EXPENSE CATEGORIES TAB ── */}
+        {tab==="expense" && (
+          <div className="lb-section" style={{ padding: isDesktop?"26px 28px":"18px 20px" }}>
+            <div style={{ fontSize:13, color:"#888", marginBottom:18, lineHeight:1.6 }}>
+              Set spending limits per expense category. A warning will appear when you're close to or over the limit.
+            </div>
+            {expCats.map(cat=>(
+              <div key={cat} style={{ display:"flex", alignItems:"center", gap:12, marginBottom:14 }}>
+                <div style={{ flex:1, fontWeight:700, fontSize:14, color:"#333" }}>📤 {cat}</div>
+                <div style={{ position:"relative", width:160, flexShrink:0 }}>
+                  <span style={{ position:"absolute", left:12, top:"50%", transform:"translateY(-50%)", fontSize:13, color:"#888", fontWeight:700 }}>{currency.symbol}</span>
+                  <input type="number" placeholder="—" value={catBudgets[cat]??""} onChange={e=>setCat(cat,e.target.value)}
+                    style={{ width:"100%", padding:"10px 12px 10px 28px", border:"2px solid #e5e5e5", borderRadius:11, fontSize:14, outline:"none", boxSizing:"border-box" }}/>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Save button */}
+        <button onClick={handleSave} disabled={saving}
+          style={{ width:"100%", padding:"16px", background:p, color:"#fff", border:"none", borderRadius:16,
+            fontSize:16, fontWeight:900, cursor:"pointer", marginTop:20, boxShadow:`0 4px 16px ${p}50` }}>
+          {saving ? "Saving…" : isEdit ? "✅ Update Budget" : "✅ Create Budget"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════
+// BUDGET DETAIL
+// ═══════════════════════════════════════════════════════════════
+function BudgetDetail({ budget, entries, currency, p, bg, isDesktop, onBack, onEdit, onDelete }) {
+  const { actualInc, actualExp, catActual, totalDays, elapsedDays, pctTimeElapsed, inRange, isActive, isPast, isFuture } = calcBudgetStats(budget, entries);
+
+  const expPct  = budget.totalExpense > 0 ? Math.min(100,(actualExp/budget.totalExpense)*100) : null;
+  const incPct  = budget.totalIncome  > 0 ? Math.min(100,(actualInc/budget.totalIncome)*100)  : null;
+  const expOver = budget.totalExpense > 0 && actualExp > budget.totalExpense;
+  const incMet  = budget.totalIncome  > 0 && actualInc >= budget.totalIncome;
+  const timePct = Math.round(pctTimeElapsed*100);
+  const netBudget = (budget.totalIncome||0) - (budget.totalExpense||0);
+  const netActual = actualInc - actualExp;
+
+  // All categories that have either a budget or actual spend
+  const allExpCats = [...new Set([...Object.keys(budget.catBudgets||{}).filter(k => {
+    const anyInc = entries.some(e => e.type==="income" && e.category===k);
+    return !anyInc;
+  }), ...inRange.filter(e=>e.type==="expense").map(e=>e.category)])];
+  const allIncCats = [...new Set([...Object.keys(budget.catBudgets||{}), ...inRange.filter(e=>e.type==="income").map(e=>e.category)])].filter(k => {
+    const budgeted = (budget.catBudgets||{})[k] !== undefined;
+    const hasInc   = inRange.some(e=>e.type==="income" && e.category===k);
+    return budgeted || hasInc;
+  });
+
+  const CatRow = ({ cat, type }) => {
+    const budgeted = (budget.catBudgets||{})[cat] || 0;
+    const actual   = catActual[cat] || 0;
+    const pct      = budgeted > 0 ? Math.min(100, (actual/budgeted)*100) : null;
+    const over     = budgeted > 0 && actual > budgeted;
+    const barColor = type==="income" ? (pct>=100?"#25D366":"#128C7E") : (over?"#ef5350": pct>=80?"#FF9800":"#25D366");
+
+    return (
+      <div style={{ marginBottom:16, paddingBottom:16, borderBottom:"1px solid #f5f5f5" }}>
+        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:6 }}>
+          <div style={{ fontWeight:700, fontSize:14, color:"#222" }}>{type==="income"?"💰":"📤"} {cat}</div>
+          <div style={{ textAlign:"right" }}>
+            <div style={{ fontSize:13, fontWeight:800, color: over?"#c62828": pct>=100&&type==="income"?"#2E7D32":"#333" }}>
+              {fmtAmt(actual,currency)}
+              {budgeted>0 && <span style={{ fontWeight:400, color:"#aaa", fontSize:12 }}> / {fmtAmt(budgeted,currency)}</span>}
+            </div>
+            {pct !== null && <div style={{ fontSize:11, color: over?"#e53935": pct>=100&&type==="income"?"#2E7D32":"#888", fontWeight:700 }}>{Math.round(pct)}%</div>}
+          </div>
+        </div>
+        {pct !== null && (
+          <div style={{ height:6, background:"#f0f0f0", borderRadius:99, overflow:"hidden" }}>
+            <div style={{ height:"100%", borderRadius:99, width:`${pct}%`, background:barColor, transition:"width 0.5s" }}/>
+          </div>
+        )}
+        {budgeted===0 && actual>0 && <div style={{ fontSize:11, color:"#bbb", marginTop:3 }}>No limit set · {fmtAmt(actual,currency)} spent</div>}
+        {over && <div style={{ fontSize:11, color:"#e53935", marginTop:4, fontWeight:700 }}>⚠️ Over by {fmtAmt(actual-budgeted,currency)}</div>}
+      </div>
+    );
+  };
+
+  return (
+    <div style={{ flex:1, overflowY:"auto",
+      paddingLeft:isDesktop?0:S.px, paddingRight:isDesktop?0:S.px,
+      paddingTop:isDesktop?0:16,
+      paddingBottom:isDesktop?48:`calc(${S.navH}px + env(safe-area-inset-bottom,0px) + 16px)` }}>
+
+      {/* Header */}
+      <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:20 }}>
+        <div style={{ display:"flex", alignItems:"center", gap:12 }}>
+          <button onClick={onBack} style={{ background:"#f0f0f0", border:"none", borderRadius:11, padding:"8px 14px", cursor:"pointer", fontWeight:800, fontSize:14, color:"#555" }}>← Back</button>
+          <div style={{ fontWeight:900, fontSize:isDesktop?20:16, color:"#1a1a1a", letterSpacing:-.3 }}>{budget.name}</div>
+        </div>
+        <div style={{ display:"flex", gap:8 }}>
+          <button onClick={()=>onEdit(budget)} style={{ background:`${p}15`, border:`1.5px solid ${p}`, color:p, borderRadius:11, padding:"7px 14px", cursor:"pointer", fontWeight:800, fontSize:13 }}>✏️ Edit</button>
+          <button onClick={()=>{if(window.confirm("Delete this budget?")) onDelete(budget.id);}} style={{ background:"#FFF3F3", border:"1.5px solid #ffcdd2", color:"#c62828", borderRadius:11, padding:"7px 12px", cursor:"pointer", fontSize:14 }}>🗑️</button>
+        </div>
+      </div>
+
+      {/* Hero card */}
+      <div style={{ background:bg, borderRadius:20, padding:"22px 24px", color:"#fff", marginBottom:20,
+        boxShadow:`0 8px 28px ${p}40` }}>
+        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:16 }}>
+          <div>
+            <div style={{ fontSize:11, opacity:.7, textTransform:"uppercase", letterSpacing:1.5, marginBottom:4 }}>
+              {isActive?"Active Budget": isPast?"Completed": "Upcoming"}
+            </div>
+            <div style={{ fontSize:11, opacity:.65 }}>{fmtDate(budget.startDate+"T12:00:00")} → {fmtDate(budget.endDate+"T12:00:00")}</div>
+          </div>
+          <div style={{ background:"rgba(0,0,0,0.2)", borderRadius:20, padding:"4px 12px", fontSize:11, fontWeight:800 }}>
+            {isActive ? `Day ${elapsedDays} of ${totalDays}` : isPast ? `${totalDays} days` : `Starts in ${Math.ceil((new Date(budget.startDate)-new Date())/864e5)} days`}
+          </div>
+        </div>
+
+        {/* KPI strip */}
+        <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:0, background:"rgba(0,0,0,0.15)", borderRadius:14, overflow:"hidden" }}>
+          {[
+            ["Net Budget", fmtAmt(netBudget, currency)],
+            ["Net Actual", fmtAmt(netActual, currency)],
+            ["Variance",   fmtAmt(netActual - netBudget, currency)],
+          ].map(([lbl,val],i)=>(
+            <div key={lbl} style={{ padding:"12px 14px", borderRight:i<2?"1px solid rgba(255,255,255,0.15)":undefined }}>
+              <div style={{ fontSize:9, opacity:.6, textTransform:"uppercase", letterSpacing:1, marginBottom:4 }}>{lbl}</div>
+              <div style={{ fontWeight:900, fontSize:14 }}>{val}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* Time progress */}
+        {isActive && (
+          <div style={{ marginTop:14 }}>
+            <div style={{ display:"flex", justifyContent:"space-between", fontSize:11, opacity:.7, marginBottom:5 }}>
+              <span>Time elapsed</span><span>{timePct}%</span>
+            </div>
+            <div style={{ height:5, background:"rgba(0,0,0,0.2)", borderRadius:99 }}>
+              <div style={{ height:"100%", borderRadius:99, width:`${timePct}%`, background:"rgba(255,255,255,0.7)" }}/>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Overall progress */}
+      {(expPct !== null || incPct !== null) && (
+        <div className="lb-section" style={{ marginBottom:16, padding:isDesktop?"22px 24px":"16px 18px" }}>
+          <div style={{ fontWeight:800, fontSize:15, color:"#1a1a1a", marginBottom:16 }}>Overall Performance</div>
+          {incPct !== null && (
+            <div style={{ marginBottom:16 }}>
+              <div style={{ display:"flex", justifyContent:"space-between", fontSize:13, marginBottom:6 }}>
+                <span style={{ fontWeight:700 }}>💰 Income Target</span>
+                <span style={{ fontWeight:800, color: incMet?"#2E7D32":"#555" }}>{Math.round(incPct)}% — {fmtAmt(actualInc,currency)} of {fmtAmt(budget.totalIncome,currency)}</span>
+              </div>
+              <div style={{ height:10, background:"#f0f0f0", borderRadius:99, overflow:"hidden" }}>
+                <div style={{ height:"100%", borderRadius:99, width:`${incPct}%`, background: incMet?"#25D366":"#128C7E", transition:"width 0.6s" }}/>
+              </div>
+              {incMet && <div style={{ fontSize:11, color:"#2E7D32", fontWeight:700, marginTop:5 }}>🎉 Income target met!</div>}
+              {!incMet && <div style={{ fontSize:11, color:"#888", marginTop:5 }}>{fmtAmt(budget.totalIncome-actualInc,currency)} remaining to reach target</div>}
+            </div>
+          )}
+          {expPct !== null && (
+            <div>
+              <div style={{ display:"flex", justifyContent:"space-between", fontSize:13, marginBottom:6 }}>
+                <span style={{ fontWeight:700 }}>📤 Expense Limit</span>
+                <span style={{ fontWeight:800, color: expOver?"#c62828":"#555" }}>{Math.round(expPct)}% — {fmtAmt(actualExp,currency)} of {fmtAmt(budget.totalExpense,currency)}</span>
+              </div>
+              <div style={{ height:10, background:"#f0f0f0", borderRadius:99, overflow:"hidden" }}>
+                <div style={{ height:"100%", borderRadius:99, width:`${expPct}%`, background: expOver?"#ef5350":"#FF9800", transition:"width 0.6s" }}/>
+              </div>
+              {expOver ? <div style={{ fontSize:11, color:"#c62828", fontWeight:800, marginTop:5 }}>⚠️ Over budget by {fmtAmt(actualExp-budget.totalExpense,currency)}</div>
+                       : <div style={{ fontSize:11, color:"#888", marginTop:5 }}>{fmtAmt(budget.totalExpense-actualExp,currency)} remaining</div>}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Category breakdown — expenses */}
+      {allExpCats.length > 0 && (
+        <div className="lb-section" style={{ marginBottom:16, padding:isDesktop?"22px 24px":"16px 18px" }}>
+          <div style={{ fontWeight:800, fontSize:15, color:"#1a1a1a", marginBottom:18 }}>📤 Expense Categories</div>
+          {allExpCats.map(cat => <CatRow key={cat} cat={cat} type="expense"/>)}
+        </div>
+      )}
+
+      {/* Category breakdown — income */}
+      {allIncCats.length > 0 && (
+        <div className="lb-section" style={{ marginBottom:16, padding:isDesktop?"22px 24px":"16px 18px" }}>
+          <div style={{ fontWeight:800, fontSize:15, color:"#1a1a1a", marginBottom:18 }}>💰 Income Categories</div>
+          {allIncCats.map(cat => <CatRow key={cat} cat={cat} type="income"/>)}
+        </div>
+      )}
+
+      {/* Transactions in this period */}
+      {inRange.length > 0 && (
+        <div className="lb-section" style={{ padding:isDesktop?"22px 24px":"16px 18px" }}>
+          <div style={{ fontWeight:800, fontSize:15, color:"#1a1a1a", marginBottom:14 }}>🧾 Transactions in Period ({inRange.length})</div>
+          {inRange.slice(0,10).map(e=>(
+            <div key={e.id} style={{ display:"flex", justifyContent:"space-between", alignItems:"center",
+              padding:"10px 0", borderBottom:"1px solid #f5f5f5" }}>
+              <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+                <div style={{ width:32, height:32, borderRadius:"50%", background:e.type==="income"?"#E8F5E9":"#FFF3E0",
+                  display:"flex", alignItems:"center", justifyContent:"center", fontSize:14, flexShrink:0 }}>
+                  {e.type==="income"?"💰":"📤"}
+                </div>
+                <div>
+                  <div style={{ fontWeight:700, fontSize:13 }}>{e.category}</div>
+                  <div style={{ fontSize:11, color:"#aaa" }}>{fmtDate(e.date)}{e.note && ` · ${e.note}`}</div>
+                </div>
+              </div>
+              <div style={{ fontWeight:800, fontSize:14, color:e.type==="income"?"#2E7D32":"#E65100" }}>
+                {e.type==="income"?"+":"-"}{fmtAmt(e.amount,currency)}
+              </div>
+            </div>
+          ))}
+          {inRange.length > 10 && <div style={{ textAlign:"center", color:"#aaa", fontSize:13, paddingTop:12 }}>+{inRange.length-10} more transactions</div>}
+        </div>
+      )}
+    </div>
+  );
+}
+
