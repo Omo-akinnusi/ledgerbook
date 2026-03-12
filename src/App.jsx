@@ -186,6 +186,31 @@ const countThisMonth = (entries) => {
 };
 const planDoc = (uid) => doc(db, "users", uid, "settings", "plan");
 
+// ── Paystack Plan Codes ───────────────────────────────────────
+// Create these 3 plans in your Paystack dashboard, then paste the plan codes here.
+// Amounts in their respective currencies (Paystack handles FX).
+const PAYSTACK_PLANS = {
+  monthly:    { code: "PLN_gh2mcit6fixix9k",    label:"Monthly",  months:1,  usd:1,  discount:null },
+  biannually: { code: "PLN_gxtrrhn8z2tfqmf",   label:"6 Months", months:6,  usd:5,  discount:"17% off" },
+  annually:   { code: "PLN_87ghrcbnb4p8aaa",     label:"Annual",   months:12, usd:9,  discount:"25% off" },
+};
+
+// Price display per currency (matching the app's supported currencies)
+// Base: $1/mo · $5/6mo · $9/yr
+const PLAN_PRICES = {
+  NGN: { monthly: "₦1,500",  biannually: "₦7,500",  annually:  "₦13,500", note:"NGN" },
+  USD: { monthly: "$1",      biannually: "$5",       annually:  "$9",      note:"USD" },
+  GBP: { monthly: "£0.80",   biannually: "£4",       annually:  "£7",      note:"GBP" },
+  EUR: { monthly: "€0.90",   biannually: "€4.50",    annually:  "€8",      note:"EUR" },
+  GHS: { monthly: "₵15",     biannually: "₵75",      annually:  "₵135",    note:"GHS" },
+  KES: { monthly: "KSh130",  biannually: "KSh650",   annually:  "KSh1,170",note:"KES" },
+  ZAR: { monthly: "R18",     biannually: "R90",      annually:  "R162",    note:"ZAR" },
+  XOF: { monthly: "CFA600",  biannually: "CFA3,000", annually:  "CFA5,400",note:"XOF" },
+  EGP: { monthly: "E£50",    biannually: "E£250",    annually:  "E£450",   note:"EGP" },
+  INR: { monthly: "₹85",     biannually: "₹425",     annually:  "₹765",    note:"INR" },
+  default: { monthly: "$1",  biannually: "$5",       annually:  "$9",      note:"USD" },
+};
+
 const CURRENCIES = [
   { code: "NGN", symbol: "₦", name: "Nigerian Naira",    locale: "en-NG" },
   { code: "USD", symbol: "$", name: "US Dollar",          locale: "en-US" },
@@ -767,31 +792,113 @@ const buildWAReport = (entries, currency, branding, rangeLabel) => {
 // ═══════════════════════════════════════════════════════════════
 // UPGRADE MODAL
 // ═══════════════════════════════════════════════════════════════
-function UpgradeModal({ onClose, reason="default", monthCount=0, p="#075E54" }) {
+function UpgradeModal({ onClose, reason="default", monthCount=0, p="#075E54", user, currency }) {
   const UPGRADE_CSS = `
     @keyframes um-in{from{opacity:0;transform:translateY(40px) scale(.97)}to{opacity:1;transform:translateY(0) scale(1)}}
     @keyframes um-badge{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}
     .um-card{animation:um-in .35s cubic-bezier(.22,.68,0,1.1) both}
     .um-badge{animation:um-badge 2s ease-in-out infinite}
-    .um-row{display:flex;align-items:flex-start;gap:12px;padding:11px 0;border-bottom:1px solid #f5f5f5}
+    .um-row{display:flex;align-items:flex-start;gap:12px;padding:10px 0;border-bottom:1px solid #f5f5f5}
     .um-row:last-child{border-bottom:none}
+    .um-plan{border:2.5px solid #e0e0e0;border-radius:16px;padding:14px 16px;cursor:pointer;transition:all .18s;position:relative;margin-bottom:10px}
+    .um-plan:hover{border-color:#075E54;background:#f0faf7}
+    .um-plan.selected{border-color:#075E54;background:#f0faf7}
+    .um-plan.popular::before{content:"BEST VALUE";position:absolute;top:-10px;right:14px;
+      background:#075E54;color:#fff;font-size:9px;font-weight:900;letter-spacing:.8px;
+      padding:3px 9px;border-radius:6px}
+    .um-pay-btn{width:100%;padding:16px;background:linear-gradient(135deg,#054d44,#128C7E);
+      color:#fff;border:none;border-radius:16px;font-size:16px;font-weight:900;cursor:pointer;
+      box-shadow:0 6px 20px rgba(7,94,84,.35);transition:opacity .15s,transform .15s;display:flex;
+      align-items:center;justify-content:center;gap:10px}
+    .um-pay-btn:hover{opacity:.92;transform:translateY(-1px)}
+    .um-pay-btn:disabled{opacity:.5;cursor:not-allowed;transform:none}
+    .um-spin{width:18px;height:18px;border-radius:50%;border:2px solid rgba(255,255,255,.3);
+      border-top-color:#fff;animation:um-spin .7s linear infinite;flex-shrink:0}
+    @keyframes um-spin{to{transform:rotate(360deg)}}
   `;
+
   const reasons = {
-    limit:    { icon:"🚫", title:"Monthly limit reached", sub:`You've used all ${FREE_LIMITS.ENTRIES_PER_MONTH} free entries for ${new Date().toLocaleString("default",{month:"long"})}. Upgrade for unlimited entries.` },
-    budget:   { icon:"🎯", title:"Budget feature is Pro", sub:"Create and track budgets, set targets per category, and see detailed budget vs actual reports." },
-    cats:     { icon:"🏷️", title:"Custom categories are Pro", sub:"Edit, add, and remove income and expense categories to match your exact business structure." },
-    default:  { icon:"⚡", title:"Upgrade to LedgerBook Pro", sub:"Unlock the full power of LedgerBook and grow your business faster." },
+    limit:   { icon:"🚫", title:"Monthly limit reached", sub:`You've used all ${FREE_LIMITS.ENTRIES_PER_MONTH} free entries for ${new Date().toLocaleString("default",{month:"long"})}. Upgrade for unlimited entries.` },
+    budget:  { icon:"🎯", title:"Budget feature is Pro",  sub:"Create and track budgets, set targets per category, and see detailed budget vs actual reports." },
+    cats:    { icon:"🏷️", title:"Custom categories are Pro", sub:"Edit, add, and remove income and expense categories to match your exact business structure." },
+    default: { icon:"⚡", title:"Upgrade to LedgerBook Pro", sub:"Unlock the full power of LedgerBook and grow your business faster." },
   };
   const { icon, title, sub } = reasons[reason] || reasons.default;
 
   const FEATURES = [
-    ["♾️", "Unlimited entries",           "Free plan: 20/month"],
-    ["🎯", "Budget creation & tracking",  "Set targets, track actuals"],
-    ["🏷️", "Custom categories",           "Add, edit, remove categories"],
-    ["🚫", "No ads, ever",                "Clean, distraction-free UI"],
-    ["📊", "All reports & exports",       "CSV, PDF income statements"],
-    ["🔒", "Priority support",            "Direct email support"],
+    ["♾️", "Unlimited entries",          "Free plan: 20/month"],
+    ["🎯", "Budget creation & tracking", "Set targets, track actuals"],
+    ["🏷️", "Custom categories",          "Add, edit, remove categories"],
+    ["🚫", "No ads, ever",               "Clean, distraction-free UI"],
+    ["📊", "All reports & exports",      "CSV, PDF income statements"],
   ];
+
+  const [selectedPlan, setSelectedPlan] = React.useState("annually");
+  const [loading,      setLoading]      = React.useState(false);
+  const [error,        setError]        = React.useState("");
+  const [screen,       setScreen]       = React.useState("pricing"); // "pricing" | "features"
+
+  const prices = PLAN_PRICES[currency?.code] || PLAN_PRICES.default;
+
+  const PLANS = [
+    {
+      id: "monthly",
+      label: "Monthly",
+      price: prices.monthly,
+      perMonth: prices.monthly,
+      discount: null,
+      detail: "Billed monthly, cancel anytime",
+    },
+    {
+      id: "biannually",
+      label: "6 Months",
+      price: prices.biannually,
+      perMonth: null,
+      discount: "Save 16.7%",
+      detail: "One payment every 6 months",
+      popular: true,
+    },
+    {
+      id: "annually",
+      label: "Annual",
+      price: prices.annually,
+      perMonth: null,
+      discount: "Save 25%",
+      detail: "Best value — one payment per year",
+    },
+  ];
+
+  const handleCheckout = async () => {
+    if (!user?.email) return setError("No email found. Please sign out and sign back in.");
+    const plan = PAYSTACK_PLANS[selectedPlan];
+    if (!plan.code || plan.code.includes("_CODE_HERE")) {
+      return setError("Payment is not yet configured. Contact v.bookenterprise@gmail.com to upgrade.");
+    }
+    setLoading(true);
+    setError("");
+    try {
+      // Store uid in sessionStorage so the callback page can use it
+      sessionStorage.setItem("lb_pending_uid", user.id);
+
+      const res  = await fetch("/api/paystack-init", {
+        method:  "POST",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify({
+          email:    user.email,
+          planCode: plan.code,
+          uid:      user.id,
+          currency: currency?.code || "NGN",
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.authorization_url) throw new Error(data.error || "Failed to start checkout");
+      // Redirect to Paystack checkout
+      window.location.href = data.authorization_url;
+    } catch(e) {
+      setError(e.message || "Something went wrong. Try again.");
+      setLoading(false);
+    }
+  };
 
   return (
     <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.6)", zIndex:500,
@@ -799,61 +906,120 @@ function UpgradeModal({ onClose, reason="default", monthCount=0, p="#075E54" }) 
       onClick={e=>{ if(e.target===e.currentTarget) onClose(); }}>
       <style>{UPGRADE_CSS}</style>
       <div className="um-card" style={{ width:"100%", maxWidth:520, background:"#fff",
-        borderRadius:"28px 28px 0 0", overflow:"hidden",
+        borderRadius:"28px 28px 0 0", overflow:"hidden", maxHeight:"92vh",
+        display:"flex", flexDirection:"column",
         boxShadow:"0 -8px 40px rgba(0,0,0,0.2)",
-        paddingBottom:"max(28px,env(safe-area-inset-bottom,28px))" }}>
+        paddingBottom:"max(20px,env(safe-area-inset-bottom,20px))" }}>
 
         {/* Hero */}
         <div style={{ background:`linear-gradient(135deg,#054d44,#075E54,#128C7E)`,
-          padding:"32px 24px 28px", textAlign:"center", position:"relative" }}>
-          <button onClick={onClose} style={{ position:"absolute", top:16, right:16,
+          padding:"28px 24px 22px", textAlign:"center", position:"relative", flexShrink:0 }}>
+          <button onClick={onClose} style={{ position:"absolute", top:14, right:14,
             background:"rgba(255,255,255,.18)", border:"none", borderRadius:"50%",
-            width:32, height:32, color:"#fff", fontSize:16, cursor:"pointer",
+            width:30, height:30, color:"#fff", fontSize:15, cursor:"pointer",
             display:"flex", alignItems:"center", justifyContent:"center" }}>✕</button>
-          <div className="um-badge" style={{ fontSize:52, marginBottom:12 }}>{icon}</div>
-          <div style={{ color:"#fff", fontWeight:900, fontSize:20, letterSpacing:"-.4px", marginBottom:6 }}>{title}</div>
-          <div style={{ color:"rgba(255,255,255,.72)", fontSize:13, lineHeight:1.5, maxWidth:320, margin:"0 auto" }}>{sub}</div>
+          <div className="um-badge" style={{ fontSize:44, marginBottom:10 }}>{icon}</div>
+          <div style={{ color:"#fff", fontWeight:900, fontSize:19, letterSpacing:"-.3px", marginBottom:5 }}>{title}</div>
+          <div style={{ color:"rgba(255,255,255,.72)", fontSize:13, lineHeight:1.5 }}>{sub}</div>
           {reason==="limit"&&(
-            <div style={{ marginTop:14, background:"rgba(255,255,255,.15)", borderRadius:12,
-              padding:"8px 16px", display:"inline-block", color:"#fff", fontSize:12, fontWeight:700 }}>
+            <div style={{ marginTop:12, background:"rgba(255,255,255,.15)", borderRadius:10,
+              padding:"6px 14px", display:"inline-block", color:"#fff", fontSize:12, fontWeight:700 }}>
               {monthCount}/{FREE_LIMITS.ENTRIES_PER_MONTH} entries used this month
             </div>
           )}
-        </div>
-
-        {/* Features list */}
-        <div style={{ padding:"20px 24px 0" }}>
-          <div style={{ fontSize:11, fontWeight:800, color:"#aaa", textTransform:"uppercase",
-            letterSpacing:.8, marginBottom:4 }}>Everything in Pro</div>
-          {FEATURES.map(([em, feat, detail])=>(
-            <div key={feat} className="um-row">
-              <span style={{ fontSize:20, flexShrink:0, marginTop:1 }}>{em}</span>
-              <div>
-                <div style={{ fontWeight:700, fontSize:14, color:"#222" }}>{feat}</div>
-                <div style={{ fontSize:12, color:"#aaa", marginTop:1 }}>{detail}</div>
-              </div>
-              <span style={{ marginLeft:"auto", color:"#25D366", fontWeight:900, fontSize:16, flexShrink:0 }}>✓</span>
-            </div>
-          ))}
-        </div>
-
-        {/* CTA */}
-        <div style={{ padding:"20px 24px 0" }}>
-          <div style={{ background:"linear-gradient(135deg,#054d44,#128C7E)", borderRadius:16,
-            padding:"18px 20px", textAlign:"center", marginBottom:12, cursor:"pointer",
-            boxShadow:"0 6px 20px rgba(7,94,84,.35)" }}
-            onClick={()=>{ alert("Payment integration coming soon!\n\nContact v.bookenterprise@gmail.com to upgrade manually."); }}>
-            <div style={{ color:"#fff", fontWeight:900, fontSize:17 }}>Upgrade to Pro ✨</div>
-            <div style={{ color:"rgba(255,255,255,.7)", fontSize:12, marginTop:4 }}>
-              Contact us to activate your Pro plan
-            </div>
+          {/* Tab switcher */}
+          <div style={{ display:"flex", background:"rgba(0,0,0,.2)", borderRadius:10, padding:3,
+            marginTop:16, gap:2 }}>
+            {[["pricing","💳 Pricing"],["features","✅ Features"]].map(([id,label])=>(
+              <button key={id} onClick={()=>setScreen(id)}
+                style={{ flex:1, padding:"8px", border:"none", borderRadius:8, fontSize:12,
+                  fontWeight:700, cursor:"pointer", transition:"all .15s",
+                  background: screen===id ? "rgba(255,255,255,.25)" : "transparent",
+                  color: screen===id ? "#fff" : "rgba(255,255,255,.6)" }}>
+                {label}
+              </button>
+            ))}
           </div>
-          <button onClick={onClose}
-            style={{ width:"100%", padding:"13px", background:"none", border:"none",
-              color:"#aaa", fontSize:13, cursor:"pointer", fontWeight:600 }}>
-            Continue with free plan
-          </button>
         </div>
+
+        {/* Scrollable body */}
+        <div style={{ flex:1, overflowY:"auto", padding:"20px 20px 0" }}>
+
+          {screen==="pricing" && <>
+            <div style={{ fontSize:11, fontWeight:800, color:"#aaa", textTransform:"uppercase",
+              letterSpacing:.8, marginBottom:12 }}>Choose your plan · {prices.note}</div>
+
+            {PLANS.map(plan=>(
+              <div key={plan.id} className={`um-plan${selectedPlan===plan.id?" selected":""}${plan.popular?" popular":""}`}
+                onClick={()=>setSelectedPlan(plan.id)}>
+                <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+                  <div>
+                    <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:3 }}>
+                      <div style={{ fontWeight:800, fontSize:15, color:"#222" }}>{plan.label}</div>
+                      {plan.discount&&(
+                        <span style={{ background:"#e8f9f0", color:"#1b5e20", fontSize:10,
+                          fontWeight:800, padding:"2px 8px", borderRadius:6 }}>{plan.discount}</span>
+                      )}
+                    </div>
+                    <div style={{ fontSize:12, color:"#aaa" }}>{plan.detail}</div>
+                  </div>
+                  <div style={{ textAlign:"right", flexShrink:0 }}>
+                    <div style={{ fontWeight:900, fontSize:20, color:"#075E54" }}>{plan.price}</div>
+                  </div>
+                </div>
+                {selectedPlan===plan.id&&(
+                  <div style={{ marginTop:8, display:"flex", alignItems:"center", gap:6,
+                    color:"#075E54", fontSize:12, fontWeight:700 }}>
+                    <span>✓</span> Selected
+                  </div>
+                )}
+              </div>
+            ))}
+
+            {error&&(
+              <div style={{ background:"#fff3f0", border:"1px solid #ffcdd2", borderRadius:10,
+                padding:"10px 14px", color:"#c62828", fontSize:12, marginTop:8 }}>
+                ⚠️ {error}
+              </div>
+            )}
+
+            <button className="um-pay-btn" onClick={handleCheckout} disabled={loading}
+              style={{ marginTop:14 }}>
+              {loading
+                ? <><div className="um-spin"/><span>Opening checkout…</span></>
+                : <span>Pay with Paystack 🔒</span>}
+            </button>
+            <div style={{ textAlign:"center", fontSize:11, color:"#ccc", marginTop:10, marginBottom:4 }}>
+              Secured by Paystack · Cancel anytime from your Paystack email
+            </div>
+          </>}
+
+          {screen==="features" && <>
+            <div style={{ fontSize:11, fontWeight:800, color:"#aaa", textTransform:"uppercase",
+              letterSpacing:.8, marginBottom:4 }}>Everything in Pro</div>
+            {FEATURES.map(([em, feat, detail])=>(
+              <div key={feat} className="um-row">
+                <span style={{ fontSize:20, flexShrink:0, marginTop:1 }}>{em}</span>
+                <div>
+                  <div style={{ fontWeight:700, fontSize:14, color:"#222" }}>{feat}</div>
+                  <div style={{ fontSize:12, color:"#aaa", marginTop:1 }}>{detail}</div>
+                </div>
+                <span style={{ marginLeft:"auto", color:"#25D366", fontWeight:900, fontSize:16, flexShrink:0 }}>✓</span>
+              </div>
+            ))}
+            <button className="um-pay-btn" onClick={()=>setScreen("pricing")}
+              style={{ marginTop:16 }}>
+              See Pricing →
+            </button>
+          </>}
+
+        </div>
+
+        <button onClick={onClose}
+          style={{ margin:"12px 20px 0", padding:"11px", background:"none", border:"none",
+            color:"#aaa", fontSize:13, cursor:"pointer", fontWeight:600, flexShrink:0 }}>
+          Continue with free plan
+        </button>
       </div>
     </div>
   );
@@ -1540,7 +1706,7 @@ function KeyboardWidget({ currency, branding, incCats, expCats, onClose }) {
 // ═══════════════════════════════════════════════════════════════
 const COLORS = ["#075E54","#1a237e","#880e4f","#bf360c","#1b5e20","#4a148c","#006064","#212121","#b71c1c","#e65100","#f57f17","#37474f"];
 
-function SettingsScreen({ branding, setBranding, currency, setCurrency, incCats, setIncCats, expCats, setExpCats, user, onLogout, onClose, isPro=false, onUpgrade }) {
+function SettingsScreen({ branding, setBranding, currency, setCurrency, incCats, setIncCats, expCats, setExpCats, user, onLogout, onClose, isPro=false, onUpgrade, planInfo=null }) {
   const [tab, setTab] = useState("brand");
   const [newCat, setNewCat] = useState({type:"income",value:""});
   const logoRef = useRef();
@@ -1761,6 +1927,28 @@ function SettingsScreen({ branding, setBranding, currency, setCurrency, incCats,
               {isPro ? "✨ Pro Plan" : "🆓 Free Plan"}
             </div>
           </div>
+
+          {/* Subscription info card (Pro) */}
+          {isPro && planInfo && (
+            <div style={{ background:"rgba(255,255,255,.08)", borderRadius:14, padding:"14px 18px", marginBottom:14, border:"1px solid rgba(255,255,255,.12)" }}>
+              <div style={{ fontSize:10, fontWeight:800, color:"rgba(255,255,255,.5)", textTransform:"uppercase", letterSpacing:1, marginBottom:10 }}>Subscription Details</div>
+              {[
+                ["Plan",     planInfo.interval ? { monthly:"Monthly", biannually:"6-Month", annually:"Annual" }[planInfo.interval] || planInfo.interval : "Pro"],
+                ["Status",   planInfo.status === "active" ? "✅ Active" : planInfo.status === "cancelled" ? "❌ Cancelled" : planInfo.status || "Active"],
+                ["Renews",   planInfo.expiresAt ? fmtDate(planInfo.expiresAt) : "—"],
+                ["Activated",planInfo.activatedAt ? fmtDate(planInfo.activatedAt) : "—"],
+              ].map(([k,v])=>(
+                <div key={k} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"5px 0", borderBottom:"1px solid rgba(255,255,255,.07)" }}>
+                  <span style={{ color:"rgba(255,255,255,.5)", fontSize:12 }}>{k}</span>
+                  <span style={{ fontWeight:700, color:"#fff", fontSize:12 }}>{v}</span>
+                </div>
+              ))}
+              <div style={{ marginTop:10, fontSize:11, color:"rgba(255,255,255,.4)", lineHeight:1.5 }}>
+                To cancel, open the subscription email from Paystack and click "Cancel subscription".
+              </div>
+            </div>
+          )}
+
           {/* Upgrade CTA for free users */}
           {!isPro && (
             <button onClick={onUpgrade}
@@ -1960,6 +2148,7 @@ function AppCore({ user, onLogout }) {
   const [dateRange, setDateRange] = useState({from:"",to:""});
   const [budgets,   setBudgets]   = useState([]);
   const [plan,      setPlan]      = useState("free"); // "free" | "pro"
+  const [planInfo,  setPlanInfo]  = useState(null);   // full plan doc data
   const [showUpgrade, setShowUpgrade] = useState(false); // upgrade modal
   const [budgetView,setBudgetView]= useState("list"); // "list"|"create"|"detail"
   const [activeBudget,setActiveBudget] = useState(null); // budget being viewed/edited
@@ -1981,10 +2170,21 @@ function AppCore({ user, onLogout }) {
           if (d.incCats)   setIncCats(d.incCats);
           if (d.expCats)   setExpCats(d.expCats);
         }
-        // Load plan (free/pro)
+        // Load plan (free/pro) — also auto-downgrade if subscription has expired
         const planSnap = await getDoc(planDoc(uid));
         if (planSnap.exists() && planSnap.data().plan) {
-          setPlan(planSnap.data().plan);
+          const planData  = planSnap.data();
+          const expiresAt = planData.expiresAt;
+          // Auto-downgrade if Pro subscription has expired
+          if (planData.plan === "pro" && expiresAt && new Date(expiresAt) < new Date()) {
+            setPlan("free");
+            // Write downgrade back to Firestore so it persists
+            setDoc(planDoc(uid), { plan: "free", status: "expired", expiredAt: new Date().toISOString() }, { merge: true })
+              .catch(()=>{});
+          } else {
+            setPlan(planData.plan);
+          }
+          setPlanInfo(planData);
         }
         // Real-time listener for entries
         const q = query(entriesCol(uid), orderBy("date", "desc"));
@@ -2771,9 +2971,10 @@ function AppCore({ user, onLogout }) {
         {showSt&&<SettingsScreen branding={branding} setBranding={setBranding} currency={currency} setCurrency={setCurrency}
           incCats={incCats} setIncCats={setIncCats} expCats={expCats} setExpCats={setExpCats}
           user={user} onLogout={onLogout} onClose={()=>setShowSt(false)}
-          isPro={isPro} onUpgrade={()=>{ setShowSt(false); setShowUpgrade(true); }}/>}
+          isPro={isPro} onUpgrade={()=>{ setShowSt(false); setShowUpgrade(true); }}
+          planInfo={planInfo}/>}
         {showDP&&<DateRangePicker preset={datePreset} dateRange={dateRange} onChange={handleDateChange} onClose={()=>setShowDP(false)} primaryColor={p}/>}
-        {showUpgrade&&<UpgradeModal onClose={()=>setShowUpgrade(false)} reason={atLimit?"limit":"default"} monthCount={monthCount} p={p}/>}
+        {showUpgrade&&<UpgradeModal onClose={()=>setShowUpgrade(false)} reason={atLimit?"limit":"default"} monthCount={monthCount} p={p} user={user} currency={currency}/>}
 
         {/* WhatsApp Modal */}
         {showWA&&(

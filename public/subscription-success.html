@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Payment Successful — LedgerBook Pro</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;700;900&display=swap" rel="stylesheet"/>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'DM Sans',sans-serif;background:linear-gradient(135deg,#054d44,#075E54,#128C7E);
+    min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}
+  .card{background:#fff;border-radius:28px;padding:48px 36px;text-align:center;max-width:420px;width:100%;
+    box-shadow:0 24px 64px rgba(0,0,0,0.25)}
+  .icon{font-size:72px;margin-bottom:20px;animation:pop .5s cubic-bezier(.22,.68,0,1.4) both}
+  @keyframes pop{from{transform:scale(0);opacity:0}to{transform:scale(1);opacity:1}}
+  h1{font-size:26px;font-weight:900;color:#0a1612;letter-spacing:-.5px;margin-bottom:10px}
+  .sub{color:#888;font-size:15px;line-height:1.65;margin-bottom:28px}
+  .plan-pill{display:inline-block;background:#e8f9f0;color:#1b5e20;font-weight:800;font-size:13px;
+    border-radius:20px;padding:7px 18px;margin-bottom:28px}
+  .btn{display:block;width:100%;padding:16px;background:linear-gradient(135deg,#054d44,#128C7E);
+    color:#fff;border:none;border-radius:16px;font-size:16px;font-weight:900;cursor:pointer;
+    text-decoration:none;box-shadow:0 6px 20px rgba(7,94,84,.35)}
+  .loading{color:#aaa;font-size:13px;margin-top:16px}
+  .error-box{background:#fff3f0;border:1px solid #ffcdd2;border-radius:12px;
+    padding:14px 16px;color:#c62828;font-size:13px;margin-bottom:16px;display:none}
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="icon" id="icon">⏳</div>
+  <h1 id="title">Verifying payment…</h1>
+  <p class="sub" id="sub">Please wait while we confirm your subscription.</p>
+  <div class="error-box" id="error-box"></div>
+  <div id="plan-pill-wrap"></div>
+  <a href="https://ledgerbook-nu.vercel.app" class="btn" id="cta-btn" style="display:none">
+    Open LedgerBook Pro ✨
+  </a>
+  <div class="loading" id="loading">Contacting payment server…</div>
+</div>
+
+<script>
+(async () => {
+  const params    = new URLSearchParams(window.location.search);
+  const reference = params.get("reference") || params.get("trxref");
+  const uid       = params.get("uid") || sessionStorage.getItem("lb_pending_uid");
+
+  const iconEl   = document.getElementById("icon");
+  const titleEl  = document.getElementById("title");
+  const subEl    = document.getElementById("sub");
+  const ctaEl    = document.getElementById("cta-btn");
+  const loadEl   = document.getElementById("loading");
+  const errEl    = document.getElementById("error-box");
+  const pillWrap = document.getElementById("plan-pill-wrap");
+
+  function showSuccess(interval) {
+    const labels = { monthly:"Monthly Plan", biannually:"6-Month Plan", annually:"Annual Plan" };
+    iconEl.textContent  = "🎉";
+    titleEl.textContent = "You're now on Pro!";
+    subEl.textContent   = "Your payment was confirmed. All Pro features are now unlocked — enjoy unlimited entries, budgets, and no ads.";
+    pillWrap.innerHTML  = `<div class="plan-pill">✨ LedgerBook Pro · ${labels[interval]||"Pro Plan"}</div>`;
+    ctaEl.style.display = "block";
+    loadEl.style.display = "none";
+  }
+
+  function showError(msg) {
+    iconEl.textContent  = "⚠️";
+    titleEl.textContent = "Payment issue";
+    subEl.textContent   = "We couldn't verify your payment automatically. Your account will be upgraded once our team reviews it.";
+    errEl.textContent   = msg;
+    errEl.style.display = "block";
+    ctaEl.textContent   = "Return to LedgerBook";
+    ctaEl.style.display = "block";
+    loadEl.style.display = "none";
+  }
+
+  if (!reference) {
+    return showError("No payment reference found in URL. Contact support.");
+  }
+
+  try {
+    const qs  = uid ? `?reference=${reference}&uid=${uid}` : `?reference=${reference}`;
+    const res = await fetch(`/api/paystack-verify${qs}`);
+    const data = await res.json();
+    if (data.success) {
+      showSuccess(data.interval || "monthly");
+    } else {
+      showError(data.error || "Verification failed");
+    }
+  } catch(e) {
+    showError("Network error. Your payment may still have been processed — contact v.bookenterprise@gmail.com.");
+  }
+})();
+</script>
+</body>
+</html>

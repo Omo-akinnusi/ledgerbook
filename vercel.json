@@ -1,7 +1,8 @@
 {
   "routes": [
-    { "src": "/privacy", "dest": "/privacy.html" },
-    { "src": "/terms",   "dest": "/terms.html"   },
-    { "src": "/admin",   "dest": "/admin.html"    }
+    { "src": "/privacy",              "dest": "/privacy.html"              },
+    { "src": "/terms",                "dest": "/terms.html"                },
+    { "src": "/admin",                "dest": "/admin.html"                },
+    { "src": "/subscription-success", "dest": "/subscription-success.html" }
   ]
 }
