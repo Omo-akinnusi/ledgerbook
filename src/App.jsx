@@ -845,119 +845,200 @@ function SplashScreen() {
   const css = `
     @keyframes sp-cloud1{0%{transform:translateX(0)}100%{transform:translateX(16px)}}
     @keyframes sp-cloud2{0%{transform:translateX(0)}100%{transform:translateX(-12px)}}
-    @keyframes sp-cloud3{0%{transform:translateX(0)}100%{transform:translateX(9px)}}
-    @keyframes sp-moto{0%{left:-90px}100%{left:108%}}
+    @keyframes sp-moto{0%{left:-100px}100%{left:108%}}
     @keyframes sp-logo{0%,100%{transform:translateY(0) scale(1)}45%{transform:translateY(-11px) scale(1.06)}65%{transform:translateY(-5px) scale(1.02)}}
     @keyframes sp-fadein{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
     @keyframes sp-dot{0%,80%,100%{transform:scale(.55);opacity:.35}40%{transform:scale(1);opacity:1}}
-    @keyframes sp-coin1{0%,100%{transform:translateY(0) rotate(-7deg)}50%{transform:translateY(-11px) rotate(7deg)}}
-    @keyframes sp-coin2{0%,100%{transform:translateY(0) rotate(5deg)}50%{transform:translateY(-8px) rotate(-5deg)}}
-    @keyframes sp-coin3{0%,100%{transform:translateY(0)}50%{transform:translateY(-9px)}}
-    @keyframes sp-star{0%,100%{opacity:0;transform:scale(0) rotate(0)}50%{opacity:1;transform:scale(1) rotate(180deg)}}
-    @keyframes sp-hill{0%{transform:translateX(0)}100%{transform:translateX(-6px)}}
-    .sp-c1{animation:sp-cloud1 5s ease-in-out alternate infinite}
-    .sp-c2{animation:sp-cloud2 7s ease-in-out alternate infinite}
-    .sp-c3{animation:sp-cloud3 4s ease-in-out alternate infinite}
-    .sp-c4{animation:sp-cloud1 6s 1s ease-in-out alternate infinite}
-    .sp-c5{animation:sp-cloud2 5.5s 2s ease-in-out alternate infinite}
+    @keyframes sp-coin{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+    @keyframes sp-star{0%,100%{opacity:0;transform:scale(0)}50%{opacity:1;transform:scale(1)}}
+    @keyframes sp-hill{0%{transform:translateX(0)}100%{transform:translateX(-5px)}}
     .sp-logo{animation:sp-logo 2.4s ease-in-out infinite}
     .sp-title{animation:sp-fadein .7s ease-out both}
-    .sp-tag{animation:sp-fadein .7s .18s ease-out both}
+    .sp-tag{animation:sp-fadein .7s .2s ease-out both}
     .sp-d1{animation:sp-dot 1.3s ease-in-out infinite}
     .sp-d2{animation:sp-dot 1.3s .22s ease-in-out infinite}
     .sp-d3{animation:sp-dot 1.3s .44s ease-in-out infinite}
-    .sp-coin1{animation:sp-coin1 2.6s ease-in-out infinite}
-    .sp-coin2{animation:sp-coin2 3.1s .8s ease-in-out infinite}
-    .sp-coin3{animation:sp-coin3 2.9s 1.5s ease-in-out infinite}
-    .sp-star1{animation:sp-star 2.2s .1s ease-in-out infinite}
-    .sp-star2{animation:sp-star 2.5s .9s ease-in-out infinite}
-    .sp-star3{animation:sp-star 2s 1.7s ease-in-out infinite}
-    .sp-hill{animation:sp-hill 7s ease-in-out alternate infinite}
-    .sp-moto{position:absolute;bottom:97px;animation:sp-moto 4.2s linear infinite}
+    .sp-moto{position:absolute;bottom:96px;animation:sp-moto 4s linear infinite}
   `;
-  const Cloud = ({cx,cy,r1,r2,r3,cls,op=0.09}) => (
-    React.createElement('g',{className:cls},
-      React.createElement('ellipse',{cx,cy,rx:r1,ry:r1*.54,fill:`rgba(255,255,255,${op})`}),
-      React.createElement('ellipse',{cx:cx+r1*.45,cy:cy-r1*.28,rx:r2,ry:r2*.56,fill:`rgba(255,255,255,${op})`}),
-      React.createElement('ellipse',{cx:cx-r1*.3,cy:cy-r1*.18,rx:r3,ry:r3*.55,fill:`rgba(255,255,255,${op-.01})`})
-    )
-  );
-  const Coin = ({cx,cy,r,sym,cls}) => (
-    React.createElement('g',{className:cls,style:{transformOrigin:`${cx}px ${cy}px`}},
-      React.createElement('circle',{cx,cy,r,fill:"rgba(255,215,0,.2)",stroke:"rgba(255,215,0,.4)",strokeWidth:"1.5"}),
-      React.createElement('text',{x:cx,y:cy+r*.38,textAnchor:"middle",fontSize:r*.9,fill:"rgba(255,215,0,.7)"},sym)
-    )
-  );
-  const Star = ({cx,cy,cls}) => {
-    const p=`M${cx} ${cy-5}L${cx+1.2} ${cy-1.2}L${cx+5} ${cy}L${cx+1.2} ${cy+1.2}L${cx} ${cy+5}L${cx-1.2} ${cy+1.2}L${cx-5} ${cy}L${cx-1.2} ${cy-1.2}Z`;
-    return React.createElement('g',{className:cls,style:{transformOrigin:`${cx}px ${cy}px`}},React.createElement('path',{d:p,fill:"rgba(255,255,255,.55)"}));
-  };
   return (
     <div style={{position:"fixed",inset:0,background:"linear-gradient(175deg,#032e28 0%,#054d44 28%,#075E54 55%,#0a7a6c 80%,#0d9688 100%)",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",overflow:"hidden",userSelect:"none"}}>
       <style>{css}</style>
-      <svg style={{position:"absolute",top:0,left:0,width:"100%",height:"100%",overflow:"visible"}} viewBox="0 0 390 844" preserveAspectRatio="xMidYMid slice">
-        <Cloud cx={72}  cy={88}  r1={50} r2={36} r3={28} cls="sp-c1"/>
-        <Cloud cx={295} cy={125} r1={60} r2={44} r3={32} cls="sp-c2" op={0.07}/>
-        <Cloud cx={178} cy={58}  r1={34} r2={24} r3={18} cls="sp-c3" op={0.06}/>
-        <Cloud cx={340} cy={260} r1={44} r2={30} r3={22} cls="sp-c4" op={0.06}/>
-        <Cloud cx={38}  cy={205} r1={36} r2={26} r3={18} cls="sp-c5" op={0.055}/>
-        <Coin cx={56}  cy={182} r={14} sym="₦" cls="sp-coin1"/>
-        <Coin cx={334} cy={218} r={11} sym="$" cls="sp-coin2"/>
-        <Coin cx={198} cy={158} r={9}  sym="£" cls="sp-coin3"/>
-        <Star cx={118} cy={302} cls="sp-star1"/>
-        <Star cx={272} cy={182} cls="sp-star2"/>
-        <Star cx={352} cy={358} cls="sp-star3"/>
-        <g className="sp-hill">
-          <path d="M-20 722Q85 642 185 678Q285 715 385 650Q430 624 460 642L460 844L-20 844Z" fill="rgba(0,0,0,.17)"/>
-          <path d="M-20 752Q55 702 155 720Q255 738 345 698Q392 676 460 698L460 844L-20 844Z" fill="rgba(0,0,0,.24)"/>
-          {Array.from({length:19},(_,i)=>{
-            const x=8+i*22;
-            return <g key={i}><rect x={x} y={717} width="2" height="13" rx="1" fill="rgba(255,255,255,.22)"/><rect x={x-4} y={715} width="10" height="2" rx="1" fill="rgba(255,255,255,.17)"/></g>;
-          })}
-          <path d="M-20 788Q105 748 225 762Q325 774 425 752Q448 746 470 755L470 844L-20 844Z" fill="rgba(0,0,0,.33)"/>
-          {[[38,770],[112,761],[292,762],[364,752]].map(([x,y],i)=>(
-            <g key={i}>
-              <rect x={x-1.5} y={y+9} width="3" height="11" fill="rgba(255,255,255,.16)"/>
-              <ellipse cx={x} cy={y+7} rx={8} ry={10} fill="rgba(255,255,255,.14)"/>
-              <ellipse cx={x} cy={y+2} rx={5}  ry={7}  fill="rgba(255,255,255,.11)"/>
-            </g>
-          ))}
+
+      {/* ── Full-screen background SVG ── */}
+      <svg style={{position:"absolute",top:0,left:0,width:"100%",height:"100%",overflow:"visible",pointerEvents:"none"}}
+        viewBox="0 0 390 844" preserveAspectRatio="xMidYMid slice">
+
+        {/* Cloud 1 */}
+        <g style={{animation:"sp-cloud1 5s ease-in-out alternate infinite"}}>
+          <ellipse cx="72"  cy="88"  rx="50" ry="27" fill="rgba(255,255,255,.09)"/>
+          <ellipse cx="95"  cy="76"  rx="36" ry="20" fill="rgba(255,255,255,.09)"/>
+          <ellipse cx="51"  cy="81"  rx="26" ry="14" fill="rgba(255,255,255,.08)"/>
         </g>
+        {/* Cloud 2 */}
+        <g style={{animation:"sp-cloud2 7s ease-in-out alternate infinite"}}>
+          <ellipse cx="295" cy="125" rx="60" ry="32" fill="rgba(255,255,255,.07)"/>
+          <ellipse cx="322" cy="112" rx="44" ry="24" fill="rgba(255,255,255,.07)"/>
+          <ellipse cx="272" cy="118" rx="30" ry="17" fill="rgba(255,255,255,.06)"/>
+        </g>
+        {/* Cloud 3 */}
+        <g style={{animation:"sp-cloud1 4.5s 1s ease-in-out alternate infinite"}}>
+          <ellipse cx="178" cy="56"  rx="34" ry="18" fill="rgba(255,255,255,.06)"/>
+          <ellipse cx="198" cy="46"  rx="24" ry="14" fill="rgba(255,255,255,.05)"/>
+        </g>
+        {/* Cloud 4 */}
+        <g style={{animation:"sp-cloud2 6s 0.5s ease-in-out alternate infinite"}}>
+          <ellipse cx="340" cy="262" rx="44" ry="22" fill="rgba(255,255,255,.06)"/>
+          <ellipse cx="364" cy="251" rx="30" ry="17" fill="rgba(255,255,255,.05)"/>
+        </g>
+        {/* Cloud 5 */}
+        <g style={{animation:"sp-cloud1 5.5s 2s ease-in-out alternate infinite"}}>
+          <ellipse cx="38"  cy="207" rx="36" ry="19" fill="rgba(255,255,255,.055)"/>
+          <ellipse cx="60"  cy="197" rx="26" ry="15" fill="rgba(255,255,255,.05)"/>
+        </g>
+
+        {/* Floating coins */}
+        <g style={{animation:"sp-coin 2.6s ease-in-out infinite",transformOrigin:"56px 182px"}}>
+          <circle cx="56" cy="182" r="14" fill="rgba(255,215,0,.2)" stroke="rgba(255,215,0,.4)" strokeWidth="1.5"/>
+          <text x="56" y="187" textAnchor="middle" fontSize="12" fill="rgba(255,215,0,.7)">₦</text>
+        </g>
+        <g style={{animation:"sp-coin 3.1s .8s ease-in-out infinite",transformOrigin:"334px 218px"}}>
+          <circle cx="334" cy="218" r="11" fill="rgba(255,215,0,.17)" stroke="rgba(255,215,0,.35)" strokeWidth="1.5"/>
+          <text x="334" y="222" textAnchor="middle" fontSize="10" fill="rgba(255,215,0,.65)">$</text>
+        </g>
+        <g style={{animation:"sp-coin 2.9s 1.5s ease-in-out infinite",transformOrigin:"198px 158px"}}>
+          <circle cx="198" cy="158" r="9" fill="rgba(255,215,0,.14)" stroke="rgba(255,215,0,.3)" strokeWidth="1.5"/>
+          <text x="198" y="162" textAnchor="middle" fontSize="9" fill="rgba(255,215,0,.6)">£</text>
+        </g>
+
+        {/* Sparkle stars */}
+        <g style={{animation:"sp-star 2.2s .1s ease-in-out infinite",transformOrigin:"118px 302px"}}>
+          <path d="M118 296 L119.5 301 L118 306 L116.5 301 Z" fill="rgba(255,255,255,.55)"/>
+          <path d="M112 302 L117 300 L122 302 L117 304 Z" fill="rgba(255,255,255,.55)"/>
+        </g>
+        <g style={{animation:"sp-star 2.5s .9s ease-in-out infinite",transformOrigin:"272px 182px"}}>
+          <path d="M272 176 L273.5 181 L272 186 L270.5 181 Z" fill="rgba(255,255,255,.45)"/>
+          <path d="M266 182 L271 180 L276 182 L271 184 Z" fill="rgba(255,255,255,.45)"/>
+        </g>
+        <g style={{animation:"sp-star 2s 1.7s ease-in-out infinite",transformOrigin:"352px 358px"}}>
+          <path d="M352 352 L353.5 357 L352 362 L350.5 357 Z" fill="rgba(255,255,255,.4)"/>
+          <path d="M346 358 L351 356 L356 358 L351 360 Z" fill="rgba(255,255,255,.4)"/>
+        </g>
+
+        {/* Rolling hills */}
+        <g style={{animation:"sp-hill 7s ease-in-out alternate infinite"}}>
+          {/* Back hill */}
+          <path d="M-20 722 Q85 642 185 678 Q285 715 385 650 Q430 624 460 642 L460 844 L-20 844 Z" fill="rgba(0,0,0,.17)"/>
+          {/* Mid hill */}
+          <path d="M-20 752 Q55 702 155 720 Q255 738 345 698 Q392 676 460 698 L460 844 L-20 844 Z" fill="rgba(0,0,0,.24)"/>
+          {/* Fence posts */}
+          <rect x="8"   y="717" width="2" height="13" rx="1" fill="rgba(255,255,255,.22)"/>
+          <rect x="4"   y="715" width="10" height="2" rx="1" fill="rgba(255,255,255,.17)"/>
+          <rect x="30"  y="718" width="2" height="13" rx="1" fill="rgba(255,255,255,.22)"/>
+          <rect x="26"  y="716" width="10" height="2" rx="1" fill="rgba(255,255,255,.17)"/>
+          <rect x="52"  y="717" width="2" height="13" rx="1" fill="rgba(255,255,255,.22)"/>
+          <rect x="48"  y="715" width="10" height="2" rx="1" fill="rgba(255,255,255,.17)"/>
+          <rect x="74"  y="716" width="2" height="13" rx="1" fill="rgba(255,255,255,.22)"/>
+          <rect x="70"  y="714" width="10" height="2" rx="1" fill="rgba(255,255,255,.17)"/>
+          <rect x="96"  y="717" width="2" height="13" rx="1" fill="rgba(255,255,255,.22)"/>
+          <rect x="92"  y="715" width="10" height="2" rx="1" fill="rgba(255,255,255,.17)"/>
+          <rect x="118" y="718" width="2" height="13" rx="1" fill="rgba(255,255,255,.22)"/>
+          <rect x="114" y="716" width="10" height="2" rx="1" fill="rgba(255,255,255,.17)"/>
+          <rect x="140" y="717" width="2" height="13" rx="1" fill="rgba(255,255,255,.22)"/>
+          <rect x="136" y="715" width="10" height="2" rx="1" fill="rgba(255,255,255,.17)"/>
+          <rect x="162" y="716" width="2" height="13" rx="1" fill="rgba(255,255,255,.22)"/>
+          <rect x="158" y="714" width="10" height="2" rx="1" fill="rgba(255,255,255,.17)"/>
+          <rect x="184" y="717" width="2" height="13" rx="1" fill="rgba(255,255,255,.22)"/>
+          <rect x="180" y="715" width="10" height="2" rx="1" fill="rgba(255,255,255,.17)"/>
+          <rect x="206" y="718" width="2" height="13" rx="1" fill="rgba(255,255,255,.22)"/>
+          <rect x="202" y="716" width="10" height="2" rx="1" fill="rgba(255,255,255,.17)"/>
+          <rect x="228" y="717" width="2" height="13" rx="1" fill="rgba(255,255,255,.22)"/>
+          <rect x="224" y="715" width="10" height="2" rx="1" fill="rgba(255,255,255,.17)"/>
+          <rect x="250" y="716" width="2" height="13" rx="1" fill="rgba(255,255,255,.22)"/>
+          <rect x="246" y="714" width="10" height="2" rx="1" fill="rgba(255,255,255,.17)"/>
+          <rect x="272" y="717" width="2" height="13" rx="1" fill="rgba(255,255,255,.22)"/>
+          <rect x="268" y="715" width="10" height="2" rx="1" fill="rgba(255,255,255,.17)"/>
+          <rect x="294" y="718" width="2" height="13" rx="1" fill="rgba(255,255,255,.22)"/>
+          <rect x="290" y="716" width="10" height="2" rx="1" fill="rgba(255,255,255,.17)"/>
+          <rect x="316" y="717" width="2" height="13" rx="1" fill="rgba(255,255,255,.22)"/>
+          <rect x="312" y="715" width="10" height="2" rx="1" fill="rgba(255,255,255,.17)"/>
+          <rect x="338" y="716" width="2" height="13" rx="1" fill="rgba(255,255,255,.22)"/>
+          <rect x="334" y="714" width="10" height="2" rx="1" fill="rgba(255,255,255,.17)"/>
+          <rect x="360" y="717" width="2" height="13" rx="1" fill="rgba(255,255,255,.22)"/>
+          <rect x="356" y="715" width="10" height="2" rx="1" fill="rgba(255,255,255,.17)"/>
+          {/* Front hill */}
+          <path d="M-20 788 Q105 748 225 762 Q325 774 425 752 Q448 746 470 755 L470 844 L-20 844 Z" fill="rgba(0,0,0,.33)"/>
+          {/* Trees */}
+          <rect x="36.5" y="779" width="3" height="11" fill="rgba(255,255,255,.16)"/>
+          <ellipse cx="38"  cy="777" rx="8"  ry="10" fill="rgba(255,255,255,.14)"/>
+          <ellipse cx="38"  cy="772" rx="5"  ry="7"  fill="rgba(255,255,255,.11)"/>
+          <rect x="110.5" y="770" width="3" height="11" fill="rgba(255,255,255,.16)"/>
+          <ellipse cx="112" cy="768" rx="8"  ry="10" fill="rgba(255,255,255,.14)"/>
+          <ellipse cx="112" cy="763" rx="5"  ry="7"  fill="rgba(255,255,255,.11)"/>
+          <rect x="290.5" y="771" width="3" height="11" fill="rgba(255,255,255,.16)"/>
+          <ellipse cx="292" cy="769" rx="8"  ry="10" fill="rgba(255,255,255,.14)"/>
+          <ellipse cx="292" cy="764" rx="5"  ry="7"  fill="rgba(255,255,255,.11)"/>
+          <rect x="362.5" y="761" width="3" height="11" fill="rgba(255,255,255,.16)"/>
+          <ellipse cx="364" cy="759" rx="8"  ry="10" fill="rgba(255,255,255,.14)"/>
+          <ellipse cx="364" cy="754" rx="5"  ry="7"  fill="rgba(255,255,255,.11)"/>
+        </g>
+
+        {/* Mini bar chart */}
         <g opacity=".22" transform="translate(308,718)">
-          {[[0,30,"#25D366"],[13,44,"#25D366"],[26,24,"#fff"],[39,38,"#25D366"],[52,20,"#fff"]].map(([x,h,c],i)=>(
-            <rect key={i} x={x} y={52-h} width="10" height={h} rx="2" fill={c}/>
-          ))}
+          <rect x="0"  y="22" width="10" height="30" rx="2" fill="#25D366"/>
+          <rect x="13" y="8"  width="10" height="44" rx="2" fill="#25D366"/>
+          <rect x="26" y="28" width="10" height="24" rx="2" fill="rgba(255,255,255,.7)"/>
+          <rect x="39" y="14" width="10" height="38" rx="2" fill="#25D366"/>
+          <rect x="52" y="32" width="10" height="20" rx="2" fill="rgba(255,255,255,.7)"/>
         </g>
       </svg>
+
+      {/* ── Motorcycle (outside SVG for CSS left animation) ── */}
       <div className="sp-moto" style={{zIndex:3}}>
-        <svg width="75" height="40" viewBox="0 0 75 40">
-          <ellipse cx="-10" cy="22" rx="10" ry="3.5" fill="rgba(255,255,255,.1)"/>
-          <ellipse cx="-22" cy="21" rx="7"  ry="2.5" fill="rgba(255,255,255,.06)"/>
-          <circle cx="16" cy="28" r="9"  fill="none" stroke="rgba(255,255,255,.65)" strokeWidth="2.5"/>
-          <circle cx="16" cy="28" r="3.5" fill="rgba(255,255,255,.5)"/>
-          <circle cx="49" cy="28" r="9"  fill="none" stroke="rgba(255,255,255,.65)" strokeWidth="2.5"/>
-          <circle cx="49" cy="28" r="3.5" fill="rgba(255,255,255,.5)"/>
-          <path d="M20 26L32 10L48 12L52 26Z" fill="rgba(255,255,255,.42)"/>
-          <path d="M16 26L20 26L26 8L20 8Z"   fill="rgba(255,255,255,.32)"/>
-          <path d="M28 16Q32 6 36 16L34 26L30 26Z" fill="rgba(255,210,0,.55)"/>
-          <circle cx="32" cy="9" r="6" fill="rgba(255,210,0,.75)"/>
-          <rect x="38" y="8" width="14" height="11" rx="2" fill="rgba(37,211,102,.65)" stroke="rgba(255,255,255,.3)" strokeWidth="1"/>
-          <text x="45" y="16" textAnchor="middle" fontSize="7" fill="rgba(255,255,255,.9)">₦</text>
+        <svg width="76" height="42" viewBox="0 0 76 42" fill="none">
+          {/* Exhaust puffs */}
+          <ellipse cx="-8"  cy="30" rx="9"  ry="3.5" fill="rgba(255,255,255,.1)"/>
+          <ellipse cx="-20" cy="29" rx="6"  ry="2.5" fill="rgba(255,255,255,.06)"/>
+          {/* Wheels */}
+          <circle cx="16" cy="30" r="9"   stroke="rgba(255,255,255,.65)" strokeWidth="2.5"/>
+          <circle cx="16" cy="30" r="3.5" fill="rgba(255,255,255,.55)"/>
+          <circle cx="50" cy="30" r="9"   stroke="rgba(255,255,255,.65)" strokeWidth="2.5"/>
+          <circle cx="50" cy="30" r="3.5" fill="rgba(255,255,255,.55)"/>
+          {/* Bike frame */}
+          <path d="M20 28 L32 12 L49 14 L53 28 Z" fill="rgba(255,255,255,.4)"/>
+          <path d="M16 28 L20 28 L26 10 L20 10 Z"  fill="rgba(255,255,255,.3)"/>
+          {/* Rider torso */}
+          <path d="M28 17 Q32 7 36 17 L34 28 L30 28 Z" fill="rgba(255,210,0,.55)"/>
+          {/* Rider head */}
+          <circle cx="32" cy="10" r="6" fill="rgba(255,210,0,.8)"/>
+          {/* Helmet visor */}
+          <path d="M28 11 Q32 15 36 11" stroke="rgba(0,0,0,.2)" strokeWidth="1.5" fill="none"/>
+          {/* Delivery box */}
+          <rect x="38" y="9"  width="15" height="12" rx="2" fill="rgba(37,211,102,.7)" stroke="rgba(255,255,255,.3)" strokeWidth="1"/>
+          <text x="45.5" y="17" textAnchor="middle" fontSize="7" fill="white" fontWeight="bold">₦</text>
         </svg>
       </div>
-      <div style={{position:"relative",zIndex:10,display:"flex",flexDirection:"column",alignItems:"center",marginTop:-60}}>
+
+      {/* ── Logo + title + dots ── */}
+      <div style={{position:"relative",zIndex:10,display:"flex",flexDirection:"column",alignItems:"center",marginTop:-55}}>
         <div className="sp-logo" style={{width:96,height:96,borderRadius:26,background:"rgba(255,255,255,.14)",backdropFilter:"blur(14px)",border:"2px solid rgba(255,255,255,.24)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:52,marginBottom:20,boxShadow:"0 10px 36px rgba(0,0,0,.32),inset 0 1px 0 rgba(255,255,255,.28)"}}>
           📒
         </div>
-        <div className="sp-title" style={{color:"#fff",fontWeight:900,fontSize:30,letterSpacing:"-.7px",textShadow:"0 2px 18px rgba(0,0,0,.3)",marginBottom:6}}>LedgerBook Pro</div>
-        <div className="sp-tag" style={{color:"rgba(255,255,255,.6)",fontSize:14,fontWeight:500,letterSpacing:".3px",marginBottom:44}}>Track · Grow · Prosper</div>
+        <div className="sp-title" style={{color:"#fff",fontWeight:900,fontSize:30,letterSpacing:"-.7px",textShadow:"0 2px 18px rgba(0,0,0,.3)",marginBottom:6}}>
+          LedgerBook Pro
+        </div>
+        <div className="sp-tag" style={{color:"rgba(255,255,255,.6)",fontSize:14,fontWeight:500,letterSpacing:".3px",marginBottom:44}}>
+          Track · Grow · Prosper
+        </div>
         <div style={{display:"flex",gap:7,alignItems:"center"}}>
           <div className="sp-d1" style={{width:9,height:9,borderRadius:"50%",background:"rgba(255,255,255,.8)"}}/>
           <div className="sp-d2" style={{width:9,height:9,borderRadius:"50%",background:"rgba(255,255,255,.8)"}}/>
           <div className="sp-d3" style={{width:9,height:9,borderRadius:"50%",background:"rgba(255,255,255,.8)"}}/>
         </div>
       </div>
-      <div style={{position:"absolute",bottom:30,fontSize:11,color:"rgba(255,255,255,.32)",fontWeight:600,letterSpacing:".5px",zIndex:10}}>by VBook Enterprise</div>
+
+      <div style={{position:"absolute",bottom:30,fontSize:11,color:"rgba(255,255,255,.3)",fontWeight:600,letterSpacing:".5px",zIndex:10}}>
+        by VBook Enterprise
+      </div>
     </div>
   );
 }
@@ -1102,9 +1183,10 @@ function AuthScreen() {
           <text x="342" y="210" textAnchor="middle" fontSize="9" fill="rgba(255,215,0,.55)">$</text>
         </g>
         {/* subtle grid dots */}
-        {Array.from({length:6},(_,row)=>Array.from({length:5},(_,col)=>(
-          <circle key={`${row}-${col}`} cx={60+col*70} cy={380+row*70} r="1.5" fill="rgba(255,255,255,.06)"/>
-        )))}
+        {Array.from({length:30},(_,i)=>{
+          const row=Math.floor(i/5), col=i%5;
+          return <circle key={i} cx={60+col*70} cy={380+row*70} r="1.5" fill="rgba(255,255,255,.06)"/>;
+        })}
         <path d="M-20 800Q100 762 230 776Q340 788 440 762L440 844L-20 844Z" fill="rgba(0,0,0,.18)"/>
         <path d="M-20 828Q120 800 260 812Q360 820 440 800L440 844L-20 844Z" fill="rgba(0,0,0,.26)"/>
       </svg>
