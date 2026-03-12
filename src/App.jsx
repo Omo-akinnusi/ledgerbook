@@ -1881,7 +1881,7 @@ export default function LedgerBookPro() {
 
   useEffect(()=>{
     // Firebase listens for login/logout automatically
-    const unsub = onAuthStateChanged(auth, (firebaseUser) => {
+    const unsub = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
         const u = {
           id:           firebaseUser.uid,
@@ -1891,6 +1891,21 @@ export default function LedgerBookPro() {
           photoURL:     firebaseUser.photoURL || null,
           createdAt:    firebaseUser.metadata.creationTime || new Date().toISOString(),
         };
+        // Write profile to Firestore so the admin panel can see all users
+        try {
+          await saveProfile(firebaseUser.uid, {
+            name:         u.name,
+            email:        u.email,
+            businessName: u.businessName,
+            photoURL:     u.photoURL || "",
+            lastSeen:     new Date().toISOString(),
+            createdAt:    u.createdAt,
+          });
+        } catch(e) {
+          // Log so we can see if rules are blocking this
+          console.warn("saveProfile failed:", e.code, e.message);
+          Sentry.captureException(e, { tags: { operation: "save_profile" } });
+        }
         // Tell Sentry who is logged in — makes error reports much easier to investigate
         Sentry.setUser({ id: firebaseUser.uid, email: firebaseUser.email, username: u.name });
         setUser(u);
