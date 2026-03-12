@@ -176,6 +176,15 @@ const DEFAULT_BRANDING = {
 const DEFAULT_CURRENCY = { code: "NGN", symbol: "₦", name: "Nigerian Naira", locale: "en-NG" };
 const DEFAULT_INC_CATS = ["Sales", "Service", "Transfer In", "Investment", "Refund", "Other Income"];
 const DEFAULT_EXP_CATS = ["Inventory", "Rent", "Salary", "Utilities", "Transport", "Marketing", "Tax", "Other Expense"];
+// ── Freemium Plan Config ─────────────────────────────────────
+const PLAN = { FREE: "free", PRO: "pro" };
+const FREE_LIMITS = { ENTRIES_PER_MONTH: 20 };
+const countThisMonth = (entries) => {
+  const now = new Date();
+  const ym  = now.getFullYear() + "-" + String(now.getMonth()+1).padStart(2,"0");
+  return entries.filter(e => e.date && e.date.slice(0,7) === ym).length;
+};
+const planDoc = (uid) => doc(db, "users", uid, "settings", "plan");
 
 const CURRENCIES = [
   { code: "NGN", symbol: "₦", name: "Nigerian Naira",    locale: "en-NG" },
@@ -754,6 +763,147 @@ const buildWAReport = (entries, currency, branding, rangeLabel) => {
     ``,`_${branding.tagline}_`,`_Powered by LedgerBook Pro_`,
   ].filter(x=>x!==undefined).join("\n");
 };
+
+// ═══════════════════════════════════════════════════════════════
+// UPGRADE MODAL
+// ═══════════════════════════════════════════════════════════════
+function UpgradeModal({ onClose, reason="default", monthCount=0, p="#075E54" }) {
+  const UPGRADE_CSS = `
+    @keyframes um-in{from{opacity:0;transform:translateY(40px) scale(.97)}to{opacity:1;transform:translateY(0) scale(1)}}
+    @keyframes um-badge{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}
+    .um-card{animation:um-in .35s cubic-bezier(.22,.68,0,1.1) both}
+    .um-badge{animation:um-badge 2s ease-in-out infinite}
+    .um-row{display:flex;align-items:flex-start;gap:12px;padding:11px 0;border-bottom:1px solid #f5f5f5}
+    .um-row:last-child{border-bottom:none}
+  `;
+  const reasons = {
+    limit:    { icon:"🚫", title:"Monthly limit reached", sub:`You've used all ${FREE_LIMITS.ENTRIES_PER_MONTH} free entries for ${new Date().toLocaleString("default",{month:"long"})}. Upgrade for unlimited entries.` },
+    budget:   { icon:"🎯", title:"Budget feature is Pro", sub:"Create and track budgets, set targets per category, and see detailed budget vs actual reports." },
+    cats:     { icon:"🏷️", title:"Custom categories are Pro", sub:"Edit, add, and remove income and expense categories to match your exact business structure." },
+    default:  { icon:"⚡", title:"Upgrade to LedgerBook Pro", sub:"Unlock the full power of LedgerBook and grow your business faster." },
+  };
+  const { icon, title, sub } = reasons[reason] || reasons.default;
+
+  const FEATURES = [
+    ["♾️", "Unlimited entries",           "Free plan: 20/month"],
+    ["🎯", "Budget creation & tracking",  "Set targets, track actuals"],
+    ["🏷️", "Custom categories",           "Add, edit, remove categories"],
+    ["🚫", "No ads, ever",                "Clean, distraction-free UI"],
+    ["📊", "All reports & exports",       "CSV, PDF income statements"],
+    ["🔒", "Priority support",            "Direct email support"],
+  ];
+
+  return (
+    <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.6)", zIndex:500,
+      display:"flex", alignItems:"flex-end", justifyContent:"center", backdropFilter:"blur(3px)" }}
+      onClick={e=>{ if(e.target===e.currentTarget) onClose(); }}>
+      <style>{UPGRADE_CSS}</style>
+      <div className="um-card" style={{ width:"100%", maxWidth:520, background:"#fff",
+        borderRadius:"28px 28px 0 0", overflow:"hidden",
+        boxShadow:"0 -8px 40px rgba(0,0,0,0.2)",
+        paddingBottom:"max(28px,env(safe-area-inset-bottom,28px))" }}>
+
+        {/* Hero */}
+        <div style={{ background:`linear-gradient(135deg,#054d44,#075E54,#128C7E)`,
+          padding:"32px 24px 28px", textAlign:"center", position:"relative" }}>
+          <button onClick={onClose} style={{ position:"absolute", top:16, right:16,
+            background:"rgba(255,255,255,.18)", border:"none", borderRadius:"50%",
+            width:32, height:32, color:"#fff", fontSize:16, cursor:"pointer",
+            display:"flex", alignItems:"center", justifyContent:"center" }}>✕</button>
+          <div className="um-badge" style={{ fontSize:52, marginBottom:12 }}>{icon}</div>
+          <div style={{ color:"#fff", fontWeight:900, fontSize:20, letterSpacing:"-.4px", marginBottom:6 }}>{title}</div>
+          <div style={{ color:"rgba(255,255,255,.72)", fontSize:13, lineHeight:1.5, maxWidth:320, margin:"0 auto" }}>{sub}</div>
+          {reason==="limit"&&(
+            <div style={{ marginTop:14, background:"rgba(255,255,255,.15)", borderRadius:12,
+              padding:"8px 16px", display:"inline-block", color:"#fff", fontSize:12, fontWeight:700 }}>
+              {monthCount}/{FREE_LIMITS.ENTRIES_PER_MONTH} entries used this month
+            </div>
+          )}
+        </div>
+
+        {/* Features list */}
+        <div style={{ padding:"20px 24px 0" }}>
+          <div style={{ fontSize:11, fontWeight:800, color:"#aaa", textTransform:"uppercase",
+            letterSpacing:.8, marginBottom:4 }}>Everything in Pro</div>
+          {FEATURES.map(([em, feat, detail])=>(
+            <div key={feat} className="um-row">
+              <span style={{ fontSize:20, flexShrink:0, marginTop:1 }}>{em}</span>
+              <div>
+                <div style={{ fontWeight:700, fontSize:14, color:"#222" }}>{feat}</div>
+                <div style={{ fontSize:12, color:"#aaa", marginTop:1 }}>{detail}</div>
+              </div>
+              <span style={{ marginLeft:"auto", color:"#25D366", fontWeight:900, fontSize:16, flexShrink:0 }}>✓</span>
+            </div>
+          ))}
+        </div>
+
+        {/* CTA */}
+        <div style={{ padding:"20px 24px 0" }}>
+          <div style={{ background:"linear-gradient(135deg,#054d44,#128C7E)", borderRadius:16,
+            padding:"18px 20px", textAlign:"center", marginBottom:12, cursor:"pointer",
+            boxShadow:"0 6px 20px rgba(7,94,84,.35)" }}
+            onClick={()=>{ alert("Payment integration coming soon!\n\nContact v.bookenterprise@gmail.com to upgrade manually."); }}>
+            <div style={{ color:"#fff", fontWeight:900, fontSize:17 }}>Upgrade to Pro ✨</div>
+            <div style={{ color:"rgba(255,255,255,.7)", fontSize:12, marginTop:4 }}>
+              Contact us to activate your Pro plan
+            </div>
+          </div>
+          <button onClick={onClose}
+            style={{ width:"100%", padding:"13px", background:"none", border:"none",
+              color:"#aaa", fontSize:13, cursor:"pointer", fontWeight:600 }}>
+            Continue with free plan
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════
+// AD BANNER  (free tier only)
+// ═══════════════════════════════════════════════════════════════
+function AdBanner({ onUpgrade, p="#075E54" }) {
+  const AD_CSS = `
+    @keyframes ad-pulse{0%,100%{opacity:.7}50%{opacity:1}}
+    .ad-badge{animation:ad-pulse 2.5s ease-in-out infinite}
+  `;
+  // Rotating mock ads relevant to small Nigerian businesses
+  const ADS = [
+    { logo:"🏦", title:"GTBank Business Account", body:"Zero COT for the first 6 months. Open your SME account today.", cta:"Learn more", color:"#F57F17" },
+    { logo:"📦", title:"Jumia Business Seller Hub", body:"Reach 10M+ customers. List your products free on Jumia.", cta:"Start selling", color:"#E65100" },
+    { logo:"💳", title:"Moniepoint for Business", body:"Accept payments anywhere. POS and virtual accounts for SMEs.", cta:"Get started", color:"#1565C0" },
+    { logo:"📲", title:"Paystack Payment Links", body:"Get paid online instantly. No website needed — just share a link.", cta:"Create link", color:"#0C6B58" },
+    { logo:"📊", title:"Upgrade to LedgerBook Pro", body:"Remove ads, unlock budgets & unlimited entries.", cta:"Upgrade ✨", color:"#075E54", isUpgrade:true },
+  ];
+  const [idx] = useState(()=>Math.floor(Math.random()*ADS.length));
+  const ad = ADS[idx];
+
+  return (
+    <div style={{ margin:"0 0 14px", borderRadius:14, overflow:"hidden",
+      border:`1px solid ${ad.color}22`, background:`${ad.color}08` }}>
+      <style>{AD_CSS}</style>
+      <div style={{ display:"flex", alignItems:"center", gap:12, padding:"11px 14px" }}>
+        <div style={{ width:40, height:40, borderRadius:12, background:`${ad.color}18`,
+          display:"flex", alignItems:"center", justifyContent:"center", fontSize:22, flexShrink:0 }}>
+          {ad.logo}
+        </div>
+        <div style={{ flex:1, minWidth:0 }}>
+          <div style={{ fontSize:10, color:"#ccc", fontWeight:600, letterSpacing:.3, marginBottom:2 }}>
+            <span className="ad-badge">AD</span> · Sponsored
+          </div>
+          <div style={{ fontWeight:800, fontSize:13, color:"#222", lineHeight:1.3 }}>{ad.title}</div>
+          <div style={{ fontSize:11, color:"#888", marginTop:2, lineHeight:1.4 }}>{ad.body}</div>
+        </div>
+        <button onClick={ad.isUpgrade ? onUpgrade : ()=>{}}
+          style={{ flexShrink:0, padding:"7px 12px", background:ad.color, color:"#fff",
+            border:"none", borderRadius:10, fontSize:11, fontWeight:800, cursor:"pointer",
+            whiteSpace:"nowrap" }}>
+          {ad.cta}
+        </button>
+      </div>
+    </div>
+  );
+}
 
 // ═══════════════════════════════════════════════════════════════
 // DATE RANGE PICKER (Sheet)
@@ -1390,7 +1540,7 @@ function KeyboardWidget({ currency, branding, incCats, expCats, onClose }) {
 // ═══════════════════════════════════════════════════════════════
 const COLORS = ["#075E54","#1a237e","#880e4f","#bf360c","#1b5e20","#4a148c","#006064","#212121","#b71c1c","#e65100","#f57f17","#37474f"];
 
-function SettingsScreen({ branding, setBranding, currency, setCurrency, incCats, setIncCats, expCats, setExpCats, user, onLogout, onClose }) {
+function SettingsScreen({ branding, setBranding, currency, setCurrency, incCats, setIncCats, expCats, setExpCats, user, onLogout, onClose, isPro=false, onUpgrade }) {
   const [tab, setTab] = useState("brand");
   const [newCat, setNewCat] = useState({type:"income",value:""});
   const logoRef = useRef();
@@ -1545,26 +1695,57 @@ function SettingsScreen({ branding, setBranding, currency, setCurrency, incCats,
         </>}
 
         {tab==="cats"&&<>
-          {[["income","💰 Income Categories",incCats,setIncCats],["expense","📤 Expense Categories",expCats,setExpCats]].map(([type,title,cats,setCats])=>(
-            <div key={type} style={{ marginBottom:28 }}>
-              <div style={{ fontWeight:800, color:"#333", marginBottom:13, fontSize:15 }}>{title}</div>
-              <div style={{ display:"flex", flexWrap:"wrap", gap:9, marginBottom:13 }}>
-                {cats.map(c=>(
-                  <div key={c} style={{ display:"flex", alignItems:"center", gap:6, background:"#f0f0f0", borderRadius:20, padding:"7px 13px 7px 11px" }}>
-                    <span style={{ fontSize:13 }}>{c}</span>
-                    <button onClick={()=>setCats(prev=>prev.filter(x=>x!==c))} style={{ background:"none", border:"none", color:"#bbb", cursor:"pointer", fontSize:17, lineHeight:1, padding:0 }}>×</button>
+          {!isPro ? (
+            /* ── Locked for free users ── */
+            <div style={{ textAlign:"center", padding:"32px 16px" }}>
+              <div style={{ fontSize:48, marginBottom:14 }}>🏷️</div>
+              <div style={{ fontWeight:900, fontSize:17, color:"#222", marginBottom:8 }}>Custom Categories</div>
+              <div style={{ fontSize:13, color:"#888", lineHeight:1.65, marginBottom:24 }}>
+                Add and remove income & expense categories to perfectly match your business. Available on the Pro plan.
+              </div>
+              {/* Show read-only categories with lock overlay */}
+              {[["income","💰 Income",incCats],["expense","📤 Expense",expCats]].map(([type,title,cats])=>(
+                <div key={type} style={{ marginBottom:18, textAlign:"left" }}>
+                  <div style={{ fontWeight:700, fontSize:13, color:"#555", marginBottom:8 }}>{title}</div>
+                  <div style={{ display:"flex", flexWrap:"wrap", gap:8, pointerEvents:"none", opacity:.55 }}>
+                    {cats.map(c=>(
+                      <div key={c} style={{ background:"#f0f0f0", borderRadius:20, padding:"6px 13px", fontSize:13, color:"#555" }}>{c}</div>
+                    ))}
                   </div>
-                ))}
-              </div>
-              <div style={{ display:"flex", gap:9 }}>
-                <input value={newCat.type===type?newCat.value:""} onChange={e=>setNewCat({type,value:e.target.value})} onFocus={()=>setNewCat(n=>({...n,type}))}
-                  placeholder={`Add ${type} category…`} style={{ flex:1, padding:"11px 14px", borderRadius:12, border:"2px solid #e0e0e0", fontSize:14, outline:"none" }}
-                  onKeyDown={e=>{ if(e.key==="Enter"&&newCat.value.trim()&&!cats.includes(newCat.value.trim())){setCats(p=>[...p,newCat.value.trim()]);setNewCat({type,value:""});} }}/>
-                <button onClick={()=>{ if(newCat.value.trim()&&!cats.includes(newCat.value.trim())){setCats(p=>[...p,newCat.value.trim()]);setNewCat({type,value:""});} }}
-                  style={{ background:p, color:"#fff", border:"none", borderRadius:12, padding:"0 20px", fontWeight:900, cursor:"pointer", fontSize:22 }}>+</button>
-              </div>
+                </div>
+              ))}
+              <button onClick={onUpgrade}
+                style={{ marginTop:8, padding:"14px 32px",
+                  background:"linear-gradient(135deg,#054d44,#128C7E)",
+                  color:"#fff", border:"none", borderRadius:14,
+                  fontWeight:900, fontSize:15, cursor:"pointer",
+                  boxShadow:"0 4px 16px rgba(7,94,84,.3)" }}>
+                Upgrade to Pro ✨
+              </button>
             </div>
-          ))}
+          ) : (
+            /* ── Pro: full category editing ── */
+            [["income","💰 Income Categories",incCats,setIncCats],["expense","📤 Expense Categories",expCats,setExpCats]].map(([type,title,cats,setCats])=>(
+              <div key={type} style={{ marginBottom:28 }}>
+                <div style={{ fontWeight:800, color:"#333", marginBottom:13, fontSize:15 }}>{title}</div>
+                <div style={{ display:"flex", flexWrap:"wrap", gap:9, marginBottom:13 }}>
+                  {cats.map(c=>(
+                    <div key={c} style={{ display:"flex", alignItems:"center", gap:6, background:"#f0f0f0", borderRadius:20, padding:"7px 13px 7px 11px" }}>
+                      <span style={{ fontSize:13 }}>{c}</span>
+                      <button onClick={()=>setCats(prev=>prev.filter(x=>x!==c))} style={{ background:"none", border:"none", color:"#bbb", cursor:"pointer", fontSize:17, lineHeight:1, padding:0 }}>×</button>
+                    </div>
+                  ))}
+                </div>
+                <div style={{ display:"flex", gap:9 }}>
+                  <input value={newCat.type===type?newCat.value:""} onChange={e=>setNewCat({type,value:e.target.value})} onFocus={()=>setNewCat(n=>({...n,type}))}
+                    placeholder={`Add ${type} category…`} style={{ flex:1, padding:"11px 14px", borderRadius:12, border:"2px solid #e0e0e0", fontSize:14, outline:"none" }}
+                    onKeyDown={e=>{ if(e.key==="Enter"&&newCat.value.trim()&&!cats.includes(newCat.value.trim())){setCats(p=>[...p,newCat.value.trim()]);setNewCat({type,value:""});} }}/>
+                  <button onClick={()=>{ if(newCat.value.trim()&&!cats.includes(newCat.value.trim())){setCats(p=>[...p,newCat.value.trim()]);setNewCat({type,value:""});} }}
+                    style={{ background:p, color:"#fff", border:"none", borderRadius:12, padding:"0 20px", fontWeight:900, cursor:"pointer", fontSize:22 }}>+</button>
+                </div>
+              </div>
+            ))
+          )}
         </>}
 
         {tab==="account"&&<>
@@ -1573,7 +1754,24 @@ function SettingsScreen({ branding, setBranding, currency, setCurrency, incCats,
             <div style={{ fontWeight:900, fontSize:19 }}>{user.name}</div>
             <div style={{ opacity:.75, fontSize:13, marginTop:5 }}>{user.email}</div>
             <div style={{ opacity:.55, fontSize:12, marginTop:4 }}>Member since {fmtDate(user.createdAt)}</div>
+            {/* Plan badge */}
+            <div style={{ marginTop:14, display:"inline-flex", alignItems:"center", gap:6,
+              background: isPro ? "rgba(255,215,0,.25)" : "rgba(255,255,255,.15)",
+              borderRadius:20, padding:"6px 14px", fontSize:12, fontWeight:800 }}>
+              {isPro ? "✨ Pro Plan" : "🆓 Free Plan"}
+            </div>
           </div>
+          {/* Upgrade CTA for free users */}
+          {!isPro && (
+            <button onClick={onUpgrade}
+              style={{ width:"100%", padding:"15px", marginBottom:14,
+                background:"linear-gradient(135deg,#054d44,#128C7E)",
+                color:"#fff", border:"none", borderRadius:14,
+                fontWeight:900, fontSize:15, cursor:"pointer",
+                boxShadow:"0 4px 16px rgba(7,94,84,.3)" }}>
+              ✨ Upgrade to Pro — Unlock everything
+            </button>
+          )}
           <div style={{ background:"#fff", borderRadius:16, overflow:"hidden", marginBottom:18 }}>
             {[["Business Name",user.businessName||"—"],["Email",user.email],["Account ID",`#${user.id.toUpperCase()}`]].map(([k,v])=>(
               <div key={k} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"15px 18px", borderBottom:"1px solid #f0f0f0" }}>
@@ -1746,6 +1944,8 @@ function AppCore({ user, onLogout }) {
   const [datePreset,setDatePreset]= useState("all");
   const [dateRange, setDateRange] = useState({from:"",to:""});
   const [budgets,   setBudgets]   = useState([]);
+  const [plan,      setPlan]      = useState("free"); // "free" | "pro"
+  const [showUpgrade, setShowUpgrade] = useState(false); // upgrade modal
   const [budgetView,setBudgetView]= useState("list"); // "list"|"create"|"detail"
   const [activeBudget,setActiveBudget] = useState(null); // budget being viewed/edited
 
@@ -1765,6 +1965,11 @@ function AppCore({ user, onLogout }) {
           if (d.currency)  setCurrency(d.currency);
           if (d.incCats)   setIncCats(d.incCats);
           if (d.expCats)   setExpCats(d.expCats);
+        }
+        // Load plan (free/pro)
+        const planSnap = await getDoc(planDoc(uid));
+        if (planSnap.exists() && planSnap.data().plan) {
+          setPlan(planSnap.data().plan);
         }
         // Real-time listener for entries
         const q = query(entriesCol(uid), orderBy("date", "desc"));
@@ -1812,11 +2017,15 @@ function AppCore({ user, onLogout }) {
   const allExp    = useMemo(()=>entries.filter(e=>e.type==="expense").reduce((s,e)=>s+e.amount,0),[entries]);
   const rLabel    = describeDateRange(datePreset, dateRange);
   const cats      = form.type==="income"?incCats:expCats;
+  const isPro     = plan === PLAN.PRO;
+  const monthCount = countThisMonth(entries);
+  const atLimit    = !isPro && monthCount >= FREE_LIMITS.ENTRIES_PER_MONTH;
+  const remaining  = Math.max(0, FREE_LIMITS.ENTRIES_PER_MONTH - monthCount);
 
   const showToast = (msg,color) => { setToast({msg,color:color||p}); setTimeout(()=>setToast(null),2600); };
 
-  // ── Add entry — saves to Firestore ───────────────────────────
   const handleAdd = async () => {
+    if (atLimit) return setShowUpgrade(true);
     if (!form.amount||!form.category) return showToast("⚠️ Fill all required fields","#c62828");
     const entry = { ...form, amount: parseFloat(form.amount), date: new Date().toISOString() };
     try {
@@ -1842,6 +2051,7 @@ function AppCore({ user, onLogout }) {
 
   const handleKB = async (data) => {
     if (data) {
+      if (atLimit) { setShowKB(false); return setShowUpgrade(true); }
       try {
         await addEntry(uid, { ...data, date: new Date().toISOString() });
         showToast("⌨️ Quick entry saved!");
@@ -2034,6 +2244,31 @@ function AppCore({ user, onLogout }) {
             padding: isDesktop ? "28px 36px 48px" : undefined }}>
             <div style={{ paddingLeft: isDesktop?0:S.px, paddingRight: isDesktop?0:S.px, paddingTop: isDesktop?0:20 }}>
 
+              {/* ── Free tier usage banner ── */}
+              {!isPro && (
+                <div onClick={()=>setShowUpgrade(true)} style={{ cursor:"pointer",
+                  background: atLimit ? "#fff3f0" : `${p}0f`,
+                  border: `1.5px solid ${atLimit ? "#ffcdd2" : p+"33"}`,
+                  borderRadius:14, padding:"11px 14px", marginBottom:14,
+                  display:"flex", alignItems:"center", gap:11 }}>
+                  <div style={{ flex:1 }}>
+                    <div style={{ fontWeight:800, fontSize:13, color: atLimit ? "#c62828" : p }}>
+                      {atLimit ? "🚫 Monthly limit reached" : `📊 Free plan — ${remaining} entries left this month`}
+                    </div>
+                    <div style={{ fontSize:11, color:"#aaa", marginTop:2 }}>
+                      {atLimit
+                        ? "Upgrade to Pro for unlimited entries"
+                        : `${monthCount}/${FREE_LIMITS.ENTRIES_PER_MONTH} entries used · Tap to upgrade`}
+                    </div>
+                  </div>
+                  <div style={{ background: atLimit ? "#c62828" : p,
+                    color:"#fff", borderRadius:10, padding:"6px 12px",
+                    fontSize:11, fontWeight:800, flexShrink:0, whiteSpace:"nowrap" }}>
+                    {atLimit ? "Upgrade" : "Go Pro ✨"}
+                  </div>
+                </div>
+              )}
+
               {/* Balance card */}
               <div style={{ background:bg, borderRadius:isDesktop?22:20, padding: isDesktop?"28px 32px 24px":"22px 22px 18px",
                 color:"#fff", boxShadow:`0 8px 32px ${p}45`, marginBottom:isDesktop?24:16 }}>
@@ -2106,6 +2341,9 @@ function AppCore({ user, onLogout }) {
                 </button>
               </div>}
 
+              {/* ── Ad banner (free tier only) ── */}
+              {!isPro && <AdBanner onUpgrade={()=>setShowUpgrade(true)} p={p}/>}
+
               {/* Recent Transactions + Charts */}
               <div className="lb-page-grid">
                 {/* Left — transactions */}
@@ -2148,6 +2386,34 @@ function AppCore({ user, onLogout }) {
             paddingBottom: isDesktop?48:`calc(${S.navH}px + env(safe-area-inset-bottom,0px) + 24px)`,
             padding: isDesktop ? "28px 36px 48px" : undefined }}>
             <div style={{ maxWidth: isDesktop?560:undefined, margin: isDesktop?"0 auto":undefined }}>
+
+              {/* ── Free tier limit bar ── */}
+              {!isPro && (
+                <div style={{ marginBottom:16,
+                  background: atLimit ? "#fff3f0" : "#f8fffe",
+                  border:`1.5px solid ${atLimit?"#ffcdd2":p+"33"}`,
+                  borderRadius:14, padding:"12px 16px" }}>
+                  <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:6 }}>
+                    <span style={{ fontWeight:800, fontSize:13, color: atLimit ? "#c62828" : p }}>
+                      {atLimit ? "🚫 Limit reached for this month" : `📊 ${remaining} entries remaining`}
+                    </span>
+                    <button onClick={()=>setShowUpgrade(true)}
+                      style={{ background: atLimit?"#c62828":p, color:"#fff", border:"none",
+                        borderRadius:8, padding:"4px 10px", fontSize:11, fontWeight:800, cursor:"pointer" }}>
+                      {atLimit ? "Upgrade" : "Go Pro"}
+                    </button>
+                  </div>
+                  {/* Progress bar */}
+                  <div style={{ height:6, background:"#eee", borderRadius:3, overflow:"hidden" }}>
+                    <div style={{ height:"100%", width:`${Math.min(100,(monthCount/FREE_LIMITS.ENTRIES_PER_MONTH)*100)}%`,
+                      background: atLimit ? "#c62828" : monthCount/FREE_LIMITS.ENTRIES_PER_MONTH > 0.75 ? "#FF9800" : "#25D366",
+                      borderRadius:3, transition:"width .4s" }}/>
+                  </div>
+                  <div style={{ fontSize:11, color:"#aaa", marginTop:4 }}>
+                    {monthCount}/{FREE_LIMITS.ENTRIES_PER_MONTH} entries used in {new Date().toLocaleString("default",{month:"long"})}
+                  </div>
+                </div>
+              )}
               {isDesktop&&<div style={{ fontWeight:900, fontSize:22, color:"#1a1a1a", marginBottom:24, letterSpacing:-.5 }}>
                 {form.type==="income"?"➕ Record Income":"➖ Record Expense"}
               </div>}
@@ -2238,6 +2504,8 @@ function AppCore({ user, onLogout }) {
               paddingLeft: isDesktop?0:S.px, paddingRight: isDesktop?0:S.px,
               paddingTop:14,
               paddingBottom:isDesktop?40:`calc(${S.navH}px + env(safe-area-inset-bottom,0px) + 10px)` }}>
+              {/* Ad banner in history (free only) */}
+              {!isPro && <AdBanner onUpgrade={()=>setShowUpgrade(true)} p={p}/>}
               <div className={isDesktop?"lb-section":""} style={{ padding: isDesktop?"24px 26px":undefined }}>
                 {Object.keys(grouped).sort((a,b)=>b.localeCompare(a)).map(day=>(
                   <div key={day}>
@@ -2266,9 +2534,54 @@ function AppCore({ user, onLogout }) {
         {view==="budget"&&(
           <div style={{ flex:1, display:"flex", flexDirection:"column", overflow:"hidden",
             padding: isDesktop ? "28px 36px 0" : undefined }}>
-            {budgetView==="list"   && <BudgetList   budgets={budgets} entries={entries} currency={currency} p={p} isDesktop={isDesktop} uid={uid} onNew={()=>{ setActiveBudget(null); setBudgetView("create"); }} onView={(b)=>{ setActiveBudget(b); setBudgetView("detail"); }} onDelete={async(id)=>{ await delBudget(uid,id); showToast("Budget deleted","#888"); }} showToast={showToast}/>}
-            {budgetView==="create" && <BudgetCreate  budget={activeBudget} expCats={expCats} incCats={incCats} currency={currency} p={p} isDesktop={isDesktop} uid={uid} onSave={async(b)=>{ try { if(b.id){ await saveBudget(uid,b.id,b); showToast("✅ Budget updated!",p); } else { await addBudget(uid,b); showToast("✅ Budget created!",p); } setBudgetView("list"); } catch(e){ Sentry.captureException(e); showToast("❌ Failed to save","#c62828"); }}} onBack={()=>setBudgetView("list")}/>}
-            {budgetView==="detail" && <BudgetDetail  budget={activeBudget} entries={entries} currency={currency} p={p} bg={bg} isDesktop={isDesktop} onBack={()=>setBudgetView("list")} onEdit={(b)=>{ setActiveBudget(b); setBudgetView("create"); }} onDelete={async(id)=>{ await delBudget(uid,id); setBudgetView("list"); showToast("Budget deleted","#888"); }}/>}
+            {!isPro ? (
+              /* ── Free tier: Budget locked ── */
+              <div style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center",
+                padding:"40px 28px", textAlign:"center",
+                paddingBottom:`calc(${S.navH+24}px + env(safe-area-inset-bottom,0px))` }}>
+                <div style={{ fontSize:64, marginBottom:16 }}>🎯</div>
+                <div style={{ fontWeight:900, fontSize:20, color:"#222", marginBottom:8, letterSpacing:"-.4px" }}>
+                  Budget Tracking
+                </div>
+                <div style={{ fontSize:14, color:"#888", lineHeight:1.65, maxWidth:300, marginBottom:28 }}>
+                  Create monthly or custom budgets, set income & expense targets per category, and get a full budget vs actual report — available on the Pro plan.
+                </div>
+                <div style={{ width:"100%", maxWidth:340 }}>
+                  {[["🎯","Budget creation","Set targets by category"],
+                    ["📊","Budget vs Actual","See variance at a glance"],
+                    ["📎","Unplanned items","Track what fell outside your plan"],
+                    ["♾️","Multiple budgets","Different periods at once"],
+                  ].map(([em,feat,detail])=>(
+                    <div key={feat} style={{ display:"flex", alignItems:"center", gap:12,
+                      padding:"10px 0", borderBottom:"1px solid #f5f5f5", textAlign:"left" }}>
+                      <span style={{ fontSize:20 }}>{em}</span>
+                      <div>
+                        <div style={{ fontWeight:700, fontSize:13, color:"#333" }}>{feat}</div>
+                        <div style={{ fontSize:11, color:"#aaa" }}>{detail}</div>
+                      </div>
+                      <span style={{ marginLeft:"auto", color:"#25D366", fontWeight:900 }}>✓</span>
+                    </div>
+                  ))}
+                </div>
+                <button onClick={()=>setShowUpgrade(true)}
+                  style={{ marginTop:28, padding:"15px 36px",
+                    background:"linear-gradient(135deg,#054d44,#128C7E)",
+                    color:"#fff", border:"none", borderRadius:16,
+                    fontWeight:900, fontSize:16, cursor:"pointer",
+                    boxShadow:"0 6px 20px rgba(7,94,84,.35)" }}>
+                  Upgrade to Pro ✨
+                </button>
+                <div style={{ marginTop:12, fontSize:12, color:"#ccc" }}>
+                  Unlimited entries · Budgets · Custom categories · No ads
+                </div>
+              </div>
+            ) : (
+              <>
+                {budgetView==="list"   && <BudgetList   budgets={budgets} entries={entries} currency={currency} p={p} isDesktop={isDesktop} uid={uid} onNew={()=>{ setActiveBudget(null); setBudgetView("create"); }} onView={(b)=>{ setActiveBudget(b); setBudgetView("detail"); }} onDelete={async(id)=>{ await delBudget(uid,id); showToast("Budget deleted","#888"); }} showToast={showToast}/>}
+                {budgetView==="create" && <BudgetCreate  budget={activeBudget} expCats={expCats} incCats={incCats} currency={currency} p={p} isDesktop={isDesktop} uid={uid} onSave={async(b)=>{ try { if(b.id){ await saveBudget(uid,b.id,b); showToast("✅ Budget updated!",p); } else { await addBudget(uid,b); showToast("✅ Budget created!",p); } setBudgetView("list"); } catch(e){ Sentry.captureException(e); showToast("❌ Failed to save","#c62828"); }}} onBack={()=>setBudgetView("list")}/>}
+                {budgetView==="detail" && <BudgetDetail  budget={activeBudget} entries={entries} currency={currency} p={p} bg={bg} isDesktop={isDesktop} onBack={()=>setBudgetView("list")} onEdit={(b)=>{ setActiveBudget(b); setBudgetView("create"); }} onDelete={async(id)=>{ await delBudget(uid,id); setBudgetView("list"); showToast("Budget deleted","#888"); }}/>}
+              </>
+            )}
           </div>
         )}
 
@@ -2415,12 +2728,12 @@ function AppCore({ user, onLogout }) {
             {id:"home",   icon:"🏠", label:"Home"},
             {id:"add",    icon:"➕", label:"Add"},
             {id:"history",icon:"📋", label:"History"},
-            {id:"budget", icon:"🎯", label:"Budget"},
+            {id:"budget", icon:"🎯", label:"Budget", proOnly:true},
             {id:"summary",icon:"📊", label:"Summary"},
           ].map(tab=>(
             <button key={tab.id} onClick={()=>{ if(tab.id==="add")setForm({type:"income",amount:"",category:"",note:""}); setView(tab.id); }}
               style={{ flex:1, padding:"13px 4px 10px", border:"none", background:"none", cursor:"pointer",
-                display:"flex", flexDirection:"column", alignItems:"center", gap:3 }}>
+                display:"flex", flexDirection:"column", alignItems:"center", gap:3, position:"relative" }}>
               <span style={{ fontSize:22 }}>{tab.icon}</span>
               <span style={{ fontSize:10, fontWeight:700, color:view===tab.id?p:"#ccc", lineHeight:1 }}>
                 {tab.label}
@@ -2428,6 +2741,12 @@ function AppCore({ user, onLogout }) {
                   ?<span style={{ color:p }}> ●</span>:null}
               </span>
               {view===tab.id&&<div style={{ width:20, height:3, background:p, borderRadius:2 }}/>}
+              {tab.proOnly&&!isPro&&(
+                <div style={{ position:"absolute", top:10, right:"calc(50% - 18px)",
+                  background:"#FF9800", borderRadius:"50%", width:14, height:14,
+                  display:"flex", alignItems:"center", justifyContent:"center",
+                  fontSize:8, color:"#fff", fontWeight:900, lineHeight:1 }}>🔒</div>
+              )}
             </button>
           ))}
         </div>
@@ -2436,8 +2755,10 @@ function AppCore({ user, onLogout }) {
         {showKB&&<KeyboardWidget currency={currency} branding={branding} incCats={incCats} expCats={expCats} onClose={handleKB}/>}
         {showSt&&<SettingsScreen branding={branding} setBranding={setBranding} currency={currency} setCurrency={setCurrency}
           incCats={incCats} setIncCats={setIncCats} expCats={expCats} setExpCats={setExpCats}
-          user={user} onLogout={onLogout} onClose={()=>setShowSt(false)}/>}
+          user={user} onLogout={onLogout} onClose={()=>setShowSt(false)}
+          isPro={isPro} onUpgrade={()=>{ setShowSt(false); setShowUpgrade(true); }}/>}
         {showDP&&<DateRangePicker preset={datePreset} dateRange={dateRange} onChange={handleDateChange} onClose={()=>setShowDP(false)} primaryColor={p}/>}
+        {showUpgrade&&<UpgradeModal onClose={()=>setShowUpgrade(false)} reason={atLimit?"limit":"default"} monthCount={monthCount} p={p}/>}
 
         {/* WhatsApp Modal */}
         {showWA&&(
