@@ -1,14 +1,16 @@
 // api/paystack-init.js
 // Initializes a Paystack transaction for a subscription plan.
-// Called by the frontend with { email, planCode, uid, currency }
+// Called by the frontend with { email, planCode, uid }
 // Returns { authorization_url, reference }
+// NOTE: When using a plan code, Paystack derives amount + currency from the plan.
+// Do NOT send amount or currency in the request body — Paystack will reject it.
 
 export default async function handler(req, res) {
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
   }
 
-  const { email, planCode, uid, currency = "NGN" } = req.body || {};
+  const { email, planCode, uid } = req.body || {};
 
   if (!email || !planCode || !uid) {
     return res.status(400).json({ error: "Missing required fields: email, planCode, uid" });
@@ -18,6 +20,8 @@ export default async function handler(req, res) {
   if (!secret) {
     return res.status(500).json({ error: "Paystack secret key not configured" });
   }
+
+  const appUrl = process.env.APP_URL || "https://ledgerbook-nu.vercel.app";
 
   try {
     const response = await fetch("https://api.paystack.co/transaction/initialize", {
@@ -29,22 +33,22 @@ export default async function handler(req, res) {
       body: JSON.stringify({
         email,
         plan: planCode,
-        currency,
-        // Embed uid in metadata so webhook can look up the user in Firestore
+        // Embed uid so the webhook + verify endpoint can find the user in Firestore
         metadata: {
           uid,
           custom_fields: [
             { display_name: "User ID", variable_name: "uid", value: uid },
           ],
         },
-        // After payment, redirect back to the app's subscription success page
-        callback_url: `${process.env.APP_URL || "https://ledgerbook-nu.vercel.app"}/subscription-success`,
+        // Redirect here after payment — the page calls /api/paystack-verify
+        callback_url: `${appUrl}/subscription-success?uid=${uid}`,
       }),
     });
 
     const data = await response.json();
 
     if (!data.status) {
+      console.error("Paystack init failed:", data);
       return res.status(400).json({ error: data.message || "Failed to initialize transaction" });
     }
 
