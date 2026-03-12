@@ -839,37 +839,205 @@ function FilterBadge({ preset, dateRange, onClick, primaryColor:p }) {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// AUTH SCREEN — Firebase: Google + Apple + Email
+// SPLASH SCREEN  (Chowdeck-inspired animated scene)
+// ═══════════════════════════════════════════════════════════════
+function SplashScreen() {
+  const css = `
+    @keyframes sp-cloud1{0%{transform:translateX(0)}100%{transform:translateX(16px)}}
+    @keyframes sp-cloud2{0%{transform:translateX(0)}100%{transform:translateX(-12px)}}
+    @keyframes sp-cloud3{0%{transform:translateX(0)}100%{transform:translateX(9px)}}
+    @keyframes sp-moto{0%{left:-90px}100%{left:108%}}
+    @keyframes sp-logo{0%,100%{transform:translateY(0) scale(1)}45%{transform:translateY(-11px) scale(1.06)}65%{transform:translateY(-5px) scale(1.02)}}
+    @keyframes sp-fadein{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+    @keyframes sp-dot{0%,80%,100%{transform:scale(.55);opacity:.35}40%{transform:scale(1);opacity:1}}
+    @keyframes sp-coin1{0%,100%{transform:translateY(0) rotate(-7deg)}50%{transform:translateY(-11px) rotate(7deg)}}
+    @keyframes sp-coin2{0%,100%{transform:translateY(0) rotate(5deg)}50%{transform:translateY(-8px) rotate(-5deg)}}
+    @keyframes sp-coin3{0%,100%{transform:translateY(0)}50%{transform:translateY(-9px)}}
+    @keyframes sp-star{0%,100%{opacity:0;transform:scale(0) rotate(0)}50%{opacity:1;transform:scale(1) rotate(180deg)}}
+    @keyframes sp-hill{0%{transform:translateX(0)}100%{transform:translateX(-6px)}}
+    .sp-c1{animation:sp-cloud1 5s ease-in-out alternate infinite}
+    .sp-c2{animation:sp-cloud2 7s ease-in-out alternate infinite}
+    .sp-c3{animation:sp-cloud3 4s ease-in-out alternate infinite}
+    .sp-c4{animation:sp-cloud1 6s 1s ease-in-out alternate infinite}
+    .sp-c5{animation:sp-cloud2 5.5s 2s ease-in-out alternate infinite}
+    .sp-logo{animation:sp-logo 2.4s ease-in-out infinite}
+    .sp-title{animation:sp-fadein .7s ease-out both}
+    .sp-tag{animation:sp-fadein .7s .18s ease-out both}
+    .sp-d1{animation:sp-dot 1.3s ease-in-out infinite}
+    .sp-d2{animation:sp-dot 1.3s .22s ease-in-out infinite}
+    .sp-d3{animation:sp-dot 1.3s .44s ease-in-out infinite}
+    .sp-coin1{animation:sp-coin1 2.6s ease-in-out infinite}
+    .sp-coin2{animation:sp-coin2 3.1s .8s ease-in-out infinite}
+    .sp-coin3{animation:sp-coin3 2.9s 1.5s ease-in-out infinite}
+    .sp-star1{animation:sp-star 2.2s .1s ease-in-out infinite}
+    .sp-star2{animation:sp-star 2.5s .9s ease-in-out infinite}
+    .sp-star3{animation:sp-star 2s 1.7s ease-in-out infinite}
+    .sp-hill{animation:sp-hill 7s ease-in-out alternate infinite}
+    .sp-moto{position:absolute;bottom:97px;animation:sp-moto 4.2s linear infinite}
+  `;
+  const Cloud = ({cx,cy,r1,r2,r3,cls,op=0.09}) => (
+    React.createElement('g',{className:cls},
+      React.createElement('ellipse',{cx,cy,rx:r1,ry:r1*.54,fill:`rgba(255,255,255,${op})`}),
+      React.createElement('ellipse',{cx:cx+r1*.45,cy:cy-r1*.28,rx:r2,ry:r2*.56,fill:`rgba(255,255,255,${op})`}),
+      React.createElement('ellipse',{cx:cx-r1*.3,cy:cy-r1*.18,rx:r3,ry:r3*.55,fill:`rgba(255,255,255,${op-.01})`})
+    )
+  );
+  const Coin = ({cx,cy,r,sym,cls}) => (
+    React.createElement('g',{className:cls,style:{transformOrigin:`${cx}px ${cy}px`}},
+      React.createElement('circle',{cx,cy,r,fill:"rgba(255,215,0,.2)",stroke:"rgba(255,215,0,.4)",strokeWidth:"1.5"}),
+      React.createElement('text',{x:cx,y:cy+r*.38,textAnchor:"middle",fontSize:r*.9,fill:"rgba(255,215,0,.7)"},sym)
+    )
+  );
+  const Star = ({cx,cy,cls}) => {
+    const p=`M${cx} ${cy-5}L${cx+1.2} ${cy-1.2}L${cx+5} ${cy}L${cx+1.2} ${cy+1.2}L${cx} ${cy+5}L${cx-1.2} ${cy+1.2}L${cx-5} ${cy}L${cx-1.2} ${cy-1.2}Z`;
+    return React.createElement('g',{className:cls,style:{transformOrigin:`${cx}px ${cy}px`}},React.createElement('path',{d:p,fill:"rgba(255,255,255,.55)"}));
+  };
+  return (
+    <div style={{position:"fixed",inset:0,background:"linear-gradient(175deg,#032e28 0%,#054d44 28%,#075E54 55%,#0a7a6c 80%,#0d9688 100%)",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",overflow:"hidden",userSelect:"none"}}>
+      <style>{css}</style>
+      <svg style={{position:"absolute",top:0,left:0,width:"100%",height:"100%",overflow:"visible"}} viewBox="0 0 390 844" preserveAspectRatio="xMidYMid slice">
+        <Cloud cx={72}  cy={88}  r1={50} r2={36} r3={28} cls="sp-c1"/>
+        <Cloud cx={295} cy={125} r1={60} r2={44} r3={32} cls="sp-c2" op={0.07}/>
+        <Cloud cx={178} cy={58}  r1={34} r2={24} r3={18} cls="sp-c3" op={0.06}/>
+        <Cloud cx={340} cy={260} r1={44} r2={30} r3={22} cls="sp-c4" op={0.06}/>
+        <Cloud cx={38}  cy={205} r1={36} r2={26} r3={18} cls="sp-c5" op={0.055}/>
+        <Coin cx={56}  cy={182} r={14} sym="₦" cls="sp-coin1"/>
+        <Coin cx={334} cy={218} r={11} sym="$" cls="sp-coin2"/>
+        <Coin cx={198} cy={158} r={9}  sym="£" cls="sp-coin3"/>
+        <Star cx={118} cy={302} cls="sp-star1"/>
+        <Star cx={272} cy={182} cls="sp-star2"/>
+        <Star cx={352} cy={358} cls="sp-star3"/>
+        <g className="sp-hill">
+          <path d="M-20 722Q85 642 185 678Q285 715 385 650Q430 624 460 642L460 844L-20 844Z" fill="rgba(0,0,0,.17)"/>
+          <path d="M-20 752Q55 702 155 720Q255 738 345 698Q392 676 460 698L460 844L-20 844Z" fill="rgba(0,0,0,.24)"/>
+          {Array.from({length:19},(_,i)=>{
+            const x=8+i*22;
+            return <g key={i}><rect x={x} y={717} width="2" height="13" rx="1" fill="rgba(255,255,255,.22)"/><rect x={x-4} y={715} width="10" height="2" rx="1" fill="rgba(255,255,255,.17)"/></g>;
+          })}
+          <path d="M-20 788Q105 748 225 762Q325 774 425 752Q448 746 470 755L470 844L-20 844Z" fill="rgba(0,0,0,.33)"/>
+          {[[38,770],[112,761],[292,762],[364,752]].map(([x,y],i)=>(
+            <g key={i}>
+              <rect x={x-1.5} y={y+9} width="3" height="11" fill="rgba(255,255,255,.16)"/>
+              <ellipse cx={x} cy={y+7} rx={8} ry={10} fill="rgba(255,255,255,.14)"/>
+              <ellipse cx={x} cy={y+2} rx={5}  ry={7}  fill="rgba(255,255,255,.11)"/>
+            </g>
+          ))}
+        </g>
+        <g opacity=".22" transform="translate(308,718)">
+          {[[0,30,"#25D366"],[13,44,"#25D366"],[26,24,"#fff"],[39,38,"#25D366"],[52,20,"#fff"]].map(([x,h,c],i)=>(
+            <rect key={i} x={x} y={52-h} width="10" height={h} rx="2" fill={c}/>
+          ))}
+        </g>
+      </svg>
+      <div className="sp-moto" style={{zIndex:3}}>
+        <svg width="75" height="40" viewBox="0 0 75 40">
+          <ellipse cx="-10" cy="22" rx="10" ry="3.5" fill="rgba(255,255,255,.1)"/>
+          <ellipse cx="-22" cy="21" rx="7"  ry="2.5" fill="rgba(255,255,255,.06)"/>
+          <circle cx="16" cy="28" r="9"  fill="none" stroke="rgba(255,255,255,.65)" strokeWidth="2.5"/>
+          <circle cx="16" cy="28" r="3.5" fill="rgba(255,255,255,.5)"/>
+          <circle cx="49" cy="28" r="9"  fill="none" stroke="rgba(255,255,255,.65)" strokeWidth="2.5"/>
+          <circle cx="49" cy="28" r="3.5" fill="rgba(255,255,255,.5)"/>
+          <path d="M20 26L32 10L48 12L52 26Z" fill="rgba(255,255,255,.42)"/>
+          <path d="M16 26L20 26L26 8L20 8Z"   fill="rgba(255,255,255,.32)"/>
+          <path d="M28 16Q32 6 36 16L34 26L30 26Z" fill="rgba(255,210,0,.55)"/>
+          <circle cx="32" cy="9" r="6" fill="rgba(255,210,0,.75)"/>
+          <rect x="38" y="8" width="14" height="11" rx="2" fill="rgba(37,211,102,.65)" stroke="rgba(255,255,255,.3)" strokeWidth="1"/>
+          <text x="45" y="16" textAnchor="middle" fontSize="7" fill="rgba(255,255,255,.9)">₦</text>
+        </svg>
+      </div>
+      <div style={{position:"relative",zIndex:10,display:"flex",flexDirection:"column",alignItems:"center",marginTop:-60}}>
+        <div className="sp-logo" style={{width:96,height:96,borderRadius:26,background:"rgba(255,255,255,.14)",backdropFilter:"blur(14px)",border:"2px solid rgba(255,255,255,.24)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:52,marginBottom:20,boxShadow:"0 10px 36px rgba(0,0,0,.32),inset 0 1px 0 rgba(255,255,255,.28)"}}>
+          📒
+        </div>
+        <div className="sp-title" style={{color:"#fff",fontWeight:900,fontSize:30,letterSpacing:"-.7px",textShadow:"0 2px 18px rgba(0,0,0,.3)",marginBottom:6}}>LedgerBook Pro</div>
+        <div className="sp-tag" style={{color:"rgba(255,255,255,.6)",fontSize:14,fontWeight:500,letterSpacing:".3px",marginBottom:44}}>Track · Grow · Prosper</div>
+        <div style={{display:"flex",gap:7,alignItems:"center"}}>
+          <div className="sp-d1" style={{width:9,height:9,borderRadius:"50%",background:"rgba(255,255,255,.8)"}}/>
+          <div className="sp-d2" style={{width:9,height:9,borderRadius:"50%",background:"rgba(255,255,255,.8)"}}/>
+          <div className="sp-d3" style={{width:9,height:9,borderRadius:"50%",background:"rgba(255,255,255,.8)"}}/>
+        </div>
+      </div>
+      <div style={{position:"absolute",bottom:30,fontSize:11,color:"rgba(255,255,255,.32)",fontWeight:600,letterSpacing:".5px",zIndex:10}}>by VBook Enterprise</div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════
+// AUTH FIELD helper
+// ═══════════════════════════════════════════════════════════════
+function AuthField({ label, placeholder, type="text", value, onChange, icon }) {
+  const [show, setShow] = useState(false);
+  const isPass = type === "password";
+  return (
+    <div style={{ marginBottom:14 }}>
+      <div style={{ fontSize:11, fontWeight:800, color:"#888", textTransform:"uppercase", letterSpacing:.6, marginBottom:6 }}>{label}</div>
+      <div style={{ position:"relative" }}>
+        {icon && <span style={{ position:"absolute", left:13, top:"50%", transform:"translateY(-50%)", fontSize:15, pointerEvents:"none", opacity:.45 }}>{icon}</span>}
+        <input className="au-inp"
+          type={isPass && !show ? "password" : isPass ? "text" : type}
+          value={value} onChange={e=>onChange(e.target.value)} placeholder={placeholder}
+          style={{ width:"100%", padding:`13px ${isPass?46:15}px 13px ${icon?42:15}px`, border:"2px solid #ebebeb", borderRadius:13, fontSize:15, boxSizing:"border-box", background:"#fafafa", fontFamily:"inherit", WebkitAppearance:"none" }}/>
+        {isPass && (
+          <button type="button" onClick={()=>setShow(s=>!s)}
+            style={{ position:"absolute", right:13, top:"50%", transform:"translateY(-50%)", background:"none", border:"none", cursor:"pointer", color:"#c0c0c0", fontSize:16, padding:2, lineHeight:1 }}>
+            {show ? "🙈" : "👁️"}
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════
+// AUTH SCREEN  (redesigned)
 // ═══════════════════════════════════════════════════════════════
 function AuthScreen() {
-  const [mode,    setMode]  = useState("login");
-  const [form,    setForm]  = useState({name:"",email:"",password:"",confirm:"",businessName:""});
-  const [err,     setErr]   = useState("");
-  const [busy,    setBusy]  = useState(false);
-  const [busyBtn, setBusyBtn] = useState(""); // "google" | "apple" | "email"
+  const [mode,    setMode]   = useState("login");
+  const [form,    setForm]   = useState({name:"",email:"",password:"",confirm:"",businessName:""});
+  const [err,     setErr]    = useState("");
+  const [busy,    setBusy]   = useState(false);
+  const [busyBtn, setBusyBtn]= useState("");
   const f = (k,v) => setForm(p=>({...p,[k]:v}));
 
-  // ── Social sign-in ──────────────────────────────────────────
+  const AUTH_CSS = `
+    @keyframes au-up{from{opacity:0;transform:translateY(28px)}to{opacity:1;transform:translateY(0)}}
+    @keyframes au-shake{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-5px)}40%,80%{transform:translateX(5px)}}
+    @keyframes au-c1{0%{transform:translateX(0)}100%{transform:translateX(13px)}}
+    @keyframes au-c2{0%{transform:translateX(0)}100%{transform:translateX(-11px)}}
+    @keyframes au-coin{0%,100%{transform:translateY(0) rotate(-5deg)}50%{transform:translateY(-9px) rotate(5deg)}}
+    .au-card{animation:au-up .5s cubic-bezier(.22,.68,0,1.18) both}
+    .au-err{animation:au-shake .38s ease}
+    .au-c1{animation:au-c1 5s ease-in-out alternate infinite}
+    .au-c2{animation:au-c2 7s ease-in-out alternate infinite}
+    .au-coin1{animation:au-coin 2.6s ease-in-out infinite;transform-origin:50px 178px}
+    .au-coin2{animation:au-coin 3.1s 1s ease-in-out infinite;transform-origin:342px 205px}
+    .au-inp{transition:border-color .18s,box-shadow .18s,background .18s}
+    .au-inp:focus{border-color:#075E54 !important;box-shadow:0 0 0 3px rgba(7,94,84,.12) !important;outline:none;background:#fff !important}
+    .au-btn{transition:transform .13s,box-shadow .13s}
+    .au-btn:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 8px 28px rgba(7,94,84,.44) !important}
+    .au-btn:active:not(:disabled){transform:translateY(0px)}
+    .au-soc{transition:all .15s}
+    .au-soc:hover:not(:disabled){background:#f7f7f7 !important;transform:translateY(-1px);box-shadow:0 4px 14px rgba(0,0,0,.12) !important}
+    .au-tab{transition:background .2s,color .2s,box-shadow .2s}
+  `;
+
+  const switchMode = (m) => { setMode(m); setErr(""); setForm({name:"",email:"",password:"",confirm:"",businessName:""}); };
+
   const handleSocial = async (provider, name) => {
     setErr(""); setBusyBtn(name); setBusy(true);
     try {
       const result = await signInWithPopup(auth, provider);
-      // If new Google/Apple user, save their business name prompt
       const uid = result.user.uid;
       if (!DB.get(`lb_bname_${uid}`)) {
         DB.set(`lb_bname_${uid}`, result.user.displayName?.split(" ")[0] + "'s Business" || "My Business");
       }
-      // onAuthStateChanged in ROOT will pick up the login automatically
     } catch (e) {
       if (e.code === "auth/popup-closed-by-user") setErr("Sign-in cancelled. Please try again.");
-      else if (e.code === "auth/popup-blocked") setErr("Popup was blocked. Please allow popups for this site and try again.");
+      else if (e.code === "auth/popup-blocked") setErr("Popup blocked. Please allow popups for this site.");
       else if (e.code !== "auth/cancelled-popup-request") setErr(e.message || "Sign-in failed. Please try again.");
-    } finally {
-      setBusy(false); setBusyBtn("");
-    }
+    } finally { setBusy(false); setBusyBtn(""); }
   };
 
-  // ── Email register ──────────────────────────────────────────
   const handleRegister = async () => {
     setErr("");
     if (!form.name.trim())         return setErr("Enter your full name");
@@ -883,15 +1051,12 @@ function AuthScreen() {
       await updateProfile(cred.user, { displayName: form.name });
       DB.set(`lb_bname_${cred.user.uid}`, form.businessName);
     } catch (e) {
-      if (e.code === "auth/email-already-in-use") setErr("An account with this email already exists. Sign in instead.");
+      if (e.code === "auth/email-already-in-use") setErr("Account already exists. Sign in instead.");
       else if (e.code === "auth/invalid-email") setErr("That email address doesn't look right.");
       else setErr(e.message || "Registration failed. Please try again.");
-    } finally {
-      setBusy(false); setBusyBtn("");
-    }
+    } finally { setBusy(false); setBusyBtn(""); }
   };
 
-  // ── Email login ─────────────────────────────────────────────
   const handleLogin = async () => {
     setErr("");
     if (!form.email || !form.password) return setErr("Please fill in all fields");
@@ -900,60 +1065,101 @@ function AuthScreen() {
       await signInWithEmailAndPassword(auth, form.email, form.password);
     } catch (e) {
       if (e.code === "auth/user-not-found" || e.code === "auth/invalid-credential") setErr("No account found. Check your email or sign up.");
-      else if (e.code === "auth/wrong-password") setErr("Incorrect password. Please try again.");
-      else if (e.code === "auth/too-many-requests") setErr("Too many attempts. Please wait a moment and try again.");
+      else if (e.code === "auth/wrong-password") setErr("Incorrect password. Try again.");
+      else if (e.code === "auth/too-many-requests") setErr("Too many attempts. Please wait a moment.");
       else setErr(e.message || "Sign-in failed. Please try again.");
-    } finally {
-      setBusy(false); setBusyBtn("");
-    }
+    } finally { setBusy(false); setBusyBtn(""); }
   };
 
   return (
-    <div style={{ minHeight:"100vh",
-      background:"linear-gradient(160deg,#075E54 0%,#128C7E 50%,#25D366 100%)",
-      display:"flex", alignItems:"center", justifyContent:"center",
-      padding:`max(24px, env(safe-area-inset-top,24px)) max(20px, env(safe-area-inset-right,20px)) max(24px, env(safe-area-inset-bottom,24px)) max(20px, env(safe-area-inset-left,20px))` }}>
+    <div style={{minHeight:"100vh",position:"relative",overflow:"hidden",
+      background:"linear-gradient(175deg,#032e28 0%,#054d44 28%,#075E54 58%,#0a7a6c 82%,#128C7E 100%)"}}>
+      <style>{AUTH_CSS}</style>
 
-      <div style={{ width:"100%", maxWidth:400, background:"#fff", borderRadius:28,
-        overflow:"hidden", boxShadow:"0 24px 64px rgba(0,0,0,0.28)" }}>
+      {/* Background scene */}
+      <svg style={{position:"absolute",top:0,left:0,width:"100%",height:"100%",overflow:"visible",pointerEvents:"none"}}
+        viewBox="0 0 390 844" preserveAspectRatio="xMidYMid slice">
+        <g className="au-c1">
+          <ellipse cx="62" cy="82" rx="46" ry="25" fill="rgba(255,255,255,.07)"/>
+          <ellipse cx="88" cy="71" rx="32" ry="19" fill="rgba(255,255,255,.07)"/>
+          <ellipse cx="42" cy="76" rx="22" ry="14" fill="rgba(255,255,255,.06)"/>
+        </g>
+        <g className="au-c2">
+          <ellipse cx="302" cy="112" rx="55" ry="28" fill="rgba(255,255,255,.06)"/>
+          <ellipse cx="330" cy="100" rx="38" ry="22" fill="rgba(255,255,255,.05)"/>
+          <ellipse cx="280" cy="107" rx="26" ry="16" fill="rgba(255,255,255,.05)"/>
+        </g>
+        <g className="au-c1" style={{animationDuration:"4.5s",animationDelay:"1s"}}>
+          <ellipse cx="178" cy="52" rx="30" ry="16" fill="rgba(255,255,255,.05)"/>
+          <ellipse cx="198" cy="44" rx="21" ry="13" fill="rgba(255,255,255,.04)"/>
+        </g>
+        <g className="au-coin1">
+          <circle cx="50" cy="178" r="13" fill="rgba(255,215,0,.18)" stroke="rgba(255,215,0,.35)" strokeWidth="1.5"/>
+          <text x="50" y="183" textAnchor="middle" fontSize="11" fill="rgba(255,215,0,.6)">₦</text>
+        </g>
+        <g className="au-coin2">
+          <circle cx="342" cy="205" r="10" fill="rgba(255,215,0,.14)" stroke="rgba(255,215,0,.3)" strokeWidth="1.5"/>
+          <text x="342" y="210" textAnchor="middle" fontSize="9" fill="rgba(255,215,0,.55)">$</text>
+        </g>
+        {/* subtle grid dots */}
+        {Array.from({length:6},(_,row)=>Array.from({length:5},(_,col)=>(
+          <circle key={`${row}-${col}`} cx={60+col*70} cy={380+row*70} r="1.5" fill="rgba(255,255,255,.06)"/>
+        )))}
+        <path d="M-20 800Q100 762 230 776Q340 788 440 762L440 844L-20 844Z" fill="rgba(0,0,0,.18)"/>
+        <path d="M-20 828Q120 800 260 812Q360 820 440 800L440 844L-20 844Z" fill="rgba(0,0,0,.26)"/>
+      </svg>
 
-        {/* Header */}
-        <div style={{ background:"linear-gradient(135deg,#075E54,#25D366)", padding:"36px 28px 28px", textAlign:"center" }}>
-          <div style={{ width:76, height:76, borderRadius:22, background:"rgba(255,255,255,0.2)",
-            display:"flex", alignItems:"center", justifyContent:"center", fontSize:40, margin:"0 auto 16px" }}>📒</div>
-          <div style={{ color:"#fff", fontWeight:900, fontSize:24, letterSpacing:-.5 }}>LedgerBook Pro</div>
-          <div style={{ color:"rgba(255,255,255,0.75)", fontSize:14, marginTop:5 }}>Business Finance Tracker</div>
+      {/* Top logo */}
+      <div style={{position:"relative",zIndex:2,textAlign:"center",
+        paddingTop:"max(48px,env(safe-area-inset-top,48px))",paddingBottom:22}}>
+        <div style={{width:70,height:70,borderRadius:22,margin:"0 auto 12px",
+          background:"rgba(255,255,255,.14)",backdropFilter:"blur(12px)",
+          border:"2px solid rgba(255,255,255,.22)",
+          display:"flex",alignItems:"center",justifyContent:"center",
+          fontSize:38,boxShadow:"0 8px 24px rgba(0,0,0,.24)"}}>
+          📒
         </div>
-
-        {/* Tab switcher */}
-        <div style={{ display:"flex", background:"#f5f5f5" }}>
-          {[["login","Sign In"],["register","Create Account"]].map(([m,l])=>(
-            <button key={m} onClick={()=>{setMode(m);setErr("");}}
-              style={{ flex:1, padding:"14px", border:"none", fontWeight:700, fontSize:14, cursor:"pointer",
-                background:mode===m?"#fff":"transparent", color:mode===m?"#075E54":"#999",
-                borderBottom:mode===m?"3px solid #075E54":"3px solid transparent" }}>
-              {l}
-            </button>
-          ))}
+        <div style={{color:"#fff",fontWeight:900,fontSize:22,letterSpacing:"-.5px",textShadow:"0 2px 12px rgba(0,0,0,.22)"}}>
+          LedgerBook Pro
         </div>
+        <div style={{color:"rgba(255,255,255,.55)",fontSize:13,marginTop:4}}>
+          {mode==="login" ? "Welcome back 👋" : "Let's get you started 🚀"}
+        </div>
+      </div>
 
-        <div style={{ padding:`24px ${S.px}px 30px` }}>
+      {/* Card */}
+      <div className="au-card" style={{position:"relative",zIndex:2,margin:"0 auto",width:"100%",maxWidth:420,
+        paddingLeft:16,paddingRight:16,
+        paddingBottom:"max(32px,env(safe-area-inset-bottom,32px))"}}>
 
-          {/* ── SOCIAL BUTTONS ── */}
-          <div style={{ display:"flex", flexDirection:"column", gap:11, marginBottom:20 }}>
+        <div style={{background:"rgba(255,255,255,.97)",borderRadius:28,
+          boxShadow:"0 24px 64px rgba(0,0,0,.28),0 0 0 1px rgba(255,255,255,.4)",overflow:"hidden"}}>
 
-            {/* Google */}
-            <button onClick={()=>handleSocial(googleProvider,"google")} disabled={busy}
-              style={{ width:"100%", padding:"14px 16px", border:"2px solid #e8e8e8", borderRadius:14,
-                background: busyBtn==="google"?"#f5f5f5":"#fff", cursor:busy?"not-allowed":"pointer",
-                display:"flex", alignItems:"center", justifyContent:"center", gap:12,
-                fontWeight:700, fontSize:15, color:"#333",
-                boxShadow:"0 1px 4px rgba(0,0,0,0.08)", transition:"all 0.15s" }}>
-              {busyBtn==="google" ? (
-                <span style={{ fontSize:13, color:"#888" }}>Connecting…</span>
-              ) : (
-                <>
-                  {/* Google G logo SVG */}
+          {/* Tabs */}
+          <div style={{display:"flex",background:"#f2f2f2",padding:5,gap:4,margin:"16px 16px 0",borderRadius:18}}>
+            {[["login","Sign In"],["register","Create Account"]].map(([m,l])=>(
+              <button key={m} className="au-tab" onClick={()=>switchMode(m)}
+                style={{flex:1,padding:"11px 6px",border:"none",fontWeight:800,fontSize:14,cursor:"pointer",
+                  borderRadius:13,letterSpacing:"-.2px",
+                  background:mode===m?"#fff":"transparent",
+                  color:mode===m?"#075E54":"#aaa",
+                  boxShadow:mode===m?"0 2px 8px rgba(0,0,0,.1)":"none"}}>
+                {l}
+              </button>
+            ))}
+          </div>
+
+          <div style={{padding:"20px 22px 26px"}}>
+
+            {/* Social buttons */}
+            <div style={{display:"flex",flexDirection:"column",gap:10,marginBottom:18}}>
+              <button className="au-soc" onClick={()=>handleSocial(googleProvider,"google")} disabled={busy}
+                style={{width:"100%",padding:"13px 16px",border:"1.5px solid #e5e5e5",borderRadius:14,
+                  background:"#fff",cursor:busy?"not-allowed":"pointer",
+                  display:"flex",alignItems:"center",justifyContent:"center",gap:11,
+                  fontWeight:700,fontSize:15,color:"#2d2d2d",
+                  boxShadow:"0 2px 6px rgba(0,0,0,.05)"}}>
+                {busyBtn==="google" ? <span style={{fontSize:13,color:"#888"}}>Connecting…</span> : <>
                   <svg width="20" height="20" viewBox="0 0 48 48">
                     <path fill="#FFC107" d="M43.6 20H24v8h11.3C33.7 33.5 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3 0 5.7 1.1 7.8 2.9l5.7-5.7C34.1 6.5 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20c11 0 19.4-7.8 19.4-20 0-1.3-.1-2.7-.4-4z"/>
                     <path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.5 16 19 13 24 13c3 0 5.7 1.1 7.8 2.9l5.7-5.7C34.1 6.5 29.3 4 24 4c-7.8 0-14.5 4.3-17.7 10.7z"/>
@@ -961,87 +1167,78 @@ function AuthScreen() {
                     <path fill="#1976D2" d="M43.6 20H24v8h11.3c-.8 2.2-2.3 4.1-4.2 5.4l6.2 5.2C40.9 35.3 44 30 44 24c0-1.3-.1-2.7-.4-4z"/>
                   </svg>
                   Continue with Google
-                </>
-              )}
-            </button>
-
-            {/* Apple */}
-            <button onClick={()=>handleSocial(appleProvider,"apple")} disabled={busy}
-              style={{ width:"100%", padding:"14px 16px", border:"2px solid #e8e8e8", borderRadius:14,
-                background: busyBtn==="apple"?"#111":"#000", cursor:busy?"not-allowed":"pointer",
-                display:"flex", alignItems:"center", justifyContent:"center", gap:12,
-                fontWeight:700, fontSize:15, color:"#fff",
-                boxShadow:"0 1px 4px rgba(0,0,0,0.15)", transition:"all 0.15s" }}>
-              {busyBtn==="apple" ? (
-                <span style={{ fontSize:13, color:"#aaa" }}>Connecting…</span>
-              ) : (
-                <>
-                  {/* Apple logo SVG */}
-                  <svg width="18" height="22" viewBox="0 0 814 1000" fill="white">
+                </>}
+              </button>
+              <button className="au-soc" onClick={()=>handleSocial(appleProvider,"apple")} disabled={busy}
+                style={{width:"100%",padding:"13px 16px",border:"1.5px solid #1a1a1a",borderRadius:14,
+                  background:"#000",cursor:busy?"not-allowed":"pointer",
+                  display:"flex",alignItems:"center",justifyContent:"center",gap:11,
+                  fontWeight:700,fontSize:15,color:"#fff",
+                  boxShadow:"0 2px 8px rgba(0,0,0,.2)"}}>
+                {busyBtn==="apple" ? <span style={{fontSize:13,color:"#aaa"}}>Connecting…</span> : <>
+                  <svg width="17" height="21" viewBox="0 0 814 1000" fill="white">
                     <path d="M788.1 340.9c-5.8 4.5-108.2 62.2-108.2 190.5 0 148.4 130.3 200.9 134.2 202.2-.6 3.2-20.7 71.9-68.7 141.9-42.8 61.6-87.5 123.1-155.5 123.1s-85.5-39.5-164-39.5c-76 0-103.7 40.8-165.9 40.8s-105-57.8-155.5-127.4C46 790.7 0 663 0 541.8c0-207.5 135.4-317.5 269-317.5 70.1 0 128.4 46.4 172.5 46.4 42.8 0 109.6-49 192-49 30.8 0 110.7 2.6 173.3 66.5zm-245.7-191.4c33.4-39.5 56.7-95.3 56.7-151.1 0-7.7-.6-15.4-1.9-22.4-53.5 2-116.8 35.5-154.2 79.5-29.5 33.9-57.1 89.6-57.1 146.1 0 8.3 1.3 16.6 1.9 19.2 3.2.6 8.3 1.3 13.4 1.3 47.9 0 109.6-32.1 141.2-72.6z"/>
                   </svg>
                   Continue with Apple
-                </>
-              )}
-            </button>
-          </div>
-
-          {/* Divider */}
-          <div style={{ display:"flex", alignItems:"center", gap:12, marginBottom:20 }}>
-            <div style={{ flex:1, height:1, background:"#eee" }}/>
-            <span style={{ fontSize:12, color:"#bbb", fontWeight:600 }}>OR</span>
-            <div style={{ flex:1, height:1, background:"#eee" }}/>
-          </div>
-
-          {/* ── EMAIL FORM ── */}
-          {mode==="register"&&<>
-            <AInput label="Full Name"     placeholder="John Doe"        value={form.name}         onChange={v=>f("name",v)}/>
-            <AInput label="Business Name" placeholder="Ade Electronics" value={form.businessName} onChange={v=>f("businessName",v)}/>
-          </>}
-          <AInput label="Email"    placeholder="you@example.com"  type="email"    value={form.email}    onChange={v=>f("email",v)}/>
-          <AInput label="Password" placeholder="Min. 6 characters" type="password" value={form.password} onChange={v=>f("password",v)}/>
-          {mode==="register"&&<AInput label="Confirm Password" placeholder="Re-enter password" type="password" value={form.confirm} onChange={v=>f("confirm",v)}/>}
-
-          {/* Error */}
-          {err&&(
-            <div style={{ background:"#fff3f3", border:"1px solid #ffcdd2", borderRadius:12,
-              padding:"12px 14px", color:"#c62828", fontSize:13, marginBottom:14, lineHeight:1.5 }}>
-              ⚠️ {err}
+                </>}
+              </button>
             </div>
-          )}
 
-          {/* Submit */}
-          <button onClick={mode==="login"?handleLogin:handleRegister} disabled={busy}
-            style={{ width:"100%", padding:"15px",
-              background:busy?"#ccc":"linear-gradient(135deg,#075E54,#25D366)",
-              color:"#fff", border:"none", borderRadius:14, fontSize:16, fontWeight:900,
-              cursor:busy?"not-allowed":"pointer",
-              boxShadow:busy?"none":"0 4px 18px rgba(7,94,84,0.35)" }}>
-            {busyBtn==="email" ? "Please wait…" : mode==="login" ? "Sign In →" : "Create Account →"}
-          </button>
+            {/* Divider */}
+            <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:18}}>
+              <div style={{flex:1,height:1,background:"#efefef"}}/>
+              <span style={{fontSize:11,color:"#ccc",fontWeight:700,letterSpacing:.5}}>OR</span>
+              <div style={{flex:1,height:1,background:"#efefef"}}/>
+            </div>
 
-          {/* Switch mode */}
-          <div style={{ textAlign:"center", marginTop:16, fontSize:13, color:"#999" }}>
-            {mode==="login" ? (
-              <>No account?{" "}
-                <button onClick={()=>{setMode("register");setErr("");}}
-                  style={{ background:"none", border:"none", color:"#075E54", fontWeight:700, cursor:"pointer", fontSize:13 }}>
-                  Sign up free
-                </button>
-              </>
-            ) : (
-              <>Already have an account?{" "}
-                <button onClick={()=>{setMode("login");setErr("");}}
-                  style={{ background:"none", border:"none", color:"#075E54", fontWeight:700, cursor:"pointer", fontSize:13 }}>
-                  Sign in
-                </button>
-              </>
+            {/* Form fields */}
+            {mode==="register" && <>
+              <AuthField label="Full Name"     placeholder="e.g. Oluwasegun Akinnusi" value={form.name}         onChange={v=>f("name",v)}         icon="👤"/>
+              <AuthField label="Business Name" placeholder="e.g. Ade Electronics"     value={form.businessName} onChange={v=>f("businessName",v)} icon="🏪"/>
+            </>}
+            <AuthField label="Email Address"    placeholder="you@example.com"   type="email"    value={form.email}    onChange={v=>f("email",v)}    icon="📧"/>
+            <AuthField label="Password"         placeholder="Min. 6 characters" type="password" value={form.password} onChange={v=>f("password",v)} icon="🔒"/>
+            {mode==="register" && <AuthField label="Confirm Password" placeholder="Re-enter password" type="password" value={form.confirm} onChange={v=>f("confirm",v)} icon="🔒"/>}
+
+            {/* Error */}
+            {err && (
+              <div className="au-err" key={err}
+                style={{background:"#fff3f3",border:"1.5px solid #ffcdd2",borderRadius:13,
+                  padding:"11px 14px",color:"#c62828",fontSize:13,marginBottom:14,
+                  lineHeight:1.55,display:"flex",gap:8,alignItems:"flex-start"}}>
+                <span style={{flexShrink:0}}>⚠️</span><span>{err}</span>
+              </div>
             )}
-          </div>
 
-          {/* Terms note */}
-          <div style={{ textAlign:"center", marginTop:14, fontSize:11, color:"#ccc", lineHeight:1.5 }}>
-            By continuing, you agree to our Terms of Service and Privacy Policy
+            {/* Submit */}
+            <button className="au-btn" onClick={mode==="login"?handleLogin:handleRegister} disabled={busy}
+              style={{width:"100%",padding:"15px",
+                background:busy?"#ccc":"linear-gradient(135deg,#054d44 0%,#075E54 40%,#128C7E 75%,#1aab92 100%)",
+                color:"#fff",border:"none",borderRadius:15,fontSize:16,fontWeight:900,
+                cursor:busy?"not-allowed":"pointer",letterSpacing:"-.2px",
+                boxShadow:busy?"none":"0 6px 22px rgba(7,94,84,.38)"}}>
+              {busyBtn==="email" ? "Please wait…" : mode==="login" ? "Sign In →" : "Create Account →"}
+            </button>
+
+            {/* Switch */}
+            <div style={{textAlign:"center",marginTop:15,fontSize:13,color:"#aaa"}}>
+              {mode==="login" ? <>
+                Don't have an account?{" "}
+                <button onClick={()=>switchMode("register")} style={{background:"none",border:"none",color:"#075E54",fontWeight:800,cursor:"pointer",fontSize:13}}>Sign up free</button>
+              </> : <>
+                Already have an account?{" "}
+                <button onClick={()=>switchMode("login")} style={{background:"none",border:"none",color:"#075E54",fontWeight:800,cursor:"pointer",fontSize:13}}>Sign in</button>
+              </>}
+            </div>
+
+            {/* Legal */}
+            <div style={{textAlign:"center",marginTop:13,fontSize:11,color:"#ccc",lineHeight:1.65}}>
+              By continuing you agree to our{" "}
+              <a href="https://ledgerbook-nu.vercel.app/terms" target="_blank" rel="noopener noreferrer" style={{color:"#075E54",fontWeight:700,textDecoration:"none"}}>Terms</a>
+              {" "}and{" "}
+              <a href="https://ledgerbook-nu.vercel.app/privacy" target="_blank" rel="noopener noreferrer" style={{color:"#075E54",fontWeight:700,textDecoration:"none"}}>Privacy Policy</a>
+            </div>
+
           </div>
         </div>
       </div>
@@ -1049,23 +1246,10 @@ function AuthScreen() {
   );
 }
 
-function AInput({ label, placeholder, type="text", value, onChange }) {
-  const [show,setShow] = useState(false);
-  const isPass = type==="password";
-  return (
-    <div style={{ marginBottom:14 }}>
-      <div style={{ fontSize:11, fontWeight:700, color:"#777", textTransform:"uppercase", letterSpacing:.5, marginBottom:5 }}>{label}</div>
-      <div style={{ position:"relative" }}>
-        <input type={isPass&&!show?"password":isPass?"text":type} value={value} onChange={e=>onChange(e.target.value)} placeholder={placeholder}
-          style={{ width:"100%", padding:`12px ${isPass?"46px":"15px"} 12px 15px`, border:"2px solid #eee",
-            borderRadius:12, fontSize:15, outline:"none", boxSizing:"border-box", background:"#fafafa" }}
-          onFocus={e=>{e.target.style.borderColor="#075E54";e.target.style.background="#fff";}}
-          onBlur={e=>{e.target.style.borderColor="#eee";e.target.style.background="#fafafa";}}/>
-        {isPass&&<button type="button" onClick={()=>setShow(s=>!s)} style={{ position:"absolute", right:13, top:"50%", transform:"translateY(-50%)", background:"none", border:"none", cursor:"pointer", color:"#aaa", fontSize:16, padding:2 }}>{show?"🙈":"👁️"}</button>}
-      </div>
-    </div>
-  );
-}
+// legacy alias so any stale references compile fine
+const AInput = AuthField;
+
+
 
 // ═══════════════════════════════════════════════════════════════
 // KEYBOARD WIDGET
@@ -1447,9 +1631,7 @@ export default function LedgerBookPro() {
   if (!authChecked) return (
     <>
       <GlobalStyles/>
-      <div style={{ minHeight:"100vh", background:"#075E54", display:"flex", alignItems:"center", justifyContent:"center" }}>
-        <div style={{ color:"#fff", fontSize:18 }}>Loading…</div>
-      </div>
+      <SplashScreen/>
     </>
   );
   if (!user) return (<><GlobalStyles/><AuthScreen/></>);
