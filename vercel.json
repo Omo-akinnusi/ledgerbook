@@ -1,6 +1,7 @@
 {
   "routes": [
     { "src": "/privacy", "dest": "/privacy.html" },
-    { "src": "/terms",   "dest": "/terms.html"   }
+    { "src": "/terms",   "dest": "/terms.html"   },
+    { "src": "/admin",   "dest": "/admin.html"    }
   ]
 }

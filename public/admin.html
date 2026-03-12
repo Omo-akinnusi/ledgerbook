@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>LedgerBook Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;700;900&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --green:  #075E54;
+    --green2: #128C7E;
+    --lime:   #25D366;
+    --dark:   #0a1612;
+    --card:   #111e1b;
+    --border: rgba(37,211,102,0.15);
+    --text:   #e8f5f1;
+    --muted:  #5a8a7a;
+    --pro:    #f5c842;
+    --free:   #4a9eff;
+    --danger: #ff5a5a;
+    --font:   'DM Sans', sans-serif;
+    --mono:   'DM Mono', monospace;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: var(--font);
+    background: var(--dark);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── Grid background ── */
+  body::before {
+    content: "";
+    position: fixed; inset: 0; pointer-events: none; z-index: 0;
+    background-image:
+      linear-gradient(rgba(37,211,102,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(37,211,102,0.03) 1px, transparent 1px);
+    background-size: 48px 48px;
+  }
+
+  /* ── Top bar ── */
+  .topbar {
+    position: sticky; top: 0; z-index: 50;
+    background: rgba(10,22,18,0.92);
+    backdrop-filter: blur(16px);
+    border-bottom: 1px solid var(--border);
+    padding: 0 32px;
+    height: 60px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .topbar-brand {
+    display: flex; align-items: center; gap: 12px;
+  }
+  .topbar-logo {
+    width: 34px; height: 34px; border-radius: 10px;
+    background: linear-gradient(135deg, var(--green), var(--lime));
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+  }
+  .topbar-title { font-weight: 900; font-size: 16px; letter-spacing: -.3px; }
+  .topbar-badge {
+    background: rgba(37,211,102,0.12); border: 1px solid var(--border);
+    color: var(--lime); font-size: 10px; font-weight: 700;
+    padding: 3px 8px; border-radius: 6px; letter-spacing: .5px;
+    text-transform: uppercase; font-family: var(--mono);
+  }
+  .admin-user-pill {
+    display: flex; align-items: center; gap: 8px;
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 24px; padding: 6px 14px 6px 8px; font-size: 13px;
+  }
+  .admin-avatar {
+    width: 26px; height: 26px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--green), var(--lime));
+    display: flex; align-items: center; justify-content: center; font-size: 12px;
+  }
+
+  /* ── Main layout ── */
+  .main { position: relative; z-index: 1; max-width: 900px; margin: 0 auto; padding: 36px 24px 80px; }
+
+  /* ── Auth wall ── */
+  #auth-wall {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    min-height: 80vh; text-align: center; gap: 0;
+  }
+  .auth-icon { font-size: 56px; margin-bottom: 20px; }
+  .auth-title { font-size: 28px; font-weight: 900; letter-spacing: -.6px; margin-bottom: 8px; }
+  .auth-sub { color: var(--muted); font-size: 14px; margin-bottom: 36px; line-height: 1.6; }
+  .btn-google {
+    display: flex; align-items: center; gap: 12px;
+    background: #fff; color: #333; border: none;
+    border-radius: 14px; padding: 14px 28px;
+    font-size: 15px; font-weight: 700; cursor: pointer;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.4);
+    transition: transform .15s, box-shadow .15s;
+  }
+  .btn-google:hover { transform: translateY(-2px); box-shadow: 0 8px 32px rgba(0,0,0,0.5); }
+
+  /* ── Section heading ── */
+  .section-head {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 20px;
+  }
+  .section-title { font-size: 20px; font-weight: 900; letter-spacing: -.4px; }
+  .section-sub { color: var(--muted); font-size: 13px; margin-top: 3px; }
+
+  /* ── Stats row ── */
+  .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 32px; }
+  .stat-card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 16px; padding: 20px 22px;
+    transition: border-color .2s;
+  }
+  .stat-card:hover { border-color: rgba(37,211,102,0.3); }
+  .stat-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; font-family: var(--mono); }
+  .stat-value { font-size: 32px; font-weight: 900; letter-spacing: -1px; }
+  .stat-value.pro  { color: var(--pro); }
+  .stat-value.free { color: var(--free); }
+  .stat-value.all  { color: var(--lime); }
+
+  /* ── Search bar ── */
+  .search-wrap { position: relative; margin-bottom: 20px; }
+  .search-icon { position: absolute; left: 16px; top: 50%; transform: translateY(-50%); font-size: 16px; pointer-events: none; }
+  .search-input {
+    width: 100%; padding: 14px 16px 14px 46px;
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 14px; color: var(--text); font-size: 14px;
+    font-family: var(--font); outline: none;
+    transition: border-color .18s, box-shadow .18s;
+  }
+  .search-input:focus {
+    border-color: var(--lime);
+    box-shadow: 0 0 0 3px rgba(37,211,102,0.1);
+  }
+  .search-input::placeholder { color: var(--muted); }
+
+  /* ── User table ── */
+  .table-wrap {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 18px; overflow: hidden;
+  }
+  .table-head {
+    display: grid; grid-template-columns: 1fr 2fr 1fr 1fr 100px;
+    padding: 12px 22px;
+    background: rgba(37,211,102,0.05);
+    border-bottom: 1px solid var(--border);
+    font-size: 10px; font-weight: 700; color: var(--muted);
+    text-transform: uppercase; letter-spacing: 1px; font-family: var(--mono);
+  }
+  .user-row {
+    display: grid; grid-template-columns: 1fr 2fr 1fr 1fr 100px;
+    padding: 16px 22px; align-items: center;
+    border-bottom: 1px solid rgba(37,211,102,0.07);
+    transition: background .15s;
+  }
+  .user-row:last-child { border-bottom: none; }
+  .user-row:hover { background: rgba(37,211,102,0.04); }
+  .user-name { font-weight: 700; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .user-email { font-size: 12px; color: var(--muted); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .uid-chip {
+    font-family: var(--mono); font-size: 10px; color: var(--muted);
+    background: rgba(255,255,255,.04); border-radius: 6px; padding: 3px 7px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 140px; display: block;
+  }
+  .joined { font-size: 12px; color: var(--muted); font-family: var(--mono); }
+
+  /* Plan badge + toggle */
+  .plan-badge {
+    display: inline-flex; align-items: center; gap: 5px;
+    border-radius: 20px; padding: 5px 12px;
+    font-size: 12px; font-weight: 800; cursor: pointer;
+    border: 2px solid transparent;
+    transition: all .18s; white-space: nowrap;
+  }
+  .plan-badge.pro  { background: rgba(245,200,66,.15); color: var(--pro);  border-color: rgba(245,200,66,.3); }
+  .plan-badge.free { background: rgba(74,158,255,.12); color: var(--free); border-color: rgba(74,158,255,.25); }
+  .plan-badge:hover { transform: scale(1.05); }
+
+  /* Toggle switch */
+  .toggle-wrap { display: flex; align-items: center; justify-content: flex-end; gap: 8px; }
+  .toggle {
+    position: relative; width: 44px; height: 24px; cursor: pointer;
+  }
+  .toggle input { opacity: 0; width: 0; height: 0; }
+  .toggle-slider {
+    position: absolute; inset: 0; border-radius: 24px;
+    background: rgba(255,255,255,.1); transition: .2s;
+  }
+  .toggle-slider::before {
+    content: ""; position: absolute;
+    width: 18px; height: 18px; left: 3px; bottom: 3px;
+    background: #fff; border-radius: 50%; transition: .2s;
+  }
+  .toggle input:checked + .toggle-slider { background: var(--lime); }
+  .toggle input:checked + .toggle-slider::before { transform: translateX(20px); }
+
+  /* ── Lookup section ── */
+  .lookup-card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 18px; padding: 24px; margin-bottom: 32px;
+  }
+  .lookup-title { font-size: 14px; font-weight: 800; color: var(--lime); margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
+  .input-row { display: flex; gap: 10px; }
+  .field-input {
+    flex: 1; padding: 12px 16px;
+    background: rgba(255,255,255,.04); border: 1px solid var(--border);
+    border-radius: 12px; color: var(--text); font-size: 14px;
+    font-family: var(--mono); outline: none;
+    transition: border-color .18s;
+  }
+  .field-input:focus { border-color: var(--lime); }
+  .field-input::placeholder { color: var(--muted); }
+  .btn-primary {
+    padding: 12px 22px; background: linear-gradient(135deg, var(--green), var(--green2));
+    color: #fff; border: none; border-radius: 12px;
+    font-size: 14px; font-weight: 800; cursor: pointer;
+    transition: opacity .15s, transform .15s; white-space: nowrap;
+  }
+  .btn-primary:hover { opacity: .9; transform: translateY(-1px); }
+  .btn-primary:disabled { opacity: .4; cursor: not-allowed; transform: none; }
+  .btn-danger {
+    padding: 10px 18px; background: rgba(255,90,90,.12); color: var(--danger);
+    border: 1px solid rgba(255,90,90,.3); border-radius: 12px;
+    font-size: 13px; font-weight: 700; cursor: pointer; transition: all .15s;
+  }
+  .btn-danger:hover { background: rgba(255,90,90,.2); }
+
+  /* ── Result card ── */
+  .result-card {
+    background: rgba(37,211,102,.05); border: 1px solid rgba(37,211,102,.2);
+    border-radius: 16px; padding: 20px; margin-top: 16px; display: none;
+  }
+  .result-card.show { display: block; }
+  .result-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid rgba(37,211,102,.08); }
+  .result-row:last-child { border-bottom: none; padding-bottom: 0; }
+  .result-key { font-size: 12px; color: var(--muted); font-family: var(--mono); }
+  .result-val { font-size: 13px; font-weight: 700; font-family: var(--mono); word-break: break-all; text-align: right; max-width: 60%; }
+
+  /* ── Toast ── */
+  #toast {
+    position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%) translateY(80px);
+    background: var(--card); border: 1px solid var(--border);
+    color: var(--text); padding: 12px 24px; border-radius: 24px;
+    font-size: 13px; font-weight: 700; z-index: 999;
+    box-shadow: 0 8px 32px rgba(0,0,0,.5);
+    transition: transform .3s cubic-bezier(.22,.68,0,1.2), opacity .3s;
+    opacity: 0; white-space: nowrap;
+  }
+  #toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+  #toast.success { border-color: rgba(37,211,102,.4); background: rgba(10,22,18,.98); color: var(--lime); }
+  #toast.error   { border-color: rgba(255,90,90,.4);  background: rgba(10,22,18,.98); color: var(--danger); }
+
+  /* ── Loading ── */
+  .spinner {
+    width: 18px; height: 18px; border-radius: 50%;
+    border: 2px solid rgba(37,211,102,.2); border-top-color: var(--lime);
+    animation: spin .7s linear infinite; display: inline-block; vertical-align: middle;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── Empty state ── */
+  .empty { text-align: center; padding: 48px 20px; color: var(--muted); font-size: 14px; }
+  .empty-icon { font-size: 40px; margin-bottom: 12px; opacity: .4; }
+
+  /* ── Responsive ── */
+  @media (max-width: 680px) {
+    .stats { grid-template-columns: 1fr 1fr; }
+    .table-head, .user-row { grid-template-columns: 1fr 1fr 80px; }
+    .col-uid, .col-joined { display: none; }
+    .main { padding: 24px 16px 80px; }
+    .topbar { padding: 0 16px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ── TOP BAR ── -->
+<div class="topbar">
+  <div class="topbar-brand">
+    <div class="topbar-logo">📒</div>
+    <span class="topbar-title">LedgerBook</span>
+    <span class="topbar-badge">Admin</span>
+  </div>
+  <div id="admin-pill" style="display:none" class="admin-user-pill">
+    <div class="admin-avatar">👤</div>
+    <span id="admin-name" style="font-size:13px;font-weight:700"></span>
+  </div>
+</div>
+
+<!-- ── AUTH WALL ── -->
+<div class="main">
+<div id="auth-wall">
+  <div class="auth-icon">🔐</div>
+  <div class="auth-title">Admin Access</div>
+  <div class="auth-sub">Sign in with your admin Google account<br>to manage LedgerBook user plans.</div>
+  <button class="btn-google" onclick="signInAdmin()">
+    <svg width="20" height="20" viewBox="0 0 48 48">
+      <path fill="#FFC107" d="M43.6 20H24v8h11.3C33.7 33.5 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3 0 5.7 1.1 7.8 2.9l5.7-5.7C34.1 6.5 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20c11 0 19.4-7.8 19.4-20 0-1.3-.1-2.7-.4-4z"/>
+      <path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.5 16 19 13 24 13c3 0 5.7 1.1 7.8 2.9l5.7-5.7C34.1 6.5 29.3 4 24 4c-7.8 0-14.5 4.3-17.7 10.7z"/>
+      <path fill="#4CAF50" d="M24 44c5.2 0 9.9-1.9 13.5-5l-6.2-5.2C29.4 35.6 26.8 36 24 36c-5.2 0-9.7-3.4-11.3-8.1l-6.6 5.1C9.6 39.7 16.3 44 24 44z"/>
+      <path fill="#1976D2" d="M43.6 20H24v8h11.3c-.8 2.2-2.3 4.1-4.2 5.4l6.2 5.2C40.9 35.3 44 30 44 24c0-1.3-.1-2.7-.4-4z"/>
+    </svg>
+    Continue with Google
+  </button>
+  <p id="auth-error" style="color:#ff5a5a;margin-top:16px;font-size:13px;display:none"></p>
+</div>
+
+<!-- ── ADMIN DASHBOARD ── -->
+<div id="dashboard" style="display:none">
+
+  <!-- Stats -->
+  <div class="section-head" style="margin-bottom:24px">
+    <div>
+      <div class="section-title">User Management</div>
+      <div class="section-sub">Manage plans and view all registered users</div>
+    </div>
+    <button class="btn-primary" onclick="loadUsers()" id="refresh-btn" style="font-size:13px;padding:10px 18px">↻ Refresh</button>
+  </div>
+
+  <div class="stats">
+    <div class="stat-card">
+      <div class="stat-label">Total Users</div>
+      <div class="stat-value all" id="stat-total">—</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Pro Users</div>
+      <div class="stat-value pro" id="stat-pro">—</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Free Users</div>
+      <div class="stat-value free" id="stat-free">—</div>
+    </div>
+  </div>
+
+  <!-- Lookup by UID -->
+  <div class="lookup-card">
+    <div class="lookup-title">⚡ Quick Plan Update by User ID</div>
+    <div class="input-row">
+      <input class="field-input" id="uid-input" placeholder="Paste User ID (UID) here…" autocomplete="off"/>
+      <button class="btn-primary" onclick="upgradePlan('pro')" id="upgrade-btn">✨ Set Pro</button>
+      <button class="btn-danger" onclick="upgradePlan('free')" id="downgrade-btn">Set Free</button>
+    </div>
+    <div class="result-card" id="lookup-result"></div>
+  </div>
+
+  <!-- Search -->
+  <div class="search-wrap">
+    <span class="search-icon">🔍</span>
+    <input class="search-input" id="search-input" placeholder="Search users by name or email…" oninput="filterUsers()" autocomplete="off"/>
+  </div>
+
+  <!-- Table -->
+  <div class="table-wrap">
+    <div class="table-head">
+      <div>User</div>
+      <div class="col-uid">User ID</div>
+      <div class="col-joined">Joined</div>
+      <div>Plan</div>
+      <div style="text-align:right">Toggle</div>
+    </div>
+    <div id="user-list">
+      <div class="empty">
+        <div class="empty-icon">👥</div>
+        Loading users…
+      </div>
+    </div>
+  </div>
+
+</div><!-- end dashboard -->
+</div><!-- end main -->
+
+<!-- Toast -->
+<div id="toast"></div>
+
+<!-- Firebase SDK -->
+<script type="module">
+import { initializeApp }                   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut }
+                                            from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import { getFirestore, doc, getDoc, setDoc, collection, getDocs, query, orderBy, limit }
+                                            from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+// ── Firebase config ──────────────────────────────────────────
+const firebaseConfig = {
+  apiKey:            "AIzaSyBIGOe8cbA7Njar4ehENbIxUFS30Sy2TjE",
+  authDomain:        "ledgerbook-1db5d.firebaseapp.com",
+  projectId:         "ledgerbook-1db5d",
+  storageBucket:     "ledgerbook-1db5d.firebasestorage.app",
+  messagingSenderId: "465884400783",
+  appId:             "1:465884400783:web:891ad5dfccf0c9b49334fa",
+};
+
+const app      = initializeApp(firebaseConfig);
+const auth     = getAuth(app);
+const db       = getFirestore(app);
+const gprov    = new GoogleAuthProvider();
+
+// ── Admin email whitelist ─────────────────────────────────────
+// Only these emails can access the admin panel
+const ADMIN_EMAILS = [
+  "v.bookenterprise@gmail.com",
+  // Add more admin emails here if needed
+];
+
+// ── Auth ─────────────────────────────────────────────────────
+let currentAdmin = null;
+let allUsers     = [];
+
+window.signInAdmin = async () => {
+  try {
+    document.getElementById("auth-error").style.display = "none";
+    const result = await signInWithPopup(auth, gprov);
+    const email  = result.user.email;
+    if (!ADMIN_EMAILS.includes(email)) {
+      await signOut(auth);
+      showError(`Access denied for ${email}. This admin panel is restricted.`);
+    }
+  } catch(e) {
+    if (e.code !== "auth/popup-closed-by-user") showError(e.message);
+  }
+};
+
+onAuthStateChanged(auth, async (user) => {
+  if (user && ADMIN_EMAILS.includes(user.email)) {
+    currentAdmin = user;
+    document.getElementById("auth-wall").style.display  = "none";
+    document.getElementById("dashboard").style.display  = "block";
+    document.getElementById("admin-pill").style.display = "flex";
+    document.getElementById("admin-name").textContent   = user.displayName || user.email;
+    await loadUsers();
+  } else {
+    document.getElementById("auth-wall").style.display  = "flex";
+    document.getElementById("dashboard").style.display  = "none";
+    document.getElementById("admin-pill").style.display = "none";
+  }
+});
+
+// ── Load all users ────────────────────────────────────────────
+window.loadUsers = async () => {
+  const btn = document.getElementById("refresh-btn");
+  btn.innerHTML = '<span class="spinner"></span> Loading…';
+  btn.disabled = true;
+
+  try {
+    const usersSnap = await getDocs(collection(db, "users"));
+    allUsers = [];
+
+    for (const userDoc of usersSnap.docs) {
+      const uid = userDoc.id;
+      // Load settings/prefs for name & email (stored by the app)
+      let name  = "Unknown";
+      let email = "";
+      let joined = userDoc.data()?.createdAt || null;
+
+      const prefs = await getDoc(doc(db, "users", uid, "settings", "prefs"));
+      if (prefs.exists()) {
+        const d = prefs.data();
+        if (d.branding?.businessName) name = d.branding.businessName;
+      }
+
+      // Try to get plan
+      const planSnap = await getDoc(doc(db, "users", uid, "settings", "plan"));
+      const plan = planSnap.exists() ? (planSnap.data().plan || "free") : "free";
+
+      // Get user email from entries (the app stores email on auth, not settings)
+      // We'll use the UID as fallback display
+      allUsers.push({ uid, name, email, plan, joined });
+    }
+
+    // Also try to read from Auth-based metadata stored in app's Firestore
+    // (The app stores some data in localStorage keys lb_bname_UID)
+    renderUsers(allUsers);
+    updateStats(allUsers);
+    toast("✅ Loaded " + allUsers.length + " users", "success");
+  } catch(e) {
+    toast("❌ " + e.message, "error");
+    console.error(e);
+  } finally {
+    btn.innerHTML = "↻ Refresh";
+    btn.disabled  = false;
+  }
+};
+
+// ── Render users list ─────────────────────────────────────────
+window.filterUsers = () => {
+  const q = document.getElementById("search-input").value.toLowerCase();
+  const filtered = q
+    ? allUsers.filter(u => u.name.toLowerCase().includes(q) || u.uid.toLowerCase().includes(q) || u.email.toLowerCase().includes(q))
+    : allUsers;
+  renderUsers(filtered);
+};
+
+function renderUsers(users) {
+  const list = document.getElementById("user-list");
+  if (!users.length) {
+    list.innerHTML = `<div class="empty"><div class="empty-icon">🔍</div>No users found</div>`;
+    return;
+  }
+  list.innerHTML = users.map(u => `
+    <div class="user-row" id="row-${u.uid}">
+      <div>
+        <div class="user-name">${esc(u.name || "Unnamed User")}</div>
+        <div class="user-email">${esc(u.email || u.uid.slice(0,18) + "…")}</div>
+      </div>
+      <div class="col-uid">
+        <span class="uid-chip" title="${esc(u.uid)}">${esc(u.uid)}</span>
+      </div>
+      <div class="col-joined">
+        <span class="joined">${formatDate(u.joined)}</span>
+      </div>
+      <div>
+        <span class="plan-badge ${u.plan}" onclick="quickSetPlan('${u.uid}', '${u.plan === 'pro' ? 'free' : 'pro'}')">
+          ${u.plan === 'pro' ? '✨ Pro' : '🆓 Free'}
+        </span>
+      </div>
+      <div class="toggle-wrap">
+        <label class="toggle" title="${u.plan === 'pro' ? 'Click to set Free' : 'Click to set Pro'}">
+          <input type="checkbox" ${u.plan === 'pro' ? 'checked' : ''}
+            onchange="quickSetPlan('${u.uid}', this.checked ? 'pro' : 'free')"/>
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+    </div>
+  `).join("");
+}
+
+function updateStats(users) {
+  const pro  = users.filter(u => u.plan === "pro").length;
+  const free = users.filter(u => u.plan === "free").length;
+  document.getElementById("stat-total").textContent = users.length;
+  document.getElementById("stat-pro").textContent   = pro;
+  document.getElementById("stat-free").textContent  = free;
+}
+
+// ── Quick set plan from toggle/badge ─────────────────────────
+window.quickSetPlan = async (uid, plan) => {
+  try {
+    await setDoc(doc(db, "users", uid, "settings", "plan"), { plan }, { merge: true });
+    // Update local array
+    const u = allUsers.find(x => x.uid === uid);
+    if (u) u.plan = plan;
+    renderUsers(allUsers.filter(u => {
+      const q = document.getElementById("search-input").value.toLowerCase();
+      return !q || u.name.toLowerCase().includes(q) || u.uid.toLowerCase().includes(q);
+    }));
+    updateStats(allUsers);
+    toast(`✅ ${uid.slice(0,8)}… set to ${plan === 'pro' ? '✨ Pro' : '🆓 Free'}`, "success");
+  } catch(e) {
+    toast("❌ " + e.message, "error");
+  }
+};
+
+// ── Upgrade by UID input ──────────────────────────────────────
+window.upgradePlan = async (targetPlan) => {
+  const uid = document.getElementById("uid-input").value.trim();
+  if (!uid) { toast("⚠️ Paste a User ID first", "error"); return; }
+
+  const upgradeBtn   = document.getElementById("upgrade-btn");
+  const downgradeBtn = document.getElementById("downgrade-btn");
+  upgradeBtn.disabled = downgradeBtn.disabled = true;
+
+  try {
+    // Check if user exists
+    const usersRef = doc(db, "users", uid);
+    const userSnap = await getDoc(usersRef);
+
+    const planRef = doc(db, "users", uid, "settings", "plan");
+    await setDoc(planRef, { plan: targetPlan }, { merge: true });
+
+    // Read back to confirm + show result
+    const planSnap = await getDoc(planRef);
+    const confirmed = planSnap.data()?.plan;
+
+    // Try to get branding name
+    let displayName = uid;
+    const prefs = await getDoc(doc(db, "users", uid, "settings", "prefs"));
+    if (prefs.exists() && prefs.data().branding?.businessName) {
+      displayName = prefs.data().branding.businessName;
+    }
+
+    // Update in allUsers if present
+    const existing = allUsers.find(u => u.uid === uid);
+    if (existing) { existing.plan = confirmed; renderUsers(allUsers); updateStats(allUsers); }
+
+    // Show result card
+    const resultEl = document.getElementById("lookup-result");
+    resultEl.className = "result-card show";
+    resultEl.innerHTML = `
+      <div class="result-row">
+        <span class="result-key">user</span>
+        <span class="result-val" style="color:var(--text)">${esc(displayName)}</span>
+      </div>
+      <div class="result-row">
+        <span class="result-key">uid</span>
+        <span class="result-val" style="color:var(--muted)">${esc(uid)}</span>
+      </div>
+      <div class="result-row">
+        <span class="result-key">plan</span>
+        <span class="result-val" style="color:${confirmed === 'pro' ? 'var(--pro)' : 'var(--free)'}">${confirmed === 'pro' ? '✨ pro' : '🆓 free'}</span>
+      </div>
+      <div class="result-row">
+        <span class="result-key">updated</span>
+        <span class="result-val" style="color:var(--lime)">${new Date().toLocaleString()}</span>
+      </div>
+    `;
+    toast(`✅ ${displayName} → ${targetPlan} plan`, "success");
+  } catch(e) {
+    toast("❌ " + e.message, "error");
+  } finally {
+    upgradeBtn.disabled = downgradeBtn.disabled = false;
+  }
+};
+
+// ── Helpers ───────────────────────────────────────────────────
+function esc(s) {
+  return String(s || "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+}
+function formatDate(ts) {
+  if (!ts) return "—";
+  try {
+    const d = ts.toDate ? ts.toDate() : new Date(ts);
+    return d.toLocaleDateString("en-NG", { day:"numeric", month:"short", year:"numeric" });
+  } catch { return "—"; }
+}
+function showError(msg) {
+  const el = document.getElementById("auth-error");
+  el.textContent = msg;
+  el.style.display = "block";
+}
+
+let toastTimer;
+function toast(msg, type="success") {
+  const el = document.getElementById("toast");
+  el.textContent = msg;
+  el.className = `show ${type}`;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { el.className = ""; }, 3000);
+}
+window.toast = toast;
+</script>
+</body>
+</html>
