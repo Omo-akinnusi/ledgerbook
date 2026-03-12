@@ -833,10 +833,10 @@ function UpgradeModal({ onClose, reason="default", monthCount=0, p="#075E54", us
     ["📊", "All reports & exports",      "CSV, PDF income statements"],
   ];
 
-  const [selectedPlan, setSelectedPlan] = React.useState("annually");
-  const [loading,      setLoading]      = React.useState(false);
-  const [error,        setError]        = React.useState("");
-  const [screen,       setScreen]       = React.useState("pricing"); // "pricing" | "features"
+  const [selectedPlan, setSelectedPlan] = useState("annually");
+  const [loading,      setLoading]      = useState(false);
+  const [error,        setError]        = useState("");
+  const [screen,       setScreen]       = useState("pricing"); // "pricing" | "features"
 
   const prices = PLAN_PRICES[currency?.code] || PLAN_PRICES.default;
 
