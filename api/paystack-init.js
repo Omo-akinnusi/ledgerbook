@@ -10,29 +10,43 @@ module.exports = async function handler(req, res) {
 
   const appUrl = process.env.APP_URL || 'https://ledgerbook-nu.vercel.app';
 
+  // Log what we're sending for debugging
+  console.log('Initializing Paystack transaction:', { email, planCode, uid });
+
   try {
+    const payload = {
+      email: email,
+      plan: planCode,
+      callback_url: appUrl + '/subscription-success?uid=' + uid,
+      metadata: {
+        uid: uid,
+        custom_fields: [{ display_name: 'User ID', variable_name: 'uid', value: uid }],
+      },
+    };
+
+    console.log('Paystack payload:', JSON.stringify(payload));
+
     const response = await fetch('https://api.paystack.co/transaction/initialize', {
       method: 'POST',
-      headers: { Authorization: `Bearer ${secret}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        email,
-        plan: planCode,
-        metadata: {
-          uid,
-          custom_fields: [{ display_name: 'User ID', variable_name: 'uid', value: uid }],
-        },
-        callback_url: `${appUrl}/subscription-success?uid=${uid}`,
-      }),
+      headers: {
+        Authorization: 'Bearer ' + secret,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
     });
+
     const data = await response.json();
+    console.log('Paystack response:', JSON.stringify(data));
+
     if (!data.status) {
       console.error('Paystack init failed:', data);
       return res.status(400).json({ error: data.message || 'Failed to initialize transaction' });
     }
+
     return res.status(200).json({
       authorization_url: data.data.authorization_url,
-      access_code:       data.data.access_code,
-      reference:         data.data.reference,
+      access_code: data.data.access_code,
+      reference: data.data.reference,
     });
   } catch (err) {
     console.error('paystack-init error:', err);
