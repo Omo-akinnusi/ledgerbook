@@ -198,7 +198,7 @@ const PAYSTACK_PLANS = {
 // Price display per currency (matching the app's supported currencies)
 // Base: $1/mo · $5/6mo · $9/yr
 const PLAN_PRICES = {
-  NGN: { monthly: "1,500",  biannually: "7,500",  annually:  "13,500", note:"NGN" },
+  NGN: { monthly: "₦1,500",  biannually: "₦7,500",  annually:  "₦13,500", note:"NGN" },
   USD: { monthly: "$1",      biannually: "$5",       annually:  "$9",      note:"USD" },
   GBP: { monthly: "£0.80",   biannually: "£4",       annually:  "£7",      note:"GBP" },
   EUR: { monthly: "€0.90",   biannually: "€4.50",    annually:  "€8",      note:"EUR" },
@@ -308,13 +308,13 @@ const exportPDF = (entries, currency, branding, rangeLabel, allEntries, budgets 
   const now = new Date();
   const dateStr = now.toLocaleDateString("en-NG",{dateStyle:"full"});
 
-  // ── Revenue breakdown by category (Note 2) ───────────────────
+  // ── Revenue breakdown by category (Note 1) ───────────────────
   const incByCat = {};
   entries.filter(e=>e.type==="income").forEach(e=>{ incByCat[e.category]=(incByCat[e.category]||0)+e.amount; });
   const incCatsSorted = Object.entries(incByCat).sort((a,b)=>b[1]-a[1]);
   const topIncCat = incCatsSorted[0];
 
-  // ── Expense breakdown by category (Note 3) ───────────────────
+  // ── Expense breakdown by category (Note 2) ───────────────────
   const expByCat = {};
   entries.filter(e=>e.type==="expense").forEach(e=>{ expByCat[e.category]=(expByCat[e.category]||0)+e.amount; });
   const expCatsSorted = Object.entries(expByCat).sort((a,b)=>b[1]-a[1]);
@@ -326,10 +326,10 @@ const exportPDF = (entries, currency, branding, rangeLabel, allEntries, budgets 
   const opExp    = exp - cogsExp;
   const grossP   = inc - cogsExp;
 
-  // ── Top 10 transactions (Note 4) ─────────────────────────────
+  // ── Top 10 transactions (Note 3) ─────────────────────────────
   const top10 = [...entries].sort((a,b)=>b.amount-a.amount).slice(0,10);
 
-  // ── Period comparison (Note 5) ───────────────────────────────
+  // ── Period comparison (Note 4) ───────────────────────────────
   // Compare current filtered period vs same-length prior period
   const sortedDates = entries.map(e=>e.date).sort();
   const periodStart = sortedDates[0] ? new Date(sortedDates[0]) : new Date(now.getFullYear(), now.getMonth(), 1);
@@ -554,7 +554,7 @@ const exportPDF = (entries, currency, branding, rangeLabel, allEntries, budgets 
 <div class="section-title" style="margin-top:36px">Notes to the Financial Statements</div>
 <div class="section-body" style="padding-top:8px">
 
-  <!-- NOTE 2 — REVENUE -->
+  <!-- NOTE 1 — REVENUE -->
   <div class="no-break" style="margin-bottom:24px">
     <p style="font-weight:900;font-size:13px;margin-bottom:6px;font-family:'Segoe UI',sans-serif">Note 2 — Revenue</p>
     <div class="note-block">${revenueNote}</div>
@@ -572,7 +572,7 @@ const exportPDF = (entries, currency, branding, rangeLabel, allEntries, budgets 
     </table>` : ""}
   </div>
 
-  <!-- NOTE 3 — OPERATING EXPENSES -->
+  <!-- NOTE 2 — OPERATING EXPENSES -->
   <div class="no-break" style="margin-bottom:24px">
     <p style="font-weight:900;font-size:13px;margin-bottom:6px;font-family:'Segoe UI',sans-serif">Note 3 — Operating Expenses</p>
     <div class="note-block">${expenseNote}</div>
@@ -590,7 +590,7 @@ const exportPDF = (entries, currency, branding, rangeLabel, allEntries, budgets 
     </table>` : ""}
   </div>
 
-  <!-- NOTE 4 — TOP TRANSACTIONS -->
+  <!-- NOTE 3 — TOP TRANSACTIONS -->
   <div class="no-break page-break" style="margin-bottom:24px">
     <p style="font-weight:900;font-size:13px;margin-bottom:6px;font-family:'Segoe UI',sans-serif">Note 4 — Significant Transactions</p>
     <div class="note-block">The table below lists the top ${top10.length} transactions by value during the period, providing detail on the most material items affecting the financial position of the business.</div>
@@ -608,7 +608,7 @@ const exportPDF = (entries, currency, branding, rangeLabel, allEntries, budgets 
     </table>` : `<p style="color:#aaa;font-style:italic;font-size:13px">No transactions in this period.</p>`}
   </div>
 
-  <!-- NOTE 5 — PERIOD COMPARISON -->
+  <!-- NOTE 4 — PERIOD COMPARISON -->
   <div class="no-break" style="margin-bottom:24px">
     <p style="font-weight:900;font-size:13px;margin-bottom:6px;font-family:'Segoe UI',sans-serif">Note 5 — Comparative Period Analysis</p>
     <div class="note-block">${compNote}</div>
