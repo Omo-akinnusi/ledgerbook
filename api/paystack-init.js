@@ -1,4 +1,11 @@
 // api/paystack-init.js
+// Amount map in kobo (Paystack requires amount > 0 even when using a plan code)
+const PLAN_AMOUNTS = {
+  PLN_gh2mcit6fixix9k: 150000,   // Monthly  ₦1,500
+  PLN_gxtrrhn8z2tfqmf: 750000,   // 6-Month  ₦7,500
+  PLN_87ghrcbnb4p8aaa: 1350000,  // Annual   ₦13,500
+};
+
 module.exports = async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
@@ -8,15 +15,14 @@ module.exports = async function handler(req, res) {
   const secret = process.env.PAYSTACK_SECRET_KEY;
   if (!secret) return res.status(500).json({ error: 'Paystack secret key not configured' });
 
-  const appUrl = process.env.APP_URL || 'https://ledgerbook-nu.vercel.app';
-
-  // Log what we're sending for debugging
-  console.log('Initializing Paystack transaction:', { email, planCode, uid });
+  const appUrl  = process.env.APP_URL || 'https://ledgerbook-nu.vercel.app';
+  const amount  = PLAN_AMOUNTS[planCode] || 150000;
 
   try {
     const payload = {
-      email: email,
-      plan: planCode,
+      email:        email,
+      plan:         planCode,
+      amount:       amount,
       callback_url: appUrl + '/subscription-success?uid=' + uid,
       metadata: {
         uid: uid,
@@ -45,8 +51,8 @@ module.exports = async function handler(req, res) {
 
     return res.status(200).json({
       authorization_url: data.data.authorization_url,
-      access_code: data.data.access_code,
-      reference: data.data.reference,
+      access_code:       data.data.access_code,
+      reference:         data.data.reference,
     });
   } catch (err) {
     console.error('paystack-init error:', err);
