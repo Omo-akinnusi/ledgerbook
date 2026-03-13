@@ -190,13 +190,13 @@ const planDoc = (uid) => doc(db, "users", uid, "settings", "plan");
 // Create these 3 plans in your Paystack dashboard, then paste the plan codes here.
 // Amounts in their respective currencies (Paystack handles FX).
 const PAYSTACK_PLANS = {
-  monthly:    { code: "PLN_gh2mcit6fixix9k",    label:"Monthly",  months:1,  usd:1,  discount:null },
-  biannually: { code: "PLN_gxtrrhn8z2tfqmf",   label:"6 Months", months:6,  usd:5,  discount:"17% off" },
-  annually:   { code: "PLN_87ghrcbnb4p8aaa",     label:"Annual",   months:12, usd:9,  discount:"25% off" },
+  monthly:    { code: "PLN_gh2mcit6fixix9k",    label:"Monthly",  months:1,  ngn:1500,  discount:null },
+  biannually: { code: "PLN_gxtrrhn8z2tfqmf",   label:"6 Months", months:6,  ngn:7500,  discount:"17% off" },
+  annually:   { code: "PLN_87ghrcbnb4p8aaa",     label:"Annual",   months:12, ngn:13500,  discount:"25% off" },
 };
 
 // Price display per currency (matching the app's supported currencies)
-// Base: $1/mo · $5/6mo · $9/yr
+// Base: ₦1500/mo · ₦7500/6mo · ₦13500/yr
 const PLAN_PRICES = {
   NGN: { monthly: "₦1,500",  biannually: "₦7,500",  annually:  "₦13,500", note:"NGN" },
   USD: { monthly: "$1",      biannually: "$5",       annually:  "$9",      note:"USD" },
