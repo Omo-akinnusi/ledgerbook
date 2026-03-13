@@ -198,7 +198,7 @@ const PAYSTACK_PLANS = {
 // Price display per currency (matching the app's supported currencies)
 // Base: $1/mo · $5/6mo · $9/yr
 const PLAN_PRICES = {
-  NGN: { monthly: "₦1,500",  biannually: "₦7,500",  annually:  "₦13,500", note:"NGN" },
+  NGN: { monthly: "1,500",  biannually: "7,500",  annually:  "13,500", note:"NGN" },
   USD: { monthly: "$1",      biannually: "$5",       annually:  "$9",      note:"USD" },
   GBP: { monthly: "£0.80",   biannually: "£4",       annually:  "£7",      note:"GBP" },
   EUR: { monthly: "€0.90",   biannually: "€4.50",    annually:  "€8",      note:"EUR" },
