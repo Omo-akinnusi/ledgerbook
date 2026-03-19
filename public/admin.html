@@ -178,8 +178,56 @@
   .plan-badge.free { background: rgba(74,158,255,.12); color: var(--free); border-color: rgba(74,158,255,.25); }
   .plan-badge:hover { transform: scale(1.05); }
 
-  /* Toggle switch */
-  .toggle-wrap { display: flex; align-items: center; justify-content: flex-end; gap: 8px; }
+  /* ── Expandable user detail panel ── */
+  .user-row { cursor: pointer; }
+  .user-detail {
+    display: none;
+    padding: 0 22px 20px;
+    border-bottom: 1px solid rgba(37,211,102,0.07);
+    background: rgba(37,211,102,0.02);
+    animation: detail-in .2s ease both;
+  }
+  .user-detail.open { display: block; }
+  @keyframes detail-in {
+    from { opacity: 0; transform: translateY(-6px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .detail-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    padding-top: 16px;
+  }
+  .detail-section {
+    background: rgba(0,0,0,.25);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px 16px;
+  }
+  .detail-section-title {
+    font-size: 10px; font-weight: 700; color: var(--muted);
+    text-transform: uppercase; letter-spacing: 1px;
+    font-family: var(--mono); margin-bottom: 10px;
+  }
+  .detail-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 5px 0; border-bottom: 1px solid rgba(255,255,255,.04);
+    font-size: 12px;
+  }
+  .detail-row:last-child { border-bottom: none; }
+  .detail-key { color: var(--muted); }
+  .detail-val { color: var(--text); font-weight: 600; text-align: right; max-width: 60%; word-break: break-all; }
+  .detail-actions { display: flex; gap: 8px; margin-top: 14px; }
+  .btn-sm {
+    padding: 8px 14px; border-radius: 9px; font-size: 12px;
+    font-weight: 800; cursor: pointer; border: none;
+    font-family: var(--font); transition: opacity .15s;
+  }
+  .btn-sm:hover { opacity: .85; }
+  .btn-pro  { background: rgba(245,200,66,.2);  color: var(--pro);   border: 1px solid rgba(245,200,66,.3); }
+  .btn-free { background: rgba(255,90,90,.15);  color: var(--danger); border: 1px solid rgba(255,90,90,.25); }
+  .expand-arrow { font-size: 10px; color: var(--muted); margin-left: auto; transition: transform .2s; }
+  .user-row.expanded .expand-arrow { transform: rotate(180deg); }
   .toggle {
     position: relative; width: 44px; height: 24px; cursor: pointer;
   }
@@ -443,40 +491,103 @@ window.loadUsers = async () => {
   btn.innerHTML = '<span class="spinner"></span> Loading…';
   btn.disabled = true;
 
+  const list = document.getElementById("user-list");
+
   try {
+    list.innerHTML = `<div class="empty"><span class="spinner"></span> &nbsp; Fetching users from Firestore…</div>`;
     const usersSnap = await getDocs(collection(db, "users"));
-    allUsers = [];
 
-    for (const userDoc of usersSnap.docs) {
-      const uid = userDoc.id;
-      // Load settings/prefs for name & email (stored by the app)
-      let name  = "Unknown";
-      let email = "";
-      let joined = userDoc.data()?.createdAt || null;
-
-      const prefs = await getDoc(doc(db, "users", uid, "settings", "prefs"));
-      if (prefs.exists()) {
-        const d = prefs.data();
-        if (d.branding?.businessName) name = d.branding.businessName;
-      }
-
-      // Try to get plan
-      const planSnap = await getDoc(doc(db, "users", uid, "settings", "plan"));
-      const plan = planSnap.exists() ? (planSnap.data().plan || "free") : "free";
-
-      // Get user email from entries (the app stores email on auth, not settings)
-      // We'll use the UID as fallback display
-      allUsers.push({ uid, name, email, plan, joined });
+    if (usersSnap.empty) {
+      list.innerHTML = `<div class="empty"><div class="empty-icon">📭</div>No user documents found in Firestore.<br><br>
+        <span style="font-size:12px;color:var(--muted)">Users appear here after they sign in to the app at least once.</span></div>`;
+      updateStats([]);
+      return;
     }
 
-    // Also try to read from Auth-based metadata stored in app's Firestore
-    // (The app stores some data in localStorage keys lb_bname_UID)
+    allUsers = [];
+
+    // Fetch all users in parallel for speed
+    await Promise.all(usersSnap.docs.map(async (userDoc) => {
+      const uid      = userDoc.id;
+      const profile  = userDoc.data(); // name, email, businessName, createdAt written by app on login
+
+      const name         = profile.name         || profile.businessName || "Unknown User";
+      const email        = profile.email        || "";
+      const businessName = profile.businessName || "";
+      const joined       = profile.createdAt    || null;
+      const lastSeen     = profile.lastSeen      || null;
+
+      // Get plan + full subscription details
+      let plan = "free", planInfo = {};
+      try {
+        const planSnap = await getDoc(doc(db, "users", uid, "settings", "plan"));
+        if (planSnap.exists()) {
+          planInfo = planSnap.data();
+          plan = planInfo.plan || "free";
+        }
+      } catch(planErr) {
+        console.warn("Could not read plan for", uid, planErr.message);
+      }
+
+      const industry = profile.industry || "";
+      const phone    = profile.phone    || "";
+      const onboarded = profile.onboarded || false;
+
+      allUsers.push({ uid, name, email, businessName, industry, phone, onboarded, plan, planInfo, joined, lastSeen });
+    }));
+
+    // Sort by most recently seen
+    allUsers.sort((a, b) => {
+      if (!a.lastSeen && !b.lastSeen) return 0;
+      if (!a.lastSeen) return 1;
+      if (!b.lastSeen) return -1;
+      return new Date(b.lastSeen) - new Date(a.lastSeen);
+    });
+
     renderUsers(allUsers);
     updateStats(allUsers);
     toast("✅ Loaded " + allUsers.length + " users", "success");
+
   } catch(e) {
-    toast("❌ " + e.message, "error");
-    console.error(e);
+    console.error("loadUsers error:", e);
+
+    // Show the actual error on-screen so it's easy to diagnose
+    const isPermission = e.code === "permission-denied" || e.message.includes("Missing or insufficient permissions");
+    list.innerHTML = `
+      <div class="empty" style="padding:40px 28px">
+        <div style="font-size:40px;margin-bottom:14px">${isPermission ? "🔒" : "⚠️"}</div>
+        <div style="font-weight:800;font-size:15px;color:var(--danger);margin-bottom:10px">
+          ${isPermission ? "Firestore permission denied" : "Failed to load users"}
+        </div>
+        <div style="font-size:13px;color:var(--muted);line-height:1.7;max-width:480px;margin:0 auto">
+          ${isPermission
+            ? `Your Firestore security rules are blocking the admin from reading all user documents.<br><br>
+               <strong style="color:var(--text)">Fix:</strong> Open Firebase Console → Firestore → Rules, and add the admin rule shown below.`
+            : `<code style="color:var(--free);font-size:12px">${esc(e.message)}</code>`
+          }
+        </div>
+        ${isPermission ? `
+          <div style="margin-top:20px;text-align:left;background:rgba(0,0,0,.4);border-radius:12px;padding:16px 18px;font-family:var(--mono);font-size:12px;line-height:1.8;color:#a8d8a8;overflow-x:auto">
+<span style="color:#666">// Add this block to your Firestore rules:</span><br>
+<span style="color:#f5c842">match /users/{userId}</span> {<br>
+&nbsp;&nbsp;<span style="color:#4a9eff">allow read, write:</span> <span style="color:#fff">if request.auth.token.email == "v.bookenterprise@gmail.com";</span><br>
+}<br>
+<br>
+<span style="color:#666">// And for sub-collections (plan, entries, budgets):</span><br>
+<span style="color:#f5c842">match /users/{userId}/{document=**}</span> {<br>
+&nbsp;&nbsp;<span style="color:#4a9eff">allow read, write:</span> <span style="color:#fff">if request.auth.token.email == "v.bookenterprise@gmail.com";</span><br>
+}
+          </div>
+          <a href="https://console.firebase.google.com/project/ledgerbook-1db5d/firestore/rules"
+             target="_blank" rel="noopener noreferrer"
+             style="display:inline-block;margin-top:16px;padding:11px 22px;background:linear-gradient(135deg,var(--green),var(--green2));
+             color:#fff;border-radius:12px;font-size:13px;font-weight:800;text-decoration:none">
+            Open Firebase Rules →
+          </a>
+        ` : ""}
+      </div>
+    `;
+    toast("❌ " + (isPermission ? "Permission denied — see rules fix below" : e.message), "error");
   } finally {
     btn.innerHTML = "↻ Refresh";
     btn.disabled  = false;
@@ -498,33 +609,102 @@ function renderUsers(users) {
     list.innerHTML = `<div class="empty"><div class="empty-icon">🔍</div>No users found</div>`;
     return;
   }
-  list.innerHTML = users.map(u => `
-    <div class="user-row" id="row-${u.uid}">
+
+  list.innerHTML = users.map(u => {
+    const pi = u.planInfo || {};
+    const intervalLabel = { monthly:"Monthly", biannually:"6-Month", annually:"Annual" }[pi.interval] || pi.interval || "—";
+    const statusColor = pi.status === "active" ? "var(--lime)" : pi.status === "cancelled" ? "var(--danger)" : "var(--muted)";
+    const onboardedBadge = u.onboarded
+      ? `<span style="font-size:10px;color:var(--lime);background:rgba(37,211,102,.1);border-radius:5px;padding:2px 6px">✓ Onboarded</span>`
+      : `<span style="font-size:10px;color:var(--muted);background:rgba(255,255,255,.05);border-radius:5px;padding:2px 6px">Not onboarded</span>`;
+
+    return `
+    <div class="user-row" id="row-${u.uid}" onclick="toggleDetail('${u.uid}')">
       <div>
-        <div class="user-name">${esc(u.name || "Unnamed User")}</div>
-        <div class="user-email">${esc(u.email || u.uid.slice(0,18) + "…")}</div>
+        <div class="user-name">${esc(u.name || "Unknown")}</div>
+        <div class="user-email">${esc(u.email || "—")}${u.businessName && u.businessName !== u.name ? ` · <span style="color:var(--lime)">${esc(u.businessName)}</span>` : ""}</div>
       </div>
       <div class="col-uid">
         <span class="uid-chip" title="${esc(u.uid)}">${esc(u.uid)}</span>
       </div>
       <div class="col-joined">
         <span class="joined">${formatDate(u.joined)}</span>
+        ${u.lastSeen ? `<div style="font-size:10px;color:var(--muted);margin-top:2px">seen ${timeAgo(u.lastSeen)}</div>` : ""}
       </div>
       <div>
-        <span class="plan-badge ${u.plan}" onclick="quickSetPlan('${u.uid}', '${u.plan === 'pro' ? 'free' : 'pro'}')">
+        <span class="plan-badge ${u.plan}" onclick="event.stopPropagation();quickSetPlan('${u.uid}', '${u.plan === 'pro' ? 'free' : 'pro'}')">
           ${u.plan === 'pro' ? '✨ Pro' : '🆓 Free'}
         </span>
       </div>
-      <div class="toggle-wrap">
+      <div class="toggle-wrap" onclick="event.stopPropagation()">
         <label class="toggle" title="${u.plan === 'pro' ? 'Click to set Free' : 'Click to set Pro'}">
           <input type="checkbox" ${u.plan === 'pro' ? 'checked' : ''}
             onchange="quickSetPlan('${u.uid}', this.checked ? 'pro' : 'free')"/>
           <span class="toggle-slider"></span>
         </label>
+        <span class="expand-arrow">▼</span>
       </div>
     </div>
-  `).join("");
+    <div class="user-detail" id="detail-${u.uid}">
+      <div class="detail-grid">
+
+        <!-- Business Info -->
+        <div class="detail-section">
+          <div class="detail-section-title">👤 Business Profile</div>
+          <div class="detail-row"><span class="detail-key">Business</span><span class="detail-val">${esc(u.businessName || "—")}</span></div>
+          <div class="detail-row"><span class="detail-key">Industry</span><span class="detail-val">${esc(u.industry || "—")}</span></div>
+          <div class="detail-row"><span class="detail-key">Phone</span><span class="detail-val">${esc(u.phone || "—")}</span></div>
+          <div class="detail-row"><span class="detail-key">Email</span><span class="detail-val" style="color:var(--muted)">${esc(u.email || "—")}</span></div>
+          <div class="detail-row"><span class="detail-key">UID</span><span class="detail-val" style="font-family:var(--mono);font-size:11px;color:var(--muted)">${esc(u.uid)}</span></div>
+          <div class="detail-row"><span class="detail-key">Status</span><span class="detail-val">${onboardedBadge}</span></div>
+        </div>
+
+        <!-- Plan / Subscription Info -->
+        <div class="detail-section">
+          <div class="detail-section-title">💳 Subscription</div>
+          <div class="detail-row"><span class="detail-key">Plan</span>
+            <span class="detail-val" style="color:${u.plan==='pro'?'var(--pro)':'var(--free)'};font-weight:900">
+              ${u.plan === 'pro' ? '✨ Pro' : '🆓 Free'}
+            </span>
+          </div>
+          ${u.plan === 'pro' ? `
+          <div class="detail-row"><span class="detail-key">Interval</span><span class="detail-val">${intervalLabel}</span></div>
+          <div class="detail-row"><span class="detail-key">Status</span><span class="detail-val" style="color:${statusColor}">${esc(pi.status || "active")}</span></div>
+          <div class="detail-row"><span class="detail-key">Activated</span><span class="detail-val">${pi.activatedAt ? formatDate(pi.activatedAt) : "—"}</span></div>
+          <div class="detail-row"><span class="detail-key">Renews</span><span class="detail-val">${pi.expiresAt ? formatDate(pi.expiresAt) : "—"}</span></div>
+          <div class="detail-row"><span class="detail-key">Last Ref</span><span class="detail-val" style="font-family:var(--mono);font-size:11px;color:var(--muted)">${esc(pi.lastPaymentRef || "—")}</span></div>
+          ` : `
+          <div class="detail-row"><span class="detail-key">Joined</span><span class="detail-val">${formatDate(u.joined)}</span></div>
+          <div class="detail-row"><span class="detail-key">Last Seen</span><span class="detail-val">${u.lastSeen ? timeAgo(u.lastSeen) : "—"}</span></div>
+          `}
+          <div class="detail-actions">
+            ${u.plan === 'free'
+              ? `<button class="btn-sm btn-pro"  onclick="event.stopPropagation();quickSetPlan('${u.uid}','pro')">✨ Set Pro</button>`
+              : `<button class="btn-sm btn-free" onclick="event.stopPropagation();quickSetPlan('${u.uid}','free')">Set Free</button>`
+            }
+          </div>
+        </div>
+
+      </div>
+    </div>
+  `}).join("");
 }
+
+window.toggleDetail = (uid) => {
+  const row    = document.getElementById("row-" + uid);
+  const detail = document.getElementById("detail-" + uid);
+  const isOpen = detail.classList.contains("open");
+  // Close all others
+  document.querySelectorAll(".user-detail.open").forEach(el => {
+    el.classList.remove("open");
+    const r = document.getElementById("row-" + el.id.replace("detail-",""));
+    if (r) r.classList.remove("expanded");
+  });
+  if (!isOpen) {
+    detail.classList.add("open");
+    row.classList.add("expanded");
+  }
+};
 
 function updateStats(users) {
   const pro  = users.filter(u => u.plan === "pro").length;
@@ -538,13 +718,13 @@ function updateStats(users) {
 window.quickSetPlan = async (uid, plan) => {
   try {
     await setDoc(doc(db, "users", uid, "settings", "plan"), { plan }, { merge: true });
-    // Update local array
     const u = allUsers.find(x => x.uid === uid);
-    if (u) u.plan = plan;
-    renderUsers(allUsers.filter(u => {
-      const q = document.getElementById("search-input").value.toLowerCase();
-      return !q || u.name.toLowerCase().includes(q) || u.uid.toLowerCase().includes(q);
-    }));
+    if (u) {
+      u.plan = plan;
+      if (plan === 'free') u.planInfo = {};
+    }
+    const q = document.getElementById("search-input").value.toLowerCase();
+    renderUsers(q ? allUsers.filter(u => u.name.toLowerCase().includes(q) || u.uid.toLowerCase().includes(q) || u.email.toLowerCase().includes(q)) : allUsers);
     updateStats(allUsers);
     toast(`✅ ${uid.slice(0,8)}… set to ${plan === 'pro' ? '✨ Pro' : '🆓 Free'}`, "success");
   } catch(e) {
@@ -562,26 +742,25 @@ window.upgradePlan = async (targetPlan) => {
   upgradeBtn.disabled = downgradeBtn.disabled = true;
 
   try {
-    // Check if user exists
-    const usersRef = doc(db, "users", uid);
-    const userSnap = await getDoc(usersRef);
+    // Check user profile (written by app on login)
+    const userSnap = await getDoc(doc(db, "users", uid));
+    let displayName = uid.slice(0, 12) + "…";
+    let userEmail   = "";
+    if (userSnap.exists()) {
+      const d = userSnap.data();
+      displayName = d.name || d.businessName || displayName;
+      userEmail   = d.email || "";
+    }
 
+    // Write plan to Firestore
     const planRef = doc(db, "users", uid, "settings", "plan");
     await setDoc(planRef, { plan: targetPlan }, { merge: true });
-
-    // Read back to confirm + show result
-    const planSnap = await getDoc(planRef);
-    const confirmed = planSnap.data()?.plan;
-
-    // Try to get branding name
-    let displayName = uid;
-    const prefs = await getDoc(doc(db, "users", uid, "settings", "prefs"));
-    if (prefs.exists() && prefs.data().branding?.businessName) {
-      displayName = prefs.data().branding.businessName;
-    }
+    const planSnap  = await getDoc(planRef);
+    const confirmed = planSnap.data()?.plan || targetPlan;
 
     // Update in allUsers if present
     const existing = allUsers.find(u => u.uid === uid);
+    if (existing) { existing.plan = confirmed; renderUsers(allUsers); updateStats(allUsers); }
     if (existing) { existing.plan = confirmed; renderUsers(allUsers); updateStats(allUsers); }
 
     // Show result card
@@ -589,9 +768,13 @@ window.upgradePlan = async (targetPlan) => {
     resultEl.className = "result-card show";
     resultEl.innerHTML = `
       <div class="result-row">
-        <span class="result-key">user</span>
+        <span class="result-key">name</span>
         <span class="result-val" style="color:var(--text)">${esc(displayName)}</span>
       </div>
+      ${userEmail ? `<div class="result-row">
+        <span class="result-key">email</span>
+        <span class="result-val" style="color:var(--muted)">${esc(userEmail)}</span>
+      </div>` : ""}
       <div class="result-row">
         <span class="result-key">uid</span>
         <span class="result-val" style="color:var(--muted)">${esc(uid)}</span>
