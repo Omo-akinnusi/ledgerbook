@@ -3172,7 +3172,7 @@ function AppCore({ user, onLogout }) {
         {/* ── BOTTOM NAV (mobile/tablet only) ── */}
         <div className="lb-bottom-nav" style={{
           background:"#fff", borderTop:"1px solid #ebebeb",
-          position:"sticky", bottom:0, zIndex:10,
+          position:"fixed", bottom:0, left:0, right:0, zIndex:100,
           paddingBottom:"env(safe-area-inset-bottom, 0px)",
         }}>
           {[
