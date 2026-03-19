@@ -1929,20 +1929,23 @@ function SettingsScreen({ branding, setBranding, currency, setCurrency, incCats,
 
           {/* Subscription info card (Pro) */}
           {isPro && planInfo && (
-            <div style={{ background:"rgba(255,255,255,.08)", borderRadius:14, padding:"14px 18px", marginBottom:14, border:"1px solid rgba(255,255,255,.12)" }}>
-              <div style={{ fontSize:10, fontWeight:800, color:"rgba(255,255,255,.5)", textTransform:"uppercase", letterSpacing:1, marginBottom:10 }}>Subscription Details</div>
+            <div style={{ background:"#fff", borderRadius:14, padding:"14px 18px", marginBottom:14,
+              border:"1px solid #e8f9f0", boxShadow:"0 2px 8px rgba(7,94,84,.08)" }}>
+              <div style={{ fontSize:10, fontWeight:800, color:"#075E54", textTransform:"uppercase",
+                letterSpacing:1, marginBottom:10 }}>Subscription Details</div>
               {[
                 ["Plan",     planInfo.interval ? { monthly:"Monthly", biannually:"6-Month", annually:"Annual" }[planInfo.interval] || planInfo.interval : "Pro"],
                 ["Status",   planInfo.status === "active" ? "✅ Active" : planInfo.status === "cancelled" ? "❌ Cancelled" : planInfo.status || "Active"],
                 ["Renews",   planInfo.expiresAt ? fmtDate(planInfo.expiresAt) : "—"],
                 ["Activated",planInfo.activatedAt ? fmtDate(planInfo.activatedAt) : "—"],
               ].map(([k,v])=>(
-                <div key={k} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"5px 0", borderBottom:"1px solid rgba(255,255,255,.07)" }}>
-                  <span style={{ color:"rgba(255,255,255,.5)", fontSize:12 }}>{k}</span>
-                  <span style={{ fontWeight:700, color:"#fff", fontSize:12 }}>{v}</span>
+                <div key={k} style={{ display:"flex", justifyContent:"space-between", alignItems:"center",
+                  padding:"7px 0", borderBottom:"1px solid #f0f0f0" }}>
+                  <span style={{ color:"#999", fontSize:13 }}>{k}</span>
+                  <span style={{ fontWeight:700, color:"#222", fontSize:13 }}>{v}</span>
                 </div>
               ))}
-              <div style={{ marginTop:10, fontSize:11, color:"rgba(255,255,255,.4)", lineHeight:1.5 }}>
+              <div style={{ marginTop:10, fontSize:11, color:"#aaa", lineHeight:1.6 }}>
                 To cancel, open the subscription email from Paystack and click "Cancel subscription".
               </div>
             </div>
