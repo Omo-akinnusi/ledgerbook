@@ -438,10 +438,75 @@
     <div class="result-card" id="sub-result"></div>
   </div>
 
-  <!-- Search -->
-  <div class="search-wrap">
-    <span class="search-icon">🔍</span>
-    <input class="search-input" id="search-input" placeholder="Search users by name or email…" oninput="filterUsers()" autocomplete="off"/>
+  <!-- Filter toolbar + Download -->
+  <div style="display:flex;gap:10px;align-items:center;margin-bottom:14px;flex-wrap:wrap">
+
+    <!-- Search -->
+    <div class="search-wrap" style="flex:1;min-width:200px;margin-bottom:0">
+      <span class="search-icon">🔍</span>
+      <input class="search-input" id="search-input" placeholder="Search by name, email or business…"
+        oninput="filterUsers()" autocomplete="off"/>
+    </div>
+
+    <!-- Plan filter -->
+    <select id="filter-plan" onchange="filterUsers()"
+      style="padding:12px 14px;background:var(--card);border:1px solid var(--border);
+        color:var(--text);border-radius:12px;font-family:var(--font);font-size:13px;
+        outline:none;cursor:pointer;min-width:120px">
+      <option value="all">All Plans</option>
+      <option value="pro">Pro only</option>
+      <option value="free">Free only</option>
+    </select>
+
+    <!-- Expiry filter -->
+    <select id="filter-expiry" onchange="filterUsers()"
+      style="padding:12px 14px;background:var(--card);border:1px solid var(--border);
+        color:var(--text);border-radius:12px;font-family:var(--font);font-size:13px;
+        outline:none;cursor:pointer;min-width:160px">
+      <option value="all">All Expiry</option>
+      <option value="7">Expiring in 7 days</option>
+      <option value="14">Expiring in 14 days</option>
+      <option value="30">Expiring in 30 days</option>
+      <option value="expired">Already expired</option>
+    </select>
+
+    <!-- Industry filter -->
+    <select id="filter-industry" onchange="filterUsers()"
+      style="padding:12px 14px;background:var(--card);border:1px solid var(--border);
+        color:var(--text);border-radius:12px;font-family:var(--font);font-size:13px;
+        outline:none;cursor:pointer;min-width:150px">
+      <option value="all">All Industries</option>
+    </select>
+
+    <!-- Onboarding filter -->
+    <select id="filter-onboarded" onchange="filterUsers()"
+      style="padding:12px 14px;background:var(--card);border:1px solid var(--border);
+        color:var(--text);border-radius:12px;font-family:var(--font);font-size:13px;
+        outline:none;cursor:pointer;min-width:150px">
+      <option value="all">All Onboarding</option>
+      <option value="yes">Onboarded</option>
+      <option value="no">Not Onboarded</option>
+    </select>
+
+  </div>
+
+  <!-- Results count + Download row -->
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+    <div id="filter-count" style="font-size:12px;color:var(--muted);font-family:var(--mono)"></div>
+    <div style="display:flex;gap:8px">
+      <button onclick="downloadCSV('filtered')"
+        style="padding:8px 16px;background:rgba(37,211,102,.12);border:1px solid var(--border);
+          color:var(--lime);border-radius:10px;font-size:12px;font-weight:800;cursor:pointer;
+          font-family:var(--font)">
+        ⬇ Download Filtered CSV
+      </button>
+      <button onclick="downloadCSV('all')"
+        style="padding:8px 16px;background:rgba(74,158,255,.1);border:1px solid rgba(74,158,255,.2);
+          color:var(--free);border-radius:10px;font-size:12px;font-weight:800;cursor:pointer;
+          font-family:var(--font)">
+        ⬇ Download All Users CSV
+      </button>
+    </div>
   </div>
 
   <!-- Table -->
@@ -591,6 +656,10 @@ window.loadUsers = async () => {
 
     renderUsers(allUsers);
     updateStats(allUsers);
+    filteredUsers = [...allUsers];
+    populateIndustryFilter();
+    const countEl = document.getElementById("filter-count");
+    if (countEl) countEl.textContent = `Showing ${allUsers.length} of ${allUsers.length} users`;
     toast("✅ Loaded " + allUsers.length + " users", "success");
 
   } catch(e) {
@@ -639,13 +708,105 @@ window.loadUsers = async () => {
   }
 };
 
-// ── Render users list ─────────────────────────────────────────
+// ── Populate industry filter dropdown from actual user data ───
+function populateIndustryFilter() {
+  const industries = [...new Set(allUsers.map(u => u.industry).filter(Boolean))].sort();
+  const sel = document.getElementById("filter-industry");
+  // Keep the "All Industries" option, replace the rest
+  sel.innerHTML = `<option value="all">All Industries</option>` +
+    industries.map(i => `<option value="${esc(i)}">${esc(i)}</option>`).join("");
+}
+
+// ── Filter users by all active filters ───────────────────────
+let filteredUsers = [];
+
 window.filterUsers = () => {
-  const q = document.getElementById("search-input").value.toLowerCase();
-  const filtered = q
-    ? allUsers.filter(u => u.name.toLowerCase().includes(q) || u.uid.toLowerCase().includes(q) || u.email.toLowerCase().includes(q))
-    : allUsers;
-  renderUsers(filtered);
+  const q          = document.getElementById("search-input").value.toLowerCase().trim();
+  const planF      = document.getElementById("filter-plan").value;
+  const expiryF    = document.getElementById("filter-expiry").value;
+  const industryF  = document.getElementById("filter-industry").value;
+  const onboardedF = document.getElementById("filter-onboarded").value;
+  const now        = Date.now();
+
+  filteredUsers = allUsers.filter(u => {
+    // Search
+    if (q && !u.name.toLowerCase().includes(q) &&
+             !u.email.toLowerCase().includes(q) &&
+             !(u.businessName||"").toLowerCase().includes(q)) return false;
+    // Plan
+    if (planF !== "all" && u.plan !== planF) return false;
+    // Industry
+    if (industryF !== "all" && u.industry !== industryF) return false;
+    // Onboarding
+    if (onboardedF === "yes" && !u.onboarded) return false;
+    if (onboardedF === "no"  &&  u.onboarded) return false;
+    // Expiry
+    if (expiryF !== "all") {
+      const exp = u.planInfo && u.planInfo.expiresAt ? new Date(u.planInfo.expiresAt).getTime() : null;
+      if (expiryF === "expired") {
+        if (!exp || exp > now) return false;
+      } else {
+        const days = parseInt(expiryF);
+        if (!exp || exp <= now || exp > now + days * 86400000) return false;
+      }
+    }
+    return true;
+  });
+
+  renderUsers(filteredUsers);
+  const countEl = document.getElementById("filter-count");
+  if (countEl) countEl.textContent = `Showing ${filteredUsers.length} of ${allUsers.length} users`;
+};
+
+// ── CSV Download ───────────────────────────────────────────────
+window.downloadCSV = (scope) => {
+  const users = scope === "all" ? allUsers : filteredUsers;
+  if (!users.length) { toast("⚠️ No users to export", "error"); return; }
+
+  const headers = [
+    "Name","Email","Business Name","Industry","Phone",
+    "Plan","Subscription Interval","Subscription Status",
+    "Activated Date","Expiry Date","Days Until Expiry",
+    "Onboarded","Last Seen","Joined","UID"
+  ];
+
+  const now = Date.now();
+  const rows = users.map(u => {
+    const pi  = u.planInfo || {};
+    const exp = pi.expiresAt ? new Date(pi.expiresAt) : null;
+    const daysUntilExpiry = exp
+      ? Math.ceil((exp.getTime() - now) / 86400000)
+      : "";
+    const intervalLabel = { monthly:"Monthly", biannually:"6-Month", annually:"Annual" }[pi.interval] || pi.interval || "";
+    return [
+      u.name         || "",
+      u.email        || "",
+      u.businessName || "",
+      u.industry     || "",
+      u.phone        || "",
+      u.plan         || "free",
+      intervalLabel,
+      pi.status      || (u.plan === "pro" ? "active" : ""),
+      pi.activatedAt ? new Date(pi.activatedAt).toLocaleDateString("en-GB") : "",
+      exp            ? exp.toLocaleDateString("en-GB") : "",
+      daysUntilExpiry,
+      u.onboarded    ? "Yes" : "No",
+      u.lastSeen     ? new Date(u.lastSeen).toLocaleDateString("en-GB") : "",
+      u.joined       ? (u.joined.toDate ? u.joined.toDate() : new Date(u.joined)).toLocaleDateString("en-GB") : "",
+      u.uid          || "",
+    ].map(v => `"${String(v).replace(/"/g,'""')}"`);
+  });
+
+  const csv  = [headers.map(h => `"${h}"`).join(","), ...rows.map(r => r.join(","))].join("\n");
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement("a");
+  const date = new Date().toISOString().split("T")[0];
+  a.href     = url;
+  a.download = `ledgerbook-users-${scope}-${date}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+  toast(`✅ Downloaded ${users.length} users as CSV`, "success");
 };
 
 function renderUsers(users) {
