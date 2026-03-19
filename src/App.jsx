@@ -1081,16 +1081,14 @@ const HOUSE_ADS = [
     url:     "https://paystack.com",
   },
   {
-    active:  true,
-    brand:   "Husnun by Aisha",
-    image:   "/ads/Image-1.png",
-    url:     "https://www.instagram.com/v.bookenterprise?igsh=c3M4NWk5dzVqOXhl&utm_source=qr",
-  },
- {
-    active:  true,
-    brand:   "Husnun by Aisha",
-    image:   "/ads/Test-Image.png",
-    url:     "https://www.instagram.com/v.bookenterprise?igsh=c3M4NWk5dzVqOXhl&utm_source=qr",
+    active:  false,
+    logo:    "💰",
+    brand:   "Cowrywise",
+    title:   "Grow your business savings",
+    body:    "Earn up to 18% p.a. on your business cash reserves.",
+    cta:     "Start saving",
+    color:   "#6B21A8",
+    url:     "https://cowrywise.com",
   },
 ];
 
@@ -1136,34 +1134,28 @@ function HouseAdCard({ ad, onUpgrade }) {
     else window.open(ad.url, "_blank", "noopener");
   };
 
-  // ── Image ad — full banner with clickable image ──────────────
   if (ad.image) {
     return (
-      <div style={{ margin:"0 0 14px", borderRadius:14, overflow:"hidden",
-        border:"1px solid #f0f0f0", cursor:"pointer" }}
+      <div style={{ position:"relative", cursor:"pointer", borderRadius:14, overflow:"hidden" }}
         onClick={handleClick}>
         <style>{AD_CSS}</style>
-        <div style={{ position:"relative" }}>
-          <img src={ad.image} alt={ad.brand}
-            style={{ width:"100%", display:"block", maxHeight:120, objectFit:"cover" }}/>
-          <div style={{ position:"absolute", top:8, left:8, background:"rgba(0,0,0,.45)",
-            borderRadius:6, padding:"2px 7px" }}>
-            <span className="ad-badge" style={{ color:"#fff" }}>AD</span>
-            <span style={{ color:"rgba(255,255,255,.7)", fontSize:9, marginLeft:4 }}>
-              Sponsored by {ad.brand}
-            </span>
-          </div>
+        <img src={ad.image} alt={ad.brand}
+          style={{ width:"100%", display:"block", maxHeight:120, objectFit:"cover" }}/>
+        <div style={{ position:"absolute", top:8, left:8, background:"rgba(0,0,0,.45)",
+          borderRadius:6, padding:"2px 7px" }}>
+          <span className="ad-badge" style={{ color:"#fff" }}>AD</span>
+          <span style={{ color:"rgba(255,255,255,.7)", fontSize:9, marginLeft:4 }}>
+            Sponsored by {ad.brand}
+          </span>
         </div>
       </div>
     );
   }
 
-  // ── Text ad — default layout ─────────────────────────────────
   return (
-    <div style={{ margin:"0 0 14px", borderRadius:14, overflow:"hidden",
-      border:`1px solid ${ad.color}22`, background:`${ad.color}07` }}>
+    <div style={{ padding:"11px 14px" }}>
       <style>{AD_CSS}</style>
-      <div style={{ display:"flex", alignItems:"center", gap:12, padding:"11px 14px" }}>
+      <div style={{ display:"flex", alignItems:"center", gap:12 }}>
         <div style={{ width:40, height:40, borderRadius:12, background:`${ad.color}18`,
           display:"flex", alignItems:"center", justifyContent:"center", fontSize:22, flexShrink:0 }}>
           {ad.logo}
@@ -1186,40 +1178,75 @@ function HouseAdCard({ ad, onUpgrade }) {
   );
 }
 
-// ── AdBanner — picks house ad or falls back to AdSense ─────────
-// slot: "home" | "history" | "inline" | "add" (for future targeting)
-function AdBanner({ onUpgrade, p="#075E54", slot="home" }) {
-  const activeAds = HOUSE_ADS.filter(a => a.active);
+// ── AdBanner — carousel of all active house ads, AdSense fallback ──
+const CAROUSEL_INTERVAL = 5000; // ms between slides
 
-  // Always show upgrade house ad 1-in-4 chance if no active sponsors
+function AdBanner({ onUpgrade, p="#075E54", slot="home" }) {
   const upgradeAd = {
-    active: true, logo:"✨", brand:"LedgerBook Pro", isUpgrade:true,
+    active:true, logo:"✨", brand:"LedgerBook Pro", isUpgrade:true,
     title:"Upgrade to LedgerBook Pro",
     body:"Remove ads, unlock budgets & unlimited entries.",
     cta:"Upgrade ✨", color:"#075E54", url:"",
   };
 
-  // Pick which ad to show — cycle by slot so different placements show different ads
-  const slotIndex = { home:0, history:1, inline:2, add:3 }[slot] || 0;
+  const activeAds = HOUSE_ADS.filter(a => a.active);
+  const ads = activeAds.length > 0 ? activeAds : [upgradeAd];
 
-  let ad = null;
-  if (activeAds.length > 0) {
-    ad = activeAds[slotIndex % activeAds.length];
-  } else if (slotIndex % 4 === 3) {
-    // Show upgrade prompt every 4th slot when no sponsors
-    ad = upgradeAd;
+  const [idx, setIdx] = useState(0);
+  const [fade, setFade] = useState(true);
+
+  useEffect(() => {
+    if (ads.length <= 1) return;
+    const timer = setInterval(() => {
+      setFade(false);
+      setTimeout(() => {
+        setIdx(i => (i + 1) % ads.length);
+        setFade(true);
+      }, 300);
+    }, CAROUSEL_INTERVAL);
+    return () => clearInterval(timer);
+  }, [ads.length]);
+
+  const ad = ads[idx];
+
+  // AdSense fallback when publisher ID is configured and no house ads
+  if (activeAds.length === 0 && ADSENSE_CLIENT !== "ca-pub-XXXXXXXXXXXXXXXX") {
+    return <AdSenseUnit/>;
   }
 
-  // If no house ad, show AdSense — but only if publisher ID is configured
-  if (!ad) {
-    if (ADSENSE_CLIENT !== "ca-pub-XXXXXXXXXXXXXXXX") {
-      return <AdSenseUnit/>;
-    }
-    // AdSense not configured yet — show upgrade prompt as fallback
-    ad = upgradeAd;
-  }
+  const BANNER_CSS = `
+    @keyframes ad-fade-in{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+    .ad-slide{animation:ad-fade-in .3s ease both}
+  `;
 
-  return <HouseAdCard ad={ad} onUpgrade={onUpgrade}/>;
+  return (
+    <div style={{ margin:"0 0 14px", borderRadius:14, overflow:"hidden",
+      border:`1px solid ${ad.color || "#e5e7eb"}22`,
+      background: ad.image ? "#000" : `${ad.color || "#075E54"}07`,
+      position:"relative" }}>
+      <style>{BANNER_CSS}</style>
+
+      {/* Slide */}
+      <div key={idx} className="ad-slide"
+        style={{ opacity: fade ? 1 : 0, transition:"opacity .3s" }}>
+        <HouseAdCard ad={ad} onUpgrade={onUpgrade}/>
+      </div>
+
+      {/* Dots — only shown when 2+ ads */}
+      {ads.length > 1 && (
+        <div style={{ display:"flex", justifyContent:"center", gap:5,
+          paddingBottom:8, paddingTop: ad.image ? 0 : 4 }}>
+          {ads.map((_, i) => (
+            <button key={i} onClick={()=>{ setFade(false); setTimeout(()=>{ setIdx(i); setFade(true); },300); }}
+              style={{ width: i===idx ? 16 : 6, height:6, borderRadius:3, border:"none",
+                background: i===idx ? (ad.color||p) : "#ddd",
+                cursor:"pointer", padding:0,
+                transition:"all .3s" }}/>
+          ))}
+        </div>
+      )}
+    </div>
+  );
 }
 
 // ═══════════════════════════════════════════════════════════════
