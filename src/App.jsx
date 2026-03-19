@@ -2829,24 +2829,23 @@ function AppCore({ user, onLogout }) {
                 </div>
               )}
 
-              {/* ── Fields ── */}
-              <div style={{ padding: isDesktop?"20px 0":"16px 16px 0", background:"#fff",
-                margin: isDesktop?"20px 0":"0" }}>
+              {/* ── Fields ── no container padding — each field has its own 16px side padding */}
+              <div style={{ background:"#fff", margin: isDesktop?"20px 0":"0",
+                padding: isDesktop?"20px 0":"20px 0 0" }}>
 
                 {/* Date */}
-                <div style={{ marginBottom:20 }}>
+                <div style={{ marginBottom:20, paddingLeft:16, paddingRight:16 }}>
                   <div style={{ fontSize:11, fontWeight:800, color:"#9ca3af", textTransform:"uppercase",
                     letterSpacing:1, marginBottom:8 }}>📅 Date</div>
                   <input type="date" value={form.date || new Date().toISOString().split("T")[0]}
                     onChange={e=>setForm(f=>({...f,date:e.target.value}))}
                     style={{ width:"100%", padding:"14px 16px", border:"1.5px solid #e5e7eb",
                       borderRadius:14, fontSize:15, outline:"none", boxSizing:"border-box",
-                      background:"#f9fafb", color:"#111", fontFamily:"inherit",
-                      transition:"border-color .15s" }}/>
+                      background:"#f9fafb", color:"#111", fontFamily:"inherit" }}/>
                 </div>
 
                 {/* Category */}
-                <div style={{ marginBottom:20 }}>
+                <div style={{ marginBottom:20, paddingLeft:16, paddingRight:16 }}>
                   <div style={{ fontSize:11, fontWeight:800, color:"#9ca3af", textTransform:"uppercase",
                     letterSpacing:1, marginBottom:10 }}>🏷️ Category</div>
                   <div style={{ display:"flex", flexWrap:"wrap", gap:8 }}>
@@ -2871,7 +2870,7 @@ function AppCore({ user, onLogout }) {
                 </div>
 
                 {/* Note */}
-                <div>
+                <div style={{ paddingLeft:16, paddingRight:16 }}>
                   <div style={{ fontSize:11, fontWeight:800, color:"#9ca3af", textTransform:"uppercase",
                     letterSpacing:1, marginBottom:8 }}>📝 Note (optional)</div>
                   <input type="text" placeholder="Customer name, description…"
@@ -3539,12 +3538,16 @@ function BudgetCreate({ budget, expCats, incCats, currency, p, isDesktop, onSave
               <div>
                 <label style={labelStyle}>Start Date</label>
                 <input type="date" value={startDate} onChange={e=>setStartDate(e.target.value)}
-                  style={{...inputStyle, marginBottom:0, fontSize:14, padding:"12px 10px"}}/>
+                  style={{ width:"100%", padding:"13px 10px", border:"2px solid #e5e5e5",
+                    borderRadius:13, fontSize:14, outline:"none", boxSizing:"border-box",
+                    background:"#fafafa", fontFamily:"inherit", display:"block" }}/>
               </div>
               <div>
                 <label style={labelStyle}>End Date</label>
                 <input type="date" value={endDate} min={startDate||undefined} onChange={e=>setEndDate(e.target.value)}
-                  style={{...inputStyle, marginBottom:0, fontSize:14, padding:"12px 10px"}}/>
+                  style={{ width:"100%", padding:"13px 10px", border:"2px solid #e5e5e5",
+                    borderRadius:13, fontSize:14, outline:"none", boxSizing:"border-box",
+                    background:"#fafafa", fontFamily:"inherit", display:"block" }}/>
               </div>
             </div>
             {startDate&&endDate&&endDate>=startDate&&(
