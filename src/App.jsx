@@ -1031,25 +1031,106 @@ function UpgradeModal({ onClose, reason="default", monthCount=0, p="#075E54", us
 // ═══════════════════════════════════════════════════════════════
 // AD BANNER  (free tier only)
 // ═══════════════════════════════════════════════════════════════
-function AdBanner({ onUpgrade, p="#075E54" }) {
-  const AD_CSS = `
-    @keyframes ad-pulse{0%,100%{opacity:.7}50%{opacity:1}}
-    .ad-badge{animation:ad-pulse 2.5s ease-in-out infinite}
-  `;
-  // Rotating mock ads relevant to small Nigerian businesses
-  const ADS = [
-    { logo:"🏦", title:"GTBank Business Account", body:"Zero COT for the first 6 months. Open your SME account today.", cta:"Learn more", color:"#F57F17" },
-    { logo:"📦", title:"Jumia Business Seller Hub", body:"Reach 10M+ customers. List your products free on Jumia.", cta:"Start selling", color:"#E65100" },
-    { logo:"💳", title:"Moniepoint for Business", body:"Accept payments anywhere. POS and virtual accounts for SMEs.", cta:"Get started", color:"#1565C0" },
-    { logo:"📲", title:"Paystack Payment Links", body:"Get paid online instantly. No website needed — just share a link.", cta:"Create link", color:"#0C6B58" },
-    { logo:"📊", title:"Upgrade to LedgerBook Pro", body:"Remove ads, unlock budgets & unlimited entries.", cta:"Upgrade ✨", color:"#075E54", isUpgrade:true },
-  ];
-  const [idx] = useState(()=>Math.floor(Math.random()*ADS.length));
-  const ad = ADS[idx];
+// ═══════════════════════════════════════════════════════════════
+// AD SYSTEM
+// ═══════════════════════════════════════════════════════════════
+
+// ── HOUSE ADS ─────────────────────────────────────────────────
+// To add a paid sponsor: add an entry to this array.
+// Set active:true, provide a real url, and the ad rotates automatically.
+// When all house ads have active:false, AdSense fallback is shown instead.
+const HOUSE_ADS = [
+  {
+    active:  false, // ← set true when sponsor pays
+    logo:    "🏦",
+    brand:   "GTBank",
+    title:   "GTBank Business Account",
+    body:    "Zero COT for the first 6 months. Open your SME account today.",
+    cta:     "Open account",
+    color:   "#F57F17",
+    url:     "https://www.gtbank.com/business-banking",
+  },
+  {
+    active:  false,
+    logo:    "💳",
+    brand:   "Moniepoint",
+    title:   "Moniepoint for Business",
+    body:    "Accept payments anywhere. POS and virtual accounts for SMEs.",
+    cta:     "Get started",
+    color:   "#1565C0",
+    url:     "https://moniepoint.com",
+  },
+  {
+    active:  false,
+    logo:    "📦",
+    brand:   "Jumia",
+    title:   "Sell on Jumia",
+    body:    "Reach 10M+ customers. List your products free on Jumia.",
+    cta:     "Start selling",
+    color:   "#E65100",
+    url:     "https://seller.jumia.com.ng",
+  },
+  {
+    active:  false,
+    logo:    "📲",
+    brand:   "Paystack",
+    title:   "Paystack Payment Links",
+    body:    "Get paid online instantly. No website needed — just share a link.",
+    cta:     "Create link",
+    color:   "#0C6B58",
+    url:     "https://paystack.com",
+  },
+  {
+    active:  false,
+    logo:    "💰",
+    brand:   "Cowrywise",
+    title:   "Grow your business savings",
+    body:    "Earn up to 18% p.a. on your business cash reserves.",
+    cta:     "Start saving",
+    color:   "#6B21A8",
+    url:     "https://cowrywise.com",
+  },
+];
+
+// Your Google AdSense publisher ID — replace with your real one from adsense.google.com
+const ADSENSE_CLIENT = "ca-pub-XXXXXXXXXXXXXXXX";
+const ADSENSE_SLOT   = "XXXXXXXXXX"; // Your ad unit slot ID
+
+// ── AdSense Unit ───────────────────────────────────────────────
+function AdSenseUnit() {
+  const ref = React.useRef(null);
+  useEffect(() => {
+    try {
+      if (window.adsbygoogle && ref.current) {
+        (window.adsbygoogle = window.adsbygoogle || []).push({});
+      }
+    } catch(e) {}
+  }, []);
 
   return (
     <div style={{ margin:"0 0 14px", borderRadius:14, overflow:"hidden",
-      border:`1px solid ${ad.color}22`, background:`${ad.color}08` }}>
+      border:"1px solid #f0f0f0", background:"#fafafa", minHeight:80,
+      display:"flex", alignItems:"center", justifyContent:"center" }}>
+      <ins ref={ref}
+        className="adsbygoogle"
+        style={{ display:"block", width:"100%", minHeight:80 }}
+        data-ad-client={ADSENSE_CLIENT}
+        data-ad-slot={ADSENSE_SLOT}
+        data-ad-format="auto"
+        data-full-width-responsive="true"/>
+    </div>
+  );
+}
+
+// ── House Ad Card ──────────────────────────────────────────────
+function HouseAdCard({ ad, onUpgrade }) {
+  const AD_CSS = `
+    @keyframes ad-pulse{0%,100%{opacity:.6}50%{opacity:1}}
+    .ad-badge{animation:ad-pulse 2.5s ease-in-out infinite;font-size:9px;font-weight:800;letter-spacing:.5px}
+  `;
+  return (
+    <div style={{ margin:"0 0 14px", borderRadius:14, overflow:"hidden",
+      border:`1px solid ${ad.color}22`, background:`${ad.color}07` }}>
       <style>{AD_CSS}</style>
       <div style={{ display:"flex", alignItems:"center", gap:12, padding:"11px 14px" }}>
         <div style={{ width:40, height:40, borderRadius:12, background:`${ad.color}18`,
@@ -1057,13 +1138,14 @@ function AdBanner({ onUpgrade, p="#075E54" }) {
           {ad.logo}
         </div>
         <div style={{ flex:1, minWidth:0 }}>
-          <div style={{ fontSize:10, color:"#ccc", fontWeight:600, letterSpacing:.3, marginBottom:2 }}>
-            <span className="ad-badge">AD</span> · Sponsored
+          <div style={{ fontSize:10, color:"#bbb", fontWeight:600, letterSpacing:.3, marginBottom:2 }}>
+            <span className="ad-badge">AD</span> · Sponsored by {ad.brand}
           </div>
           <div style={{ fontWeight:800, fontSize:13, color:"#222", lineHeight:1.3 }}>{ad.title}</div>
           <div style={{ fontSize:11, color:"#888", marginTop:2, lineHeight:1.4 }}>{ad.body}</div>
         </div>
-        <button onClick={ad.isUpgrade ? onUpgrade : ()=>{}}
+        <button
+          onClick={()=>{ if(ad.isUpgrade){ onUpgrade(); } else { window.open(ad.url,"_blank","noopener"); } }}
           style={{ flexShrink:0, padding:"7px 12px", background:ad.color, color:"#fff",
             border:"none", borderRadius:10, fontSize:11, fontWeight:800, cursor:"pointer",
             whiteSpace:"nowrap" }}>
@@ -1072,6 +1154,42 @@ function AdBanner({ onUpgrade, p="#075E54" }) {
       </div>
     </div>
   );
+}
+
+// ── AdBanner — picks house ad or falls back to AdSense ─────────
+// slot: "home" | "history" | "inline" | "add" (for future targeting)
+function AdBanner({ onUpgrade, p="#075E54", slot="home" }) {
+  const activeAds = HOUSE_ADS.filter(a => a.active);
+
+  // Always show upgrade house ad 1-in-4 chance if no active sponsors
+  const upgradeAd = {
+    active: true, logo:"✨", brand:"LedgerBook Pro", isUpgrade:true,
+    title:"Upgrade to LedgerBook Pro",
+    body:"Remove ads, unlock budgets & unlimited entries.",
+    cta:"Upgrade ✨", color:"#075E54", url:"",
+  };
+
+  // Pick which ad to show — cycle by slot so different placements show different ads
+  const slotIndex = { home:0, history:1, inline:2, add:3 }[slot] || 0;
+
+  let ad = null;
+  if (activeAds.length > 0) {
+    ad = activeAds[slotIndex % activeAds.length];
+  } else if (slotIndex % 4 === 3) {
+    // Show upgrade prompt every 4th slot when no sponsors
+    ad = upgradeAd;
+  }
+
+  // If no house ad, show AdSense — but only if publisher ID is configured
+  if (!ad) {
+    if (ADSENSE_CLIENT !== "ca-pub-XXXXXXXXXXXXXXXX") {
+      return <AdSenseUnit/>;
+    }
+    // AdSense not configured yet — show upgrade prompt as fallback
+    ad = upgradeAd;
+  }
+
+  return <HouseAdCard ad={ad} onUpgrade={onUpgrade}/>;
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -2711,7 +2829,7 @@ function AppCore({ user, onLogout }) {
               </div>}
 
               {/* ── Ad banner (free tier only) ── */}
-              {!isPro && <AdBanner onUpgrade={()=>setShowUpgrade(true)} p={p}/>}
+              {!isPro && <AdBanner onUpgrade={()=>setShowUpgrade(true)} p={p} slot="home"/>}
 
               {/* Recent Transactions + Charts */}
               <div className="lb-page-grid">
@@ -2835,6 +2953,9 @@ function AppCore({ user, onLogout }) {
               <div style={{ background:"#fff", margin: isDesktop?"20px 0":"0",
                 padding: isDesktop?"20px 0":"20px 16px 0" }}>
 
+                {/* Ad on Add screen (free only) */}
+                {!isPro && !isDesktop && <AdBanner onUpgrade={()=>setShowUpgrade(true)} p={p} slot="add"/>}
+
                 {/* Date */}
                 <div style={{ marginBottom:20 }}>
                   <div style={{ fontSize:11, fontWeight:800, color:"#9ca3af", textTransform:"uppercase",
@@ -2956,14 +3077,18 @@ function AppCore({ user, onLogout }) {
               paddingTop:14,
               paddingBottom:isDesktop?40:`calc(${S.navH}px + env(safe-area-inset-bottom,0px) + 10px)` }}>
               {/* Ad banner in history (free only) */}
-              {!isPro && <AdBanner onUpgrade={()=>setShowUpgrade(true)} p={p}/>}
+              {!isPro && <AdBanner onUpgrade={()=>setShowUpgrade(true)} p={p} slot="history"/>}
               <div className={isDesktop?"lb-section":""} style={{ padding: isDesktop?"24px 26px":undefined }}>
-                {Object.keys(grouped).sort((a,b)=>b.localeCompare(a)).map(day=>(
+                {Object.keys(grouped).sort((a,b)=>b.localeCompare(a)).map((day, dayIdx)=>(
                   <div key={day}>
                     <div style={{ fontSize:11, color:"#bbb", fontWeight:700, textTransform:"uppercase", letterSpacing:.5, margin:"10px 0 7px" }}>
                       {fmtDate(day+"T12:00:00")}
                     </div>
                     {grouped[day].map(e=><TxRow key={e.id} entry={e} currency={currency} onDelete={handleDel} onEdit={setEditingEntry} isPro={isPro} p={p}/>)}
+                    {/* Inline ad after every 5th day group */}
+                    {!isPro && dayIdx > 0 && (dayIdx + 1) % 5 === 0 && (
+                      <AdBanner onUpgrade={()=>setShowUpgrade(true)} p={p} slot="inline"/>
+                    )}
                   </div>
                 ))}
                 {histFilt.length===0&&(
