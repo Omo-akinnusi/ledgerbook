@@ -38,8 +38,8 @@ const GLOBAL_CSS = `
   .lb-root         { display: flex; min-height: 100vh; background: #f0f0f0; }
   .lb-sidebar      { display: none; }
   .lb-shell        { flex: 1; display: flex; flex-direction: column; min-height: 100vh;
-                     background: #fff; width: 100%; max-width: 100%; overflow-x: hidden; }
-  .lb-content      { flex: 1; overflow-y: auto; overflow-x: hidden; }
+                     background: #fff; width: 100%; max-width: 100%; }
+  .lb-content      { flex: 1; overflow-y: auto; }
   .lb-bottom-nav   { display: flex; }
   .lb-page-grid    { display: block; }
   .lb-cards-grid   { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
@@ -2747,10 +2747,10 @@ function AppCore({ user, onLogout }) {
 
         {/* ══ ADD ENTRY ══ */}
         {view==="add"&&(
-          <div style={{ flex:1, overflowY:"auto", overflowX:"hidden",
+          <div style={{ flex:1, overflowY:"auto",
             paddingBottom: isDesktop?48:`calc(${S.navH}px + env(safe-area-inset-bottom,0px) + 24px)` }}>
             <div style={{ maxWidth: isDesktop?560:undefined, margin: isDesktop?"0 auto":undefined,
-              padding: isDesktop?"28px 36px 0":"0", overflowX:"hidden" }}>
+              padding: isDesktop?"28px 36px 0":"0" }}>
 
               {/* ── Type toggle header ── */}
               <div style={{
@@ -3496,7 +3496,7 @@ function BudgetCreate({ budget, expCats, incCats, currency, p, isDesktop, onSave
   const expCatsWithValues = Object.values(expCatBudgets).filter(v=>parseFloat(v)>0).length;
 
   return (
-    <div style={{ flex:1, overflowY:"auto", overflowX:"hidden",
+    <div style={{ flex:1, overflowY:"auto",
       paddingLeft:isDesktop?0:S.px, paddingRight:isDesktop?0:S.px,
       paddingTop:isDesktop?0:20,
       paddingBottom:isDesktop?48:`calc(${S.navH}px + env(safe-area-inset-bottom,0px) + 16px)` }}>
