@@ -1090,6 +1090,12 @@ const HOUSE_ADS = [
     color:   "#6B21A8",
     url:     "https://cowrywise.com",
   },
+ {
+    active:  true,
+    brand:   "Husnun by Aisha",
+    image:   "/ads/Test-Image.png",
+    url:     "https://www.instagram.com/v.bookenterprise?igsh=c3M4NWk5dzVqOXhl&utm_source=qr",
+  },
 ];
 
 // Your Google AdSense publisher ID — replace with your real one from adsense.google.com
