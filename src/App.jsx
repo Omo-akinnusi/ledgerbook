@@ -2537,10 +2537,11 @@ function OnboardingScreen({ user, onComplete }) {
         businessName: businessName.trim(),
         industry,
         phone: phone.trim(),
-        onboarded:  true,
+        onboarded:   true,
         onboardedAt: new Date().toISOString(),
       }, { merge: true });
       onComplete({ businessName: businessName.trim(), industry, phone: phone.trim() });
+    } catch(e) {
       setErr("Failed to save. Please try again.");
       setSaving(false);
     }
