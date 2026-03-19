@@ -1884,7 +1884,38 @@ function KeyboardWidget({ currency, branding, incCats, expCats, onClose }) {
 // ═══════════════════════════════════════════════════════════════
 const COLORS = ["#075E54","#1a237e","#880e4f","#bf360c","#1b5e20","#4a148c","#006064","#212121","#b71c1c","#e65100","#f57f17","#37474f"];
 
-function SettingsScreen({ branding, setBranding, currency, setCurrency, incCats, setIncCats, expCats, setExpCats, user, onLogout, onClose, isPro=false, onUpgrade, planInfo=null }) {
+function SettingsScreen({ branding, setBranding, currency, setCurrency, incCats, setIncCats, expCats, setExpCats, user, onLogout, onClose, isPro=false, onUpgrade, planInfo=null, onUserUpdate }) {
+  const [editingProfile, setEditingProfile] = useState(false);
+  const [profileForm,    setProfileForm]    = useState({
+    businessName: user.businessName || "",
+    industry:     user.industry     || "",
+    phone:        user.phone        || "",
+  });
+  const [profileSaving, setProfileSaving] = useState(false);
+  const [profileErr,    setProfileErr]    = useState("");
+
+  const handleProfileSave = async () => {
+    if (!profileForm.businessName.trim()) return setProfileErr("Business name is required");
+    setProfileSaving(true);
+    setProfileErr("");
+    try {
+      await setDoc(userDoc(user.id), {
+        businessName: profileForm.businessName.trim(),
+        industry:     profileForm.industry,
+        phone:        profileForm.phone.trim(),
+      }, { merge: true });
+      if (onUserUpdate) onUserUpdate({
+        businessName: profileForm.businessName.trim(),
+        industry:     profileForm.industry,
+        phone:        profileForm.phone.trim(),
+      });
+      setEditingProfile(false);
+    } catch(e) {
+      setProfileErr("Failed to save. Try again.");
+    } finally {
+      setProfileSaving(false);
+    }
+  };
   const [tab, setTab] = useState("brand");
   const [newCat, setNewCat] = useState({type:"income",value:""});
   const logoRef = useRef();
@@ -2142,12 +2173,78 @@ function SettingsScreen({ branding, setBranding, currency, setCurrency, incCats,
             </button>
           )}
           <div style={{ background:"#fff", borderRadius:16, overflow:"hidden", marginBottom:18 }}>
-            {[["Business Name",user.businessName||"—"],["Email",user.email],["Account ID",`#${user.id.toUpperCase()}`]].map(([k,v])=>(
-              <div key={k} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"15px 18px", borderBottom:"1px solid #f0f0f0" }}>
-                <span style={{ color:"#999", fontSize:14 }}>{k}</span>
-                <span style={{ fontWeight:700, color:"#333", fontSize:14 }}>{v}</span>
+            {editingProfile ? (
+              <div style={{ padding:"16px 18px" }}>
+                {[
+                  ["Business Name", "businessName", "text", "e.g. Ade Electronics"],
+                  ["Phone",         "phone",         "tel",  "e.g. +234 801 234 5678"],
+                ].map(([label, key, type, placeholder])=>(
+                  <div key={key} style={{ marginBottom:14 }}>
+                    <div style={{ fontSize:11, fontWeight:800, color:"#9ca3af",
+                      textTransform:"uppercase", letterSpacing:1, marginBottom:6 }}>{label}</div>
+                    <input type={type} value={profileForm[key]}
+                      onChange={e=>setProfileForm(f=>({...f,[key]:e.target.value}))}
+                      placeholder={placeholder}
+                      style={{ width:"100%", padding:"11px 14px", border:"1.5px solid #e5e7eb",
+                        borderRadius:11, fontSize:14, outline:"none", boxSizing:"border-box",
+                        fontFamily:"inherit", color:"#111" }}/>
+                  </div>
+                ))}
+                <div style={{ marginBottom:14 }}>
+                  <div style={{ fontSize:11, fontWeight:800, color:"#9ca3af",
+                    textTransform:"uppercase", letterSpacing:1, marginBottom:8 }}>Industry</div>
+                  <div style={{ display:"flex", flexWrap:"wrap", gap:7 }}>
+                    {INDUSTRIES.map(ind=>(
+                      <button key={ind} onClick={()=>setProfileForm(f=>({...f,industry:ind}))}
+                        style={{ padding:"7px 13px", borderRadius:20, fontSize:12, cursor:"pointer",
+                          border:`1.5px solid ${profileForm.industry===ind?"#075E54":"#e5e7eb"}`,
+                          background: profileForm.industry===ind ? "#f0faf7" : "#f9fafb",
+                          color: profileForm.industry===ind ? "#075E54" : "#6b7280",
+                          fontWeight: profileForm.industry===ind ? 800 : 500 }}>
+                        {ind}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                {profileErr && (
+                  <div style={{ color:"#c62828", fontSize:12, marginBottom:10 }}>⚠️ {profileErr}</div>
+                )}
+                <div style={{ display:"flex", gap:10 }}>
+                  <button onClick={()=>{ setEditingProfile(false); setProfileErr(""); }}
+                    style={{ flex:1, padding:"11px", background:"#f5f5f5", border:"none",
+                      borderRadius:10, fontSize:14, fontWeight:700, color:"#555", cursor:"pointer" }}>
+                    Cancel
+                  </button>
+                  <button onClick={handleProfileSave} disabled={profileSaving}
+                    style={{ flex:2, padding:"11px", background:"linear-gradient(135deg,#054d44,#128C7E)",
+                      border:"none", borderRadius:10, fontSize:14, fontWeight:900,
+                      color:"#fff", cursor:profileSaving?"not-allowed":"pointer" }}>
+                    {profileSaving ? "Saving…" : "Save Changes"}
+                  </button>
+                </div>
               </div>
-            ))}
+            ) : (
+              <>
+                {[
+                  ["Business Name", user.businessName||"—"],
+                  ["Industry",      user.industry||"—"],
+                  ["Phone",         user.phone||"—"],
+                  ["Email",         user.email],
+                  ["Account ID",    `#${user.id.toUpperCase()}`],
+                ].map(([k,v])=>(
+                  <div key={k} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"15px 18px", borderBottom:"1px solid #f0f0f0" }}>
+                    <span style={{ color:"#999", fontSize:14 }}>{k}</span>
+                    <span style={{ fontWeight:700, color:"#333", fontSize:14, textAlign:"right", maxWidth:"60%" }}>{v}</span>
+                  </div>
+                ))}
+                <button onClick={()=>{ setProfileForm({ businessName:user.businessName||"", industry:user.industry||"", phone:user.phone||"" }); setEditingProfile(true); }}
+                  style={{ width:"100%", padding:"13px 18px", background:"none", border:"none",
+                    borderTop:"1px solid #f0f0f0", color:"#075E54", fontSize:13,
+                    fontWeight:800, cursor:"pointer", textAlign:"center" }}>
+                  ✏️ Edit Profile
+                </button>
+              </>
+            )}
           </div>
           <button onClick={onLogout} style={{ width:"100%", padding:"15px", background:"#fff", border:"2px solid #ffcdd2", borderRadius:14, color:"#c62828", fontWeight:900, cursor:"pointer", fontSize:15 }}>🚪 Sign Out</button>
 
@@ -2444,7 +2541,6 @@ function OnboardingScreen({ user, onComplete }) {
         onboardedAt: new Date().toISOString(),
       }, { merge: true });
       onComplete({ businessName: businessName.trim(), industry, phone: phone.trim() });
-    } catch(e) {
       setErr("Failed to save. Please try again.");
       setSaving(false);
     }
@@ -2620,10 +2716,12 @@ export default function LedgerBookPro() {
           const profileSnap = await getDoc(userDoc(firebaseUser.uid));
           const profileData  = profileSnap.exists() ? profileSnap.data() : {};
 
-          // Use Firestore businessName if already saved
+          // Merge all Firestore profile fields into u
           if (profileData.businessName && profileData.businessName !== "My Business") {
             u.businessName = profileData.businessName;
           }
+          if (profileData.industry) u.industry = profileData.industry;
+          if (profileData.phone)    u.phone    = profileData.phone;
 
           // Show onboarding if user hasn't completed it yet
           setNeeds(!profileData.onboarded);
@@ -2654,11 +2752,14 @@ export default function LedgerBookPro() {
     return () => unsub();
   },[]);
 
-  const handleOnboardingComplete = ({ businessName }) => {
-    if (businessName && user) {
-      setUser(u => ({ ...u, businessName }));
-      DB.set(`lb_bname_${user.id}`, businessName);
-    }
+  const handleOnboardingComplete = ({ businessName, industry, phone }) => {
+    setUser(u => ({
+      ...u,
+      ...(businessName ? { businessName } : {}),
+      ...(industry     ? { industry }     : {}),
+      ...(phone        ? { phone }        : {}),
+    }));
+    if (businessName && user) DB.set(`lb_bname_${user.id}`, businessName);
     setNeeds(false);
   };
 
@@ -2673,13 +2774,13 @@ export default function LedgerBookPro() {
   if (needsOnboarding) return (
     <><GlobalStyles/><OnboardingScreen user={user} onComplete={handleOnboardingComplete}/></>
   );
-  return (<><GlobalStyles/><AppCore user={user} onLogout={handleLogout}/></>);
+  return (<><GlobalStyles/><AppCore user={user} onLogout={handleLogout} onUserUpdate={u=>setUser(prev=>({...prev,...u}))}/></>);
 }
 
 // ═══════════════════════════════════════════════════════════════
 // APP CORE — Firestore powered
 // ═══════════════════════════════════════════════════════════════
-function AppCore({ user, onLogout }) {
+function AppCore({ user, onLogout, onUserUpdate }) {
   const uid = user.id;
 
   // ── Data state — all start empty, loaded from Firestore ──────
@@ -2717,6 +2818,17 @@ function AppCore({ user, onLogout }) {
     let unsubBudgets;
     const loadData = async () => {
       try {
+        // Load profile fields (industry, phone) that may have been set during onboarding
+        const profileSnap = await getDoc(userDoc(uid));
+        if (profileSnap.exists()) {
+          const pd = profileSnap.data();
+          const updates = {};
+          if (pd.industry && !user.industry) updates.industry = pd.industry;
+          if (pd.phone    && !user.phone)    updates.phone    = pd.phone;
+          if (pd.businessName && pd.businessName !== user.businessName)
+            updates.businessName = pd.businessName;
+          if (Object.keys(updates).length > 0 && onUserUpdate) onUserUpdate(updates);
+        }
         // Load settings (branding, currency, categories)
         const snap = await getDoc(settingsDoc(uid));
         if (snap.exists()) {
@@ -3723,7 +3835,7 @@ function AppCore({ user, onLogout }) {
           incCats={incCats} setIncCats={setIncCats} expCats={expCats} setExpCats={setExpCats}
           user={user} onLogout={onLogout} onClose={()=>setShowSt(false)}
           isPro={isPro} onUpgrade={()=>{ setShowSt(false); setShowUpgrade(true); }}
-          planInfo={planInfo}/>}
+          planInfo={planInfo} onUserUpdate={onUserUpdate}/>}
         {showDP&&<DateRangePicker preset={datePreset} dateRange={dateRange} onChange={handleDateChange} onClose={()=>setShowDP(false)} primaryColor={p}/>}
         {showUpgrade&&<UpgradeModal onClose={()=>setShowUpgrade(false)} reason={atLimit?"limit":"default"} monthCount={monthCount} p={p} user={user} currency={currency}/>}
         {editingEntry&&<EditEntryModal entry={editingEntry} onClose={()=>setEditingEntry(null)} onSave={handleEditSave} incCats={incCats} expCats={expCats} currency={currency}/>}
