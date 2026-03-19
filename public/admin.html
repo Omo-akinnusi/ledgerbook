@@ -135,6 +135,15 @@
     box-shadow: 0 0 0 3px rgba(37,211,102,0.1);
   }
   .search-input::placeholder { color: var(--muted); }
+  select.field-input, input[type="date"].field-input {
+    background: var(--card); border: 1px solid var(--border);
+    color: var(--text); border-radius: 10px; font-family: var(--font);
+    font-size: 13px; outline: none; appearance: none;
+    -webkit-appearance: none;
+  }
+  select.field-input:focus, input[type="date"].field-input:focus {
+    border-color: var(--lime); box-shadow: 0 0 0 3px rgba(37,211,102,0.1);
+  }
 
   /* ── User table ── */
   .table-wrap {
@@ -142,7 +151,7 @@
     border-radius: 18px; overflow: hidden;
   }
   .table-head {
-    display: grid; grid-template-columns: 1fr 2fr 1fr 1fr 100px;
+    display: grid; grid-template-columns: 1.4fr 1.6fr 120px 90px 80px;
     padding: 12px 22px;
     background: rgba(37,211,102,0.05);
     border-bottom: 1px solid var(--border);
@@ -150,7 +159,7 @@
     text-transform: uppercase; letter-spacing: 1px; font-family: var(--mono);
   }
   .user-row {
-    display: grid; grid-template-columns: 1fr 2fr 1fr 1fr 100px;
+    display: grid; grid-template-columns: 1.4fr 1.6fr 120px 90px 80px;
     padding: 16px 22px; align-items: center;
     border-bottom: 1px solid rgba(37,211,102,0.07);
     transition: background .15s;
@@ -391,6 +400,42 @@
       <button class="btn-danger" onclick="upgradePlan('free')" id="downgrade-btn">Set Free</button>
     </div>
     <div class="result-card" id="lookup-result"></div>
+  </div>
+
+  <!-- Manual Subscription Editor -->
+  <div class="lookup-card" style="margin-bottom:24px">
+    <div class="lookup-title">📅 Manual Subscription Editor</div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:16px">
+      Use this when Paystack verify fails — manually set a user's Pro plan with custom dates.
+    </div>
+    <div class="input-row" style="margin-bottom:12px">
+      <input class="field-input" id="sub-uid-input" placeholder="Paste User ID (UID) here…" autocomplete="off"/>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:12px">
+      <div>
+        <div style="font-size:10px;color:var(--muted);font-family:var(--mono);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">Interval</div>
+        <select id="sub-interval" class="field-input" style="width:100%;padding:10px 12px">
+          <option value="monthly">Monthly</option>
+          <option value="biannually">6-Month (Biannual)</option>
+          <option value="annually">Annual</option>
+        </select>
+      </div>
+      <div>
+        <div style="font-size:10px;color:var(--muted);font-family:var(--mono);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">Activated Date</div>
+        <input type="date" id="sub-start" class="field-input" style="width:100%;padding:10px 12px"/>
+      </div>
+      <div>
+        <div style="font-size:10px;color:var(--muted);font-family:var(--mono);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">Expiry Date</div>
+        <input type="date" id="sub-end" class="field-input" style="width:100%;padding:10px 12px"/>
+      </div>
+    </div>
+    <div style="display:flex;gap:10px;align-items:center">
+      <button class="btn-primary" onclick="applyManualSub()" id="sub-apply-btn">✅ Apply Subscription</button>
+      <button onclick="autoFillSubDates()" style="padding:9px 16px;background:rgba(37,211,102,.1);border:1px solid var(--border);color:var(--lime);border-radius:10px;font-size:12px;font-weight:700;cursor:pointer;font-family:var(--font)">
+        Auto-fill dates from interval
+      </button>
+    </div>
+    <div class="result-card" id="sub-result"></div>
   </div>
 
   <!-- Search -->
@@ -793,6 +838,86 @@ window.upgradePlan = async (targetPlan) => {
     toast("❌ " + e.message, "error");
   } finally {
     upgradeBtn.disabled = downgradeBtn.disabled = false;
+  }
+};
+
+// ── Manual subscription editor ────────────────────────────────
+window.autoFillSubDates = () => {
+  const interval = document.getElementById("sub-interval").value;
+  const now      = new Date();
+  const start    = now.toISOString().split("T")[0];
+  let end;
+  if      (interval === "monthly")    end = new Date(now.setMonth(now.getMonth() + 1));
+  else if (interval === "biannually") end = new Date(now.setMonth(now.getMonth() + 6));
+  else                                end = new Date(now.setFullYear(now.getFullYear() + 1));
+  document.getElementById("sub-start").value = start;
+  document.getElementById("sub-end").value   = end.toISOString().split("T")[0];
+};
+
+window.applyManualSub = async () => {
+  const uid      = document.getElementById("sub-uid-input").value.trim();
+  const interval = document.getElementById("sub-interval").value;
+  const startVal = document.getElementById("sub-start").value;
+  const endVal   = document.getElementById("sub-end").value;
+  const btn      = document.getElementById("sub-apply-btn");
+  const resultEl = document.getElementById("sub-result");
+
+  if (!uid)      { toast("⚠️ Paste a User ID first", "error"); return; }
+  if (!startVal) { toast("⚠️ Set an activation date", "error"); return; }
+  if (!endVal)   { toast("⚠️ Set an expiry date", "error"); return; }
+  if (endVal <= startVal) { toast("⚠️ Expiry must be after activation date", "error"); return; }
+
+  btn.disabled   = true;
+  btn.textContent = "Applying…";
+
+  try {
+    // Fetch user profile for display name
+    const profileSnap = await getDoc(doc(db, "users", uid));
+    const profile      = profileSnap.exists() ? profileSnap.data() : {};
+    const displayName  = profile.name || profile.businessName || uid.slice(0,12) + "…";
+
+    const intervalLabel = { monthly:"Monthly", biannually:"6-Month", annually:"Annual" }[interval];
+    const activatedAt   = new Date(startVal).toISOString();
+    const expiresAt     = new Date(endVal + "T23:59:59").toISOString();
+
+    await setDoc(doc(db, "users", uid, "settings", "plan"), {
+      plan:           "pro",
+      interval:       interval,
+      status:         "active",
+      activatedAt:    activatedAt,
+      expiresAt:      expiresAt,
+      lastPaymentAt:  activatedAt,
+      lastPaymentRef: "manual-admin-" + Date.now(),
+      manuallySet:    true,
+      manualSetBy:    "admin",
+      manualSetAt:    new Date().toISOString(),
+    }, { merge: true });
+
+    // Update local allUsers array
+    const existing = allUsers.find(u => u.uid === uid);
+    if (existing) {
+      existing.plan = "pro";
+      existing.planInfo = { plan:"pro", interval, status:"active", activatedAt, expiresAt };
+      renderUsers(allUsers);
+      updateStats(allUsers);
+    }
+
+    resultEl.className = "result-card show";
+    resultEl.innerHTML = `
+      <div class="result-row"><span class="result-key">User</span><span class="result-val" style="color:var(--text)">${esc(displayName)}</span></div>
+      <div class="result-row"><span class="result-key">Plan</span><span class="result-val" style="color:var(--pro)">✨ Pro — ${intervalLabel}</span></div>
+      <div class="result-row"><span class="result-key">Activated</span><span class="result-val" style="color:var(--lime)">${startVal}</span></div>
+      <div class="result-row"><span class="result-key">Expires</span><span class="result-val" style="color:var(--lime)">${endVal}</span></div>
+      <div class="result-row"><span class="result-key">Set by</span><span class="result-val" style="color:var(--muted)">Admin (manual)</span></div>
+    `;
+    toast(`✅ Pro subscription applied for ${displayName}`, "success");
+  } catch(e) {
+    toast("❌ " + e.message, "error");
+    resultEl.className = "result-card show";
+    resultEl.innerHTML = `<div style="color:var(--danger);font-size:13px">❌ ${esc(e.message)}</div>`;
+  } finally {
+    btn.disabled    = false;
+    btn.textContent = "✅ Apply Subscription";
   }
 };
 
