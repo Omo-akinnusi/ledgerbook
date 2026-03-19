@@ -29,6 +29,8 @@ const GLOBAL_CSS = `
   input[type="number"]::-webkit-inner-spin-button,
   input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
   input[type="number"] { -moz-appearance: textfield; }
+  input[type="date"] { -webkit-appearance: none; appearance: none; display: block; }
+  input[type="date"]::-webkit-calendar-picker-indicator { opacity: 0.5; cursor: pointer; }
   button { -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
   input, button { font-family: inherit; }
 
@@ -38,8 +40,8 @@ const GLOBAL_CSS = `
   .lb-root         { display: flex; min-height: 100vh; background: #f0f0f0; }
   .lb-sidebar      { display: none; }
   .lb-shell        { flex: 1; display: flex; flex-direction: column; min-height: 100vh;
-                     background: #fff; width: 100%; max-width: 100%; }
-  .lb-content      { flex: 1; overflow-y: auto; }
+                     background: #fff; width: 100%; max-width: 100%; overflow-x: hidden; }
+  .lb-content      { flex: 1; overflow-y: auto; overflow-x: hidden; }
   .lb-bottom-nav   { display: flex; }
   .lb-page-grid    { display: block; }
   .lb-cards-grid   { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
@@ -2747,10 +2749,10 @@ function AppCore({ user, onLogout }) {
 
         {/* ══ ADD ENTRY ══ */}
         {view==="add"&&(
-          <div style={{ flex:1, overflowY:"auto",
+          <div style={{ flex:1, overflowY:"auto", overflowX:"hidden",
             paddingBottom: isDesktop?48:`calc(${S.navH}px + env(safe-area-inset-bottom,0px) + 24px)` }}>
             <div style={{ maxWidth: isDesktop?560:undefined, margin: isDesktop?"0 auto":undefined,
-              padding: isDesktop?"28px 36px 0":"0" }}>
+              padding: isDesktop?"28px 36px 0":"0", overflowX:"hidden" }}>
 
               {/* ── Type toggle header ── */}
               <div style={{
@@ -2841,7 +2843,8 @@ function AppCore({ user, onLogout }) {
                     onChange={e=>setForm(f=>({...f,date:e.target.value}))}
                     style={{ width:"100%", padding:"14px 16px", border:"1.5px solid #e5e7eb",
                       borderRadius:14, fontSize:15, outline:"none", boxSizing:"border-box",
-                      background:"#f9fafb", color:"#111", fontFamily:"inherit" }}/>
+                      background:"#f9fafb", color:"#111", fontFamily:"inherit",
+                      WebkitAppearance:"none", appearance:"none", display:"block" }}/>
                 </div>
 
                 {/* Category */}
@@ -3496,7 +3499,7 @@ function BudgetCreate({ budget, expCats, incCats, currency, p, isDesktop, onSave
   const expCatsWithValues = Object.values(expCatBudgets).filter(v=>parseFloat(v)>0).length;
 
   return (
-    <div style={{ flex:1, overflowY:"auto",
+    <div style={{ flex:1, overflowY:"auto", overflowX:"hidden",
       paddingLeft:isDesktop?0:S.px, paddingRight:isDesktop?0:S.px,
       paddingTop:isDesktop?0:20,
       paddingBottom:isDesktop?48:`calc(${S.navH}px + env(safe-area-inset-bottom,0px) + 16px)` }}>
