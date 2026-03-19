@@ -1128,6 +1128,35 @@ function HouseAdCard({ ad, onUpgrade }) {
     @keyframes ad-pulse{0%,100%{opacity:.6}50%{opacity:1}}
     .ad-badge{animation:ad-pulse 2.5s ease-in-out infinite;font-size:9px;font-weight:800;letter-spacing:.5px}
   `;
+
+  const handleClick = () => {
+    if (ad.isUpgrade) onUpgrade();
+    else window.open(ad.url, "_blank", "noopener");
+  };
+
+  // ── Image ad — full banner with clickable image ──────────────
+  if (ad.image) {
+    return (
+      <div style={{ margin:"0 0 14px", borderRadius:14, overflow:"hidden",
+        border:"1px solid #f0f0f0", cursor:"pointer" }}
+        onClick={handleClick}>
+        <style>{AD_CSS}</style>
+        <div style={{ position:"relative" }}>
+          <img src={ad.image} alt={ad.brand}
+            style={{ width:"100%", display:"block", maxHeight:120, objectFit:"cover" }}/>
+          <div style={{ position:"absolute", top:8, left:8, background:"rgba(0,0,0,.45)",
+            borderRadius:6, padding:"2px 7px" }}>
+            <span className="ad-badge" style={{ color:"#fff" }}>AD</span>
+            <span style={{ color:"rgba(255,255,255,.7)", fontSize:9, marginLeft:4 }}>
+              Sponsored by {ad.brand}
+            </span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Text ad — default layout ─────────────────────────────────
   return (
     <div style={{ margin:"0 0 14px", borderRadius:14, overflow:"hidden",
       border:`1px solid ${ad.color}22`, background:`${ad.color}07` }}>
@@ -1144,8 +1173,7 @@ function HouseAdCard({ ad, onUpgrade }) {
           <div style={{ fontWeight:800, fontSize:13, color:"#222", lineHeight:1.3 }}>{ad.title}</div>
           <div style={{ fontSize:11, color:"#888", marginTop:2, lineHeight:1.4 }}>{ad.body}</div>
         </div>
-        <button
-          onClick={()=>{ if(ad.isUpgrade){ onUpgrade(); } else { window.open(ad.url,"_blank","noopener"); } }}
+        <button onClick={handleClick}
           style={{ flexShrink:0, padding:"7px 12px", background:ad.color, color:"#fff",
             border:"none", borderRadius:10, fontSize:11, fontWeight:800, cursor:"pointer",
             whiteSpace:"nowrap" }}>
