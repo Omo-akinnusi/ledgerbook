@@ -156,6 +156,8 @@ const saveProfile = (uid, data) => setDoc(userDoc(uid), data, { merge: true });
 const saveSettings = (uid, data) => setDoc(settingsDoc(uid), data, { merge: true });
 // Add entry
 const addEntry = (uid, entry) => addDoc(entriesCol(uid), { ...entry, createdAt: serverTimestamp() });
+// Update entry
+const updateEntry = (uid, id, data) => updateDoc(doc(db, "users", uid, "entries", id), { ...data, updatedAt: serverTimestamp() });
 // Delete entry
 const delEntry = (uid, id) => deleteDoc(doc(db, "users", uid, "entries", id));
 
@@ -2014,7 +2016,7 @@ function SIn({ value, onChange, style={}, placeholder="" }) {
 // ═══════════════════════════════════════════════════════════════
 // TRANSACTION ROW
 // ═══════════════════════════════════════════════════════════════
-function TxRow({ entry, currency, onDelete, p }) {
+function TxRow({ entry, currency, onDelete, onEdit, isPro, p }) {
   return (
     <div style={{ background:"#fafafa", borderRadius:14, padding:"12px 14px", marginBottom:9, display:"flex", alignItems:"center", gap:12,
       borderLeft:`4px solid ${entry.type==="income"?"#25D366":"#FF9800"}` }}>
@@ -2032,7 +2034,143 @@ function TxRow({ entry, currency, onDelete, p }) {
         </div>
         <div style={{ fontSize:11, color:"#ccc", marginTop:2 }}>{fmtShort(entry.date)}</div>
       </div>
-      <button onClick={()=>onDelete(entry.id)} style={{ background:"none", border:"none", color:"#ddd", cursor:"pointer", fontSize:16, padding:"0 0 0 6px", flexShrink:0 }}>✕</button>
+      {isPro && (
+        <button onClick={()=>onEdit(entry)}
+          style={{ background:"none", border:"none", color:"#bbb", cursor:"pointer", fontSize:14,
+            padding:"0 0 0 2px", flexShrink:0, lineHeight:1 }} title="Edit entry">✏️</button>
+      )}
+      <button onClick={()=>onDelete(entry.id)}
+        style={{ background:"none", border:"none", color:"#ddd", cursor:"pointer", fontSize:16,
+          padding:"0 0 0 2px", flexShrink:0 }}>✕</button>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════
+// EDIT ENTRY MODAL (Pro only)
+// ═══════════════════════════════════════════════════════════════
+function EditEntryModal({ entry, onClose, onSave, incCats, expCats, currency }) {
+  const [form, setForm] = useState({
+    type:     entry.type,
+    amount:   String(entry.amount),
+    category: entry.category,
+    note:     entry.note || "",
+    date:     entry.date ? entry.date.slice(0,10) : new Date().toISOString().slice(0,10),
+  });
+  const [saving, setSaving] = useState(false);
+  const cats = form.type === "income" ? incCats : expCats;
+  const col  = form.type === "income" ? "#16a34a" : "#c2410c";
+  const bgCol = form.type === "income" ? "#f0fdf4" : "#fff7ed";
+
+  const handleSave = async () => {
+    if (!form.amount || !form.category) return;
+    setSaving(true);
+    await onSave(entry.id, {
+      type:     form.type,
+      amount:   parseFloat(form.amount),
+      category: form.category,
+      note:     form.note,
+      date:     new Date(form.date).toISOString(),
+    });
+    setSaving(false);
+    onClose();
+  };
+
+  const MODAL_CSS = `
+    @keyframes em-in{from{opacity:0;transform:translateY(40px)}to{opacity:1;transform:translateY(0)}}
+    .em-card{animation:em-in .28s cubic-bezier(.22,.68,0,1.1) both}
+  `;
+
+  return (
+    <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.55)", zIndex:600,
+      display:"flex", alignItems:"flex-end", justifyContent:"center", backdropFilter:"blur(3px)" }}
+      onClick={e=>{ if(e.target===e.currentTarget) onClose(); }}>
+      <style>{MODAL_CSS}</style>
+      <div className="em-card" style={{ width:"100%", maxWidth:520, background:"#fff",
+        borderRadius:"24px 24px 0 0", overflow:"hidden", maxHeight:"90vh", display:"flex", flexDirection:"column",
+        paddingBottom:"max(20px,env(safe-area-inset-bottom,20px))" }}>
+        <div style={{ background: form.type==="income"
+            ? "linear-gradient(135deg,#054d2e,#16a34a)"
+            : "linear-gradient(135deg,#7c2d12,#c2410c)",
+          padding:"20px 20px 0", transition:"background .3s" }}>
+          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:14 }}>
+            <div style={{ color:"#fff", fontWeight:900, fontSize:17 }}>Edit Entry</div>
+            <button onClick={onClose} style={{ background:"rgba(255,255,255,.2)", border:"none",
+              borderRadius:"50%", width:30, height:30, color:"#fff", fontSize:14,
+              cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}>X</button>
+          </div>
+          <div style={{ display:"flex", background:"rgba(0,0,0,.2)", borderRadius:14, padding:3, gap:3, marginBottom:16 }}>
+            {[["income","Income"],["expense","Expense"]].map(([t,label])=>(
+              <button key={t} onClick={()=>setForm(f=>({...f,type:t,category:""}))}
+                style={{ flex:1, padding:"10px 8px", border:"none", borderRadius:11,
+                  fontWeight:800, fontSize:14, cursor:"pointer", transition:"all .2s",
+                  background: form.type===t ? "rgba(255,255,255,.22)" : "transparent",
+                  color: form.type===t ? "#fff" : "rgba(255,255,255,.5)" }}>
+                {t==="income"?"Income":"Expense"}
+              </button>
+            ))}
+          </div>
+          <div style={{ paddingBottom:20 }}>
+            <div style={{ fontSize:11, fontWeight:800, color:"rgba(255,255,255,.55)", textTransform:"uppercase", letterSpacing:1.5, marginBottom:8 }}>Amount</div>
+            <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+              <span style={{ fontSize:28, fontWeight:900, color:"rgba(255,255,255,.6)" }}>{currency.symbol}</span>
+              <input type="number" value={form.amount} onChange={e=>setForm(f=>({...f,amount:e.target.value}))}
+                inputMode="decimal" placeholder="0.00"
+                style={{ flex:1, background:"transparent", border:"none", outline:"none",
+                  fontSize:40, fontWeight:900, color:"#fff", fontFamily:"inherit" }}/>
+            </div>
+            <div style={{ height:1.5, background:"rgba(255,255,255,.2)", borderRadius:1, marginTop:8 }}/>
+          </div>
+        </div>
+        <div style={{ flex:1, overflowY:"auto", padding:"18px 20px 0" }}>
+          <div style={{ marginBottom:18 }}>
+            <div style={{ fontSize:11, fontWeight:800, color:"#9ca3af", textTransform:"uppercase", letterSpacing:1, marginBottom:8 }}>Date</div>
+            <input type="date" value={form.date} onChange={e=>setForm(f=>({...f,date:e.target.value}))}
+              style={{ width:"100%", padding:"13px 16px", border:"1.5px solid #e5e7eb",
+                borderRadius:13, fontSize:15, outline:"none", boxSizing:"border-box",
+                background:"#f9fafb", color:"#111", fontFamily:"inherit" }}/>
+          </div>
+          <div style={{ marginBottom:18 }}>
+            <div style={{ fontSize:11, fontWeight:800, color:"#9ca3af", textTransform:"uppercase", letterSpacing:1, marginBottom:10 }}>Category</div>
+            <div style={{ display:"flex", flexWrap:"wrap", gap:8 }}>
+              {cats.map(c=>{
+                const sel = form.category===c;
+                return (
+                  <button key={c} onClick={()=>setForm(f=>({...f,category:c}))}
+                    style={{ padding:"8px 16px", borderRadius:24,
+                      border:"1.5px solid " + (sel ? col : "#e5e7eb"),
+                      background: sel ? bgCol : "#f9fafb",
+                      fontWeight: sel ? 800 : 500,
+                      color: sel ? col : "#6b7280",
+                      fontSize:13, cursor:"pointer", transition:"all .12s" }}>
+                    {c}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+          <div style={{ marginBottom:4 }}>
+            <div style={{ fontSize:11, fontWeight:800, color:"#9ca3af", textTransform:"uppercase", letterSpacing:1, marginBottom:8 }}>Note (optional)</div>
+            <input type="text" placeholder="Customer name, description" value={form.note}
+              onChange={e=>setForm(f=>({...f,note:e.target.value}))}
+              style={{ width:"100%", padding:"13px 16px", border:"1.5px solid #e5e7eb",
+                borderRadius:13, fontSize:15, outline:"none", boxSizing:"border-box",
+                background:"#f9fafb", fontFamily:"inherit", color:"#111" }}/>
+          </div>
+        </div>
+        <div style={{ padding:"16px 20px 0" }}>
+          <button onClick={handleSave} disabled={saving || !form.amount || !form.category}
+            style={{ width:"100%", padding:"16px",
+              background: !form.amount || !form.category ? "#e5e7eb"
+                : form.type==="income" ? "linear-gradient(135deg,#054d2e,#16a34a)"
+                : "linear-gradient(135deg,#7c2d12,#c2410c)",
+              color: !form.amount || !form.category ? "#9ca3af" : "#fff",
+              border:"none", borderRadius:15, fontSize:16, fontWeight:900,
+              cursor: saving || !form.amount || !form.category ? "not-allowed" : "pointer" }}>
+            {saving ? "Saving..." : "Save Changes"}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
@@ -2138,7 +2276,7 @@ function AppCore({ user, onLogout }) {
   const [loading,  setLoading]   = useState(true); // show spinner while data loads
 
   const [view,      setView]      = useState("home");
-  const [form,      setForm]      = useState({type:"income",amount:"",category:"",note:""});
+  const [form,      setForm]      = useState({type:"income",amount:"",category:"",note:"",date:new Date().toISOString().split("T")[0]});
   const [txFilter,  setTxFilter]  = useState("all");
   const [toast,     setToast]     = useState(null);
   const [showKB,    setShowKB]    = useState(false);
@@ -2152,6 +2290,7 @@ function AppCore({ user, onLogout }) {
   const [plan,      setPlan]      = useState("free"); // "free" | "pro"
   const [planInfo,  setPlanInfo]  = useState(null);   // full plan doc data
   const [showUpgrade, setShowUpgrade] = useState(false); // upgrade modal
+  const [editingEntry, setEditingEntry] = useState(null); // entry being edited
   const [budgetView,setBudgetView]= useState("list"); // "list"|"create"|"detail"
   const [activeBudget,setActiveBudget] = useState(null); // budget being viewed/edited
 
@@ -2244,10 +2383,11 @@ function AppCore({ user, onLogout }) {
   const handleAdd = async () => {
     if (atLimit) return setShowUpgrade(true);
     if (!form.amount||!form.category) return showToast("⚠️ Fill all required fields","#c62828");
-    const entry = { ...form, amount: parseFloat(form.amount), date: new Date().toISOString() };
+    const selectedDate = form.date || new Date().toISOString().split("T")[0];
+    const entry = { ...form, amount: parseFloat(form.amount), date: new Date(selectedDate).toISOString() };
     try {
       await addEntry(uid, entry);
-      setForm({type:"income",amount:"",category:"",note:""});
+      setForm({type:"income",amount:"",category:"",note:"",date:new Date().toISOString().split("T")[0]});
       showToast(entry.type==="income"?"✅ Income recorded!":"📤 Expense recorded!","#25D366");
       setView("home");
     } catch(e) {
@@ -2263,6 +2403,16 @@ function AppCore({ user, onLogout }) {
     } catch(e) {
       Sentry.captureException(e, { tags: { operation: "delete_entry" } });
       showToast("❌ Failed to delete.","#c62828");
+    }
+  };
+
+  const handleEditSave = async (id, data) => {
+    try {
+      await updateEntry(uid, id, data);
+      showToast("✅ Entry updated!","#25D366");
+    } catch(e) {
+      Sentry.captureException(e, { tags: { operation: "edit_entry" } });
+      showToast("❌ Failed to update.","#c62828");
     }
   };
 
@@ -2569,7 +2719,7 @@ function AppCore({ user, onLogout }) {
                     <div style={{ fontWeight:900, fontSize:isDesktop?16:15, color:isDesktop?"#1a1a1a":p }}>Recent Transactions</div>
                     <button onClick={()=>setView("history")} style={{ background:"none", border:`1.5px solid ${p}`, color:p, fontSize:12, cursor:"pointer", fontWeight:700, borderRadius:20, padding:"5px 14px" }}>View All →</button>
                   </div>
-                  {entries.slice(0,isDesktop?8:6).map(e=><TxRow key={e.id} entry={e} currency={currency} onDelete={handleDel} p={p}/>)}
+                  {entries.slice(0,isDesktop?8:6).map(e=><TxRow key={e.id} entry={e} currency={currency} onDelete={handleDel} onEdit={setEditingEntry} isPro={isPro} p={p}/>)}
                   {entries.length===0&&(
                     <div style={{ textAlign:"center", padding:"40px 0", color:"#ccc", fontSize:14, lineHeight:2 }}>
                       <div style={{ fontSize:40, marginBottom:8 }}>📭</div>
@@ -2598,78 +2748,160 @@ function AppCore({ user, onLogout }) {
         {/* ══ ADD ENTRY ══ */}
         {view==="add"&&(
           <div style={{ flex:1, overflowY:"auto",
-            paddingLeft: isDesktop?0:S.px, paddingRight: isDesktop?0:S.px,
-            paddingTop: isDesktop?28:24,
-            paddingBottom: isDesktop?48:`calc(${S.navH}px + env(safe-area-inset-bottom,0px) + 24px)`,
-            padding: isDesktop ? "28px 36px 48px" : undefined }}>
-            <div style={{ maxWidth: isDesktop?560:undefined, margin: isDesktop?"0 auto":undefined }}>
+            paddingBottom: isDesktop?48:`calc(${S.navH}px + env(safe-area-inset-bottom,0px) + 24px)` }}>
+            <div style={{ maxWidth: isDesktop?560:undefined, margin: isDesktop?"0 auto":undefined,
+              padding: isDesktop?"28px 36px 0":"0" }}>
+
+              {/* ── Type toggle header ── */}
+              <div style={{
+                background: form.type==="income"
+                  ? "linear-gradient(135deg,#054d2e,#16a34a)"
+                  : "linear-gradient(135deg,#7c2d12,#c2410c)",
+                padding: isDesktop?"28px 32px 0":"16px 16px 0",
+                transition:"background .3s" }}>
+
+                {/* Page title */}
+                <div style={{ color:"rgba(255,255,255,.7)", fontSize:12, fontWeight:800,
+                  textTransform:"uppercase", letterSpacing:1.5, marginBottom:16 }}>
+                  {form.type==="income" ? "+ Record Income" : "− Record Expense"}
+                </div>
+
+                {/* Toggle */}
+                <div style={{ display:"flex", background:"rgba(0,0,0,.2)", borderRadius:16, padding:4, gap:3, marginBottom:20 }}>
+                  {[["income","💰","Income"],["expense","📤","Expense"]].map(([t,em,label])=>(
+                    <button key={t} onClick={()=>setForm(f=>({...f,type:t,category:""}))}
+                      style={{ flex:1, padding:"12px 8px", border:"none", borderRadius:12,
+                        fontWeight:800, fontSize:15, cursor:"pointer", transition:"all .2s",
+                        background: form.type===t ? "rgba(255,255,255,.22)" : "transparent",
+                        color: form.type===t ? "#fff" : "rgba(255,255,255,.5)",
+                        backdropFilter: form.type===t ? "blur(8px)" : "none" }}>
+                      {em} {label}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Amount hero */}
+                <div style={{ paddingBottom:28 }}>
+                  <div style={{ fontSize:11, fontWeight:800, color:"rgba(255,255,255,.55)",
+                    textTransform:"uppercase", letterSpacing:1.5, marginBottom:10 }}>
+                    Amount ({currency.code})
+                  </div>
+                  <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+                    <span style={{ fontSize:36, fontWeight:900, color:"rgba(255,255,255,.6)", lineHeight:1 }}>
+                      {currency.symbol}
+                    </span>
+                    <input type="number" placeholder="0.00" value={form.amount}
+                      onChange={e=>setForm(f=>({...f,amount:e.target.value}))}
+                      inputMode="decimal"
+                      style={{ flex:1, background:"transparent", border:"none", outline:"none",
+                        fontSize:52, fontWeight:900, color:"#fff", width:"100%",
+                        caretColor:"rgba(255,255,255,.8)", fontFamily:"inherit",
+                        letterSpacing:-1 }}/>
+                  </div>
+                  <div style={{ height:1.5, background:"rgba(255,255,255,.2)", borderRadius:1, marginTop:10 }}/>
+                </div>
+              </div>
 
               {/* ── Free tier limit bar ── */}
               {!isPro && (
-                <div style={{ marginBottom:16,
-                  background: atLimit ? "#fff3f0" : "#f8fffe",
-                  border:`1.5px solid ${atLimit?"#ffcdd2":p+"33"}`,
-                  borderRadius:14, padding:"12px 16px" }}>
+                <div style={{ margin:"14px 16px 0",
+                  background: atLimit ? "#fff3f0" : "#f0fdf4",
+                  border:`1.5px solid ${atLimit?"#ffcdd2":"#bbf7d0"}`,
+                  borderRadius:14, padding:"11px 14px" }}>
                   <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:6 }}>
-                    <span style={{ fontWeight:800, fontSize:13, color: atLimit ? "#c62828" : p }}>
-                      {atLimit ? "🚫 Limit reached for this month" : `📊 ${remaining} entries remaining`}
+                    <span style={{ fontWeight:800, fontSize:13, color: atLimit ? "#c62828" : "#16a34a" }}>
+                      {atLimit ? "🚫 Limit reached" : `${remaining} entries left this month`}
                     </span>
                     <button onClick={()=>setShowUpgrade(true)}
-                      style={{ background: atLimit?"#c62828":p, color:"#fff", border:"none",
+                      style={{ background: atLimit?"#c62828":"#16a34a", color:"#fff", border:"none",
                         borderRadius:8, padding:"4px 10px", fontSize:11, fontWeight:800, cursor:"pointer" }}>
-                      {atLimit ? "Upgrade" : "Go Pro"}
+                      {atLimit ? "Upgrade" : "Go Pro ✨"}
                     </button>
                   </div>
-                  {/* Progress bar */}
-                  <div style={{ height:6, background:"#eee", borderRadius:3, overflow:"hidden" }}>
+                  <div style={{ height:5, background:"#e5e7eb", borderRadius:3, overflow:"hidden" }}>
                     <div style={{ height:"100%", width:`${Math.min(100,(monthCount/FREE_LIMITS.ENTRIES_PER_MONTH)*100)}%`,
-                      background: atLimit ? "#c62828" : monthCount/FREE_LIMITS.ENTRIES_PER_MONTH > 0.75 ? "#FF9800" : "#25D366",
+                      background: atLimit ? "#ef4444" : monthCount/FREE_LIMITS.ENTRIES_PER_MONTH > 0.75 ? "#f97316" : "#22c55e",
                       borderRadius:3, transition:"width .4s" }}/>
                   </div>
-                  <div style={{ fontSize:11, color:"#aaa", marginTop:4 }}>
-                    {monthCount}/{FREE_LIMITS.ENTRIES_PER_MONTH} entries used in {new Date().toLocaleString("default",{month:"long"})}
+                  <div style={{ fontSize:11, color:"#9ca3af", marginTop:4 }}>
+                    {monthCount}/{FREE_LIMITS.ENTRIES_PER_MONTH} used in {new Date().toLocaleString("default",{month:"long"})}
                   </div>
                 </div>
               )}
-              {isDesktop&&<div style={{ fontWeight:900, fontSize:22, color:"#1a1a1a", marginBottom:24, letterSpacing:-.5 }}>
-                {form.type==="income"?"➕ Record Income":"➖ Record Expense"}
-              </div>}
-              <div className="lb-section" style={{ padding: isDesktop?"28px 32px":undefined }}>
-                {!isDesktop&&<div style={{ fontWeight:900, fontSize:17, color:p, marginBottom:18 }}>
-                  {form.type==="income"?"➕ Record Income":"➖ Record Expense"}
-                </div>}
-                <div style={{ display:"flex", background:"#f2f2f2", borderRadius:14, padding:4, marginBottom:22 }}>
-                  {["income","expense"].map(t=>(
-                    <button key={t} onClick={()=>setForm(f=>({...f,type:t,category:""}))}
-                      style={{ flex:1, padding:"12px", border:"none", borderRadius:11, fontWeight:800, fontSize:14, cursor:"pointer",
-                        background:form.type===t?(t==="income"?"#25D366":"#FF9800"):"transparent", color:form.type===t?"#fff":"#888" }}>
-                      {t==="income"?"💰 Income":"📤 Expense"}
-                    </button>
-                  ))}
+
+              {/* ── Fields ── */}
+              <div style={{ padding: isDesktop?"20px 0":"16px", background:"#fff",
+                margin: isDesktop?"20px 0":"0" }}>
+
+                {/* Date */}
+                <div style={{ marginBottom:20 }}>
+                  <div style={{ fontSize:11, fontWeight:800, color:"#9ca3af", textTransform:"uppercase",
+                    letterSpacing:1, marginBottom:8 }}>📅 Date</div>
+                  <input type="date" value={form.date || new Date().toISOString().split("T")[0]}
+                    onChange={e=>setForm(f=>({...f,date:e.target.value}))}
+                    style={{ width:"100%", padding:"14px 16px", border:"1.5px solid #e5e7eb",
+                      borderRadius:14, fontSize:15, outline:"none", boxSizing:"border-box",
+                      background:"#f9fafb", color:"#111", fontFamily:"inherit",
+                      transition:"border-color .15s" }}/>
                 </div>
-                <FLabel>Amount ({currency.symbol})</FLabel>
-                <input type="number" placeholder="0" value={form.amount} onChange={e=>setForm(f=>({...f,amount:e.target.value}))}
-                  style={{ width:"100%", padding:"16px 18px", border:`2.5px solid ${form.amount?p:"#e5e5e5"}`, borderRadius:14, fontSize:isDesktop?32:28,
-                    fontWeight:900, color:form.type==="income"?"#1B5E20":"#E65100", outline:"none", marginBottom:22, boxSizing:"border-box", background:"#fafafa" }}/>
-                <FLabel>Category</FLabel>
-                <div style={{ display:"flex", flexWrap:"wrap", gap:9, marginBottom:22 }}>
-                  {cats.map(c=>(
-                    <button key={c} onClick={()=>setForm(f=>({...f,category:c}))}
-                      style={{ padding:"9px 16px", borderRadius:22, border:`2px solid ${form.category===c?p:"#e0e0e0"}`,
-                        background:form.category===c?`${p}15`:"#fff", fontWeight:form.category===c?800:400,
-                        color:form.category===c?p:"#666", fontSize:13, cursor:"pointer" }}>
-                      {c}
-                    </button>
-                  ))}
+
+                {/* Category */}
+                <div style={{ marginBottom:20 }}>
+                  <div style={{ fontSize:11, fontWeight:800, color:"#9ca3af", textTransform:"uppercase",
+                    letterSpacing:1, marginBottom:10 }}>🏷️ Category</div>
+                  <div style={{ display:"flex", flexWrap:"wrap", gap:8 }}>
+                    {cats.map(c=>{
+                      const sel = form.category===c;
+                      const col = form.type==="income" ? "#16a34a" : "#c2410c";
+                      const bgSel = form.type==="income" ? "#f0fdf4" : "#fff7ed";
+                      return (
+                        <button key={c} onClick={()=>setForm(f=>({...f,category:c}))}
+                          style={{ padding:"9px 18px", borderRadius:24,
+                            border:`1.5px solid ${sel ? col : "#e5e7eb"}`,
+                            background: sel ? bgSel : "#f9fafb",
+                            fontWeight: sel ? 800 : 500,
+                            color: sel ? col : "#6b7280",
+                            fontSize:13, cursor:"pointer", transition:"all .12s",
+                            boxShadow: sel ? `0 1px 4px ${col}33` : "none" }}>
+                          {c}
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
-                <FLabel>Note (optional)</FLabel>
-                <input type="text" placeholder="Customer name, description…" value={form.note} onChange={e=>setForm(f=>({...f,note:e.target.value}))}
-                  style={{ width:"100%", padding:"14px 16px", border:"2px solid #e5e5e5", borderRadius:14, fontSize:15, outline:"none", marginBottom:24, boxSizing:"border-box", background:"#fafafa" }}/>
-                <button onClick={handleAdd}
-                  style={{ width:"100%", padding:"17px", background:form.type==="income"?"#25D366":"#FF9800", color:"#fff",
-                    border:"none", borderRadius:16, fontSize:17, fontWeight:900, cursor:"pointer",
-                    boxShadow:`0 4px 20px ${form.type==="income"?"#25D36640":"#FF980040"}` }}>
-                  Save Entry
+
+                {/* Note */}
+                <div>
+                  <div style={{ fontSize:11, fontWeight:800, color:"#9ca3af", textTransform:"uppercase",
+                    letterSpacing:1, marginBottom:8 }}>📝 Note (optional)</div>
+                  <input type="text" placeholder="Customer name, description…"
+                    value={form.note} onChange={e=>setForm(f=>({...f,note:e.target.value}))}
+                    style={{ width:"100%", padding:"14px 16px", border:"1.5px solid #e5e7eb",
+                      borderRadius:14, fontSize:15, outline:"none",
+                      boxSizing:"border-box", background:"#f9fafb", fontFamily:"inherit",
+                      color:"#111" }}/>
+                </div>
+              </div>
+
+              {/* ── Save button ── */}
+              <div style={{ padding: isDesktop?"20px 0":"0 16px 16px", background:"#fff",
+                borderTop: isDesktop?"none":"1px solid #f3f4f6",
+                position: isDesktop?"static":"sticky", bottom:0,
+                paddingBottom:"max(16px,env(safe-area-inset-bottom,16px))" }}>
+                <button onClick={handleAdd} disabled={!form.amount || !form.category}
+                  style={{ width:"100%", padding:"17px",
+                    background: !form.amount || !form.category
+                      ? "#e5e7eb"
+                      : form.type==="income"
+                        ? "linear-gradient(135deg,#054d2e,#16a34a)"
+                        : "linear-gradient(135deg,#7c2d12,#c2410c)",
+                    color: !form.amount || !form.category ? "#9ca3af" : "#fff",
+                    border:"none", borderRadius:16,
+                    fontSize:17, fontWeight:900, cursor: !form.amount || !form.category ? "not-allowed" : "pointer",
+                    boxShadow: !form.amount || !form.category ? "none"
+                      : form.type==="income" ? "0 6px 20px #16a34a44" : "0 6px 20px #c2410c44",
+                    transition:"all .2s", letterSpacing:-.3 }}>
+                  {form.type==="income" ? "💰 Save Income" : "📤 Save Expense"}
                 </button>
               </div>
             </div>
@@ -2729,7 +2961,7 @@ function AppCore({ user, onLogout }) {
                     <div style={{ fontSize:11, color:"#bbb", fontWeight:700, textTransform:"uppercase", letterSpacing:.5, margin:"10px 0 7px" }}>
                       {fmtDate(day+"T12:00:00")}
                     </div>
-                    {grouped[day].map(e=><TxRow key={e.id} entry={e} currency={currency} onDelete={handleDel} p={p}/>)}
+                    {grouped[day].map(e=><TxRow key={e.id} entry={e} currency={currency} onDelete={handleDel} onEdit={setEditingEntry} isPro={isPro} p={p}/>)}
                   </div>
                 ))}
                 {histFilt.length===0&&(
@@ -2977,6 +3209,7 @@ function AppCore({ user, onLogout }) {
           planInfo={planInfo}/>}
         {showDP&&<DateRangePicker preset={datePreset} dateRange={dateRange} onChange={handleDateChange} onClose={()=>setShowDP(false)} primaryColor={p}/>}
         {showUpgrade&&<UpgradeModal onClose={()=>setShowUpgrade(false)} reason={atLimit?"limit":"default"} monthCount={monthCount} p={p} user={user} currency={currency}/>}
+        {editingEntry&&<EditEntryModal entry={editingEntry} onClose={()=>setEditingEntry(null)} onSave={handleEditSave} incCats={incCats} expCats={expCats} currency={currency}/>}
 
         {/* WhatsApp Modal */}
         {showWA&&(
