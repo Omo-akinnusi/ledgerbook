@@ -2378,14 +2378,233 @@ function CatChart({ entries, currency, type, color }) {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// ROOT
+// ONBOARDING SCREEN — shown once after signup (email or Google)
 // ═══════════════════════════════════════════════════════════════
+const INDUSTRIES = [
+  "Retail & Trading",
+  "Food & Beverages",
+  "Fashion & Clothing",
+  "Beauty & Cosmetics",
+  "Technology & IT",
+  "Agriculture & Farming",
+  "Construction & Real Estate",
+  "Transport & Logistics",
+  "Healthcare & Pharmacy",
+  "Education & Training",
+  "Media & Creative Arts",
+  "Financial Services",
+  "Hospitality & Events",
+  "Manufacturing",
+  "Professional Services",
+  "E-commerce",
+  "Other",
+];
+
+function OnboardingScreen({ user, onComplete }) {
+  const [step,         setStep]        = useState(1); // 1 = business, 2 = industry, 3 = phone
+  const [businessName, setBusinessName]= useState(user.businessName !== "My Business" ? user.businessName : "");
+  const [industry,     setIndustry]    = useState("");
+  const [phone,        setPhone]       = useState("");
+  const [saving,       setSaving]      = useState(false);
+  const [err,          setErr]         = useState("");
+
+  const OB_CSS = `
+    @keyframes ob-in{from{opacity:0;transform:translateY(28px)}to{opacity:1;transform:translateY(0)}}
+    @keyframes ob-step{from{opacity:0;transform:translateX(24px)}to{opacity:1;transform:translateX(0)}}
+    .ob-wrap{animation:ob-in .4s cubic-bezier(.22,.68,0,1.1) both}
+    .ob-step{animation:ob-step .3s cubic-bezier(.22,.68,0,1.1) both}
+  `;
+
+  const TOTAL_STEPS = 3;
+  const progress = (step / TOTAL_STEPS) * 100;
+
+  const nextStep = () => {
+    setErr("");
+    if (step === 1) {
+      if (!businessName.trim()) return setErr("Please enter your business name");
+      setStep(2);
+    } else if (step === 2) {
+      if (!industry) return setErr("Please select your industry");
+      setStep(3);
+    }
+  };
+
+  const handleFinish = async () => {
+    setErr("");
+    if (!phone.trim()) return setErr("Please enter your phone number");
+    if (!/^[+\d\s\-()]{7,15}$/.test(phone.replace(/\s/g,"")))
+      return setErr("Enter a valid phone number");
+    setSaving(true);
+    try {
+      await setDoc(userDoc(user.id), {
+        businessName: businessName.trim(),
+        industry,
+        phone: phone.trim(),
+        onboarded:  true,
+        onboardedAt: new Date().toISOString(),
+      }, { merge: true });
+      onComplete({ businessName: businessName.trim(), industry, phone: phone.trim() });
+    } catch(e) {
+      setErr("Failed to save. Please try again.");
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div style={{ minHeight:"100vh", background:"linear-gradient(175deg,#032e28 0%,#054d44 28%,#075E54 58%,#0a7a6c 82%,#128C7E 100%)",
+      display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center",
+      padding:"24px 20px" }}>
+      <style>{OB_CSS}</style>
+
+      <div className="ob-wrap" style={{ width:"100%", maxWidth:440 }}>
+
+        {/* Logo + welcome */}
+        <div style={{ textAlign:"center", marginBottom:28 }}>
+          <div style={{ fontSize:48, marginBottom:10 }}>🏪</div>
+          <div style={{ color:"#fff", fontWeight:900, fontSize:24, letterSpacing:"-.5px" }}>
+            Welcome, {user.name.split(" ")[0]}!
+          </div>
+          <div style={{ color:"rgba(255,255,255,.6)", fontSize:14, marginTop:6 }}>
+            Let's set up your business profile
+          </div>
+        </div>
+
+        {/* Progress bar */}
+        <div style={{ background:"rgba(255,255,255,.15)", borderRadius:4, height:4, marginBottom:28 }}>
+          <div style={{ height:"100%", borderRadius:4, background:"#25D366",
+            width:`${progress}%`, transition:"width .4s ease" }}/>
+        </div>
+
+        {/* Step indicator */}
+        <div style={{ display:"flex", justifyContent:"center", gap:8, marginBottom:24 }}>
+          {[1,2,3].map(s=>(
+            <div key={s} style={{ width:s===step?24:8, height:8, borderRadius:4,
+              background: s<=step ? "#25D366" : "rgba(255,255,255,.2)",
+              transition:"all .3s" }}/>
+          ))}
+        </div>
+
+        {/* Card */}
+        <div style={{ background:"#fff", borderRadius:24, padding:"28px 24px",
+          boxShadow:"0 24px 64px rgba(0,0,0,.3)" }}>
+
+          {/* ── Step 1: Business Name ── */}
+          {step === 1 && (
+            <div key="s1" className="ob-step">
+              <div style={{ fontWeight:900, fontSize:18, color:"#0a1612", marginBottom:6 }}>
+                What's your business name?
+              </div>
+              <div style={{ fontSize:13, color:"#9ca3af", marginBottom:20 }}>
+                This will appear on your reports and exports.
+              </div>
+              <input
+                type="text"
+                placeholder="e.g. Ade Electronics, Grace Boutique"
+                value={businessName}
+                onChange={e=>setBusinessName(e.target.value)}
+                autoFocus
+                style={{ width:"100%", padding:"14px 16px", border:"1.5px solid #e5e7eb",
+                  borderRadius:14, fontSize:15, outline:"none", boxSizing:"border-box",
+                  fontFamily:"inherit", color:"#111", marginBottom:err?8:0 }}/>
+            </div>
+          )}
+
+          {/* ── Step 2: Industry ── */}
+          {step === 2 && (
+            <div key="s2" className="ob-step">
+              <div style={{ fontWeight:900, fontSize:18, color:"#0a1612", marginBottom:6 }}>
+                What industry are you in?
+              </div>
+              <div style={{ fontSize:13, color:"#9ca3af", marginBottom:16 }}>
+                Helps us personalise your experience.
+              </div>
+              <div style={{ display:"flex", flexWrap:"wrap", gap:8, maxHeight:280, overflowY:"auto" }}>
+                {INDUSTRIES.map(ind=>(
+                  <button key={ind} onClick={()=>setIndustry(ind)}
+                    style={{ padding:"9px 16px", borderRadius:24, fontSize:13, cursor:"pointer",
+                      border:`1.5px solid ${industry===ind?"#075E54":"#e5e7eb"}`,
+                      background: industry===ind ? "#f0faf7" : "#f9fafb",
+                      color: industry===ind ? "#075E54" : "#6b7280",
+                      fontWeight: industry===ind ? 800 : 500,
+                      transition:"all .12s" }}>
+                    {ind}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* ── Step 3: Phone Number ── */}
+          {step === 3 && (
+            <div key="s3" className="ob-step">
+              <div style={{ fontWeight:900, fontSize:18, color:"#0a1612", marginBottom:6 }}>
+                What's your phone number?
+              </div>
+              <div style={{ fontSize:13, color:"#9ca3af", marginBottom:20 }}>
+                Used for account recovery and important notifications only.
+              </div>
+              <input
+                type="tel"
+                placeholder="e.g. +234 801 234 5678"
+                value={phone}
+                onChange={e=>setPhone(e.target.value)}
+                autoFocus
+                style={{ width:"100%", padding:"14px 16px", border:"1.5px solid #e5e7eb",
+                  borderRadius:14, fontSize:15, outline:"none", boxSizing:"border-box",
+                  fontFamily:"inherit", color:"#111", marginBottom:err?8:0 }}/>
+            </div>
+          )}
+
+          {/* Error */}
+          {err && (
+            <div style={{ background:"#fff3f0", border:"1px solid #ffcdd2", borderRadius:10,
+              padding:"9px 14px", color:"#c62828", fontSize:12, marginTop:8, marginBottom:4 }}>
+              ⚠️ {err}
+            </div>
+          )}
+
+          {/* Actions */}
+          <div style={{ marginTop:20, display:"flex", gap:10 }}>
+            {step > 1 && (
+              <button onClick={()=>{ setErr(""); setStep(s=>s-1); }}
+                style={{ padding:"14px 20px", background:"#f5f5f5", border:"none",
+                  borderRadius:14, fontSize:14, fontWeight:700, color:"#555", cursor:"pointer" }}>
+                ← Back
+              </button>
+            )}
+            <button
+              onClick={step < TOTAL_STEPS ? nextStep : handleFinish}
+              disabled={saving}
+              style={{ flex:1, padding:"14px", border:"none", borderRadius:14,
+                fontSize:15, fontWeight:900, cursor:saving?"not-allowed":"pointer",
+                background: saving ? "#e5e7eb" : "linear-gradient(135deg,#054d44,#128C7E)",
+                color: saving ? "#9ca3af" : "#fff",
+                boxShadow: saving ? "none" : "0 4px 16px rgba(7,94,84,.3)",
+                transition:"all .2s" }}>
+              {saving ? "Saving…" : step < TOTAL_STEPS ? "Continue →" : "Finish Setup 🎉"}
+            </button>
+          </div>
+        </div>
+
+        {/* Skip */}
+        <button onClick={()=>onComplete({})}
+          style={{ display:"block", margin:"16px auto 0", background:"none", border:"none",
+            color:"rgba(255,255,255,.45)", fontSize:12, cursor:"pointer", fontWeight:600 }}>
+          Skip for now
+        </button>
+
+      </div>
+    </div>
+  );
+}
+
+
 export default function LedgerBookPro() {
-  const [user,setUser]           = useState(null);
-  const [authChecked,setChecked] = useState(false);
+  const [user,setUser]             = useState(null);
+  const [authChecked,setChecked]   = useState(false);
+  const [needsOnboarding,setNeeds] = useState(false);
 
   useEffect(()=>{
-    // Firebase listens for login/logout automatically
     const unsub = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
         const u = {
@@ -2396,8 +2615,20 @@ export default function LedgerBookPro() {
           photoURL:     firebaseUser.photoURL || null,
           createdAt:    firebaseUser.metadata.creationTime || new Date().toISOString(),
         };
-        // Write profile to Firestore so the admin panel can see all users
         try {
+          // Check Firestore for existing profile + onboarding status
+          const profileSnap = await getDoc(userDoc(firebaseUser.uid));
+          const profileData  = profileSnap.exists() ? profileSnap.data() : {};
+
+          // Use Firestore businessName if already saved
+          if (profileData.businessName && profileData.businessName !== "My Business") {
+            u.businessName = profileData.businessName;
+          }
+
+          // Show onboarding if user hasn't completed it yet
+          setNeeds(!profileData.onboarded);
+
+          // Save/update profile to Firestore
           await saveProfile(firebaseUser.uid, {
             name:         u.name,
             email:        u.email,
@@ -2407,34 +2638,41 @@ export default function LedgerBookPro() {
             createdAt:    u.createdAt,
           });
         } catch(e) {
-          // Log so we can see if rules are blocking this
           console.warn("saveProfile failed:", e.code, e.message);
           Sentry.captureException(e, { tags: { operation: "save_profile" } });
+          setNeeds(false);
         }
-        // Tell Sentry who is logged in — makes error reports much easier to investigate
         Sentry.setUser({ id: firebaseUser.uid, email: firebaseUser.email, username: u.name });
         setUser(u);
       } else {
-        Sentry.setUser(null); // clear user on logout
+        Sentry.setUser(null);
         setUser(null);
+        setNeeds(false);
       }
       setChecked(true);
     });
     return () => unsub();
   },[]);
 
+  const handleOnboardingComplete = ({ businessName }) => {
+    if (businessName && user) {
+      setUser(u => ({ ...u, businessName }));
+      DB.set(`lb_bname_${user.id}`, businessName);
+    }
+    setNeeds(false);
+  };
+
   const handleLogout = async () => {
     await signOut(auth);
     setUser(null);
+    setNeeds(false);
   };
 
-  if (!authChecked) return (
-    <>
-      <GlobalStyles/>
-      <SplashScreen/>
-    </>
+  if (!authChecked) return (<><GlobalStyles/><SplashScreen/></>);
+  if (!user)        return (<><GlobalStyles/><AuthScreen/></>);
+  if (needsOnboarding) return (
+    <><GlobalStyles/><OnboardingScreen user={user} onComplete={handleOnboardingComplete}/></>
   );
-  if (!user) return (<><GlobalStyles/><AuthScreen/></>);
   return (<><GlobalStyles/><AppCore user={user} onLogout={handleLogout}/></>);
 }
 
