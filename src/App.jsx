@@ -2830,7 +2830,7 @@ function AppCore({ user, onLogout }) {
               )}
 
               {/* ── Fields ── */}
-              <div style={{ padding: isDesktop?"20px 0":"16px", background:"#fff",
+              <div style={{ padding: isDesktop?"20px 0":"16px 16px 0", background:"#fff",
                 margin: isDesktop?"20px 0":"0" }}>
 
                 {/* Date */}
@@ -2884,7 +2884,7 @@ function AppCore({ user, onLogout }) {
               </div>
 
               {/* ── Save button ── */}
-              <div style={{ padding: isDesktop?"20px 0":"0 16px 16px", background:"#fff",
+              <div style={{ padding: isDesktop?"20px 0":"16px", background:"#fff",
                 borderTop: isDesktop?"none":"1px solid #f3f4f6",
                 position: isDesktop?"static":"sticky", bottom:0,
                 paddingBottom:"max(16px,env(safe-area-inset-bottom,16px))" }}>
@@ -3530,21 +3530,21 @@ function BudgetCreate({ budget, expCats, incCats, currency, p, isDesktop, onSave
 
         {/* ── OVERVIEW TAB ── */}
         {tab==="overview" && (
-          <div className="lb-section" style={{ padding:isDesktop?"26px 28px":"18px 20px" }}>
+          <div className="lb-section" style={{ padding:isDesktop?"26px 28px":"16px" }}>
             <label style={labelStyle}>Budget Name</label>
             <input value={name} onChange={e=>setName(e.target.value)} placeholder="e.g. Q2 2026 Budget"
               style={inputStyle}/>
 
-            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:14 }}>
+            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12, marginBottom:4 }}>
               <div>
                 <label style={labelStyle}>Start Date</label>
                 <input type="date" value={startDate} onChange={e=>setStartDate(e.target.value)}
-                  style={{...inputStyle, marginBottom:0}}/>
+                  style={{...inputStyle, marginBottom:0, fontSize:14, padding:"12px 10px"}}/>
               </div>
               <div>
                 <label style={labelStyle}>End Date</label>
                 <input type="date" value={endDate} min={startDate||undefined} onChange={e=>setEndDate(e.target.value)}
-                  style={{...inputStyle, marginBottom:0}}/>
+                  style={{...inputStyle, marginBottom:0, fontSize:14, padding:"12px 10px"}}/>
               </div>
             </div>
             {startDate&&endDate&&endDate>=startDate&&(
