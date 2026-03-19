@@ -1081,14 +1081,10 @@ const HOUSE_ADS = [
     url:     "https://paystack.com",
   },
   {
-    active:  false,
-    logo:    "💰",
-    brand:   "Cowrywise",
-    title:   "Grow your business savings",
-    body:    "Earn up to 18% p.a. on your business cash reserves.",
-    cta:     "Start saving",
-    color:   "#6B21A8",
-    url:     "https://cowrywise.com",
+    active:  true,
+    brand:   "Husnun by Aisha",
+    image:   "/ads/Image-1.png",
+    url:     "https://www.instagram.com/v.bookenterprise?igsh=c3M4NWk5dzVqOXhl&utm_source=qr",
   },
  {
     active:  true,
