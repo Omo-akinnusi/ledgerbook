@@ -24,6 +24,7 @@ import {
   onSnapshot,
   query,
   orderBy,
+  limit,
   serverTimestamp,
 } from "firebase/firestore";
 
@@ -58,5 +59,5 @@ export {
   // Firestore
   doc, getDoc, setDoc, updateDoc,
   collection, addDoc, deleteDoc,
-  onSnapshot, query, orderBy, serverTimestamp,
+  onSnapshot, query, orderBy, limit, serverTimestamp,
 };

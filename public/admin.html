@@ -537,7 +537,7 @@
 import { initializeApp }                   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut }
                                             from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-import { getFirestore, doc, getDoc, setDoc, collection, getDocs, query, orderBy, limit }
+import { getFirestore, doc, getDoc, setDoc, collection, getDocs, query, orderBy, limit, startAfter }
                                             from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 // ── Firebase config ──────────────────────────────────────────
@@ -595,58 +595,73 @@ onAuthStateChanged(auth, async (user) => {
   }
 });
 
-// ── Load all users ────────────────────────────────────────────
-window.loadUsers = async () => {
-  const btn = document.getElementById("refresh-btn");
-  btn.innerHTML = '<span class="spinner"></span> Loading…';
-  btn.disabled = true;
+// ── Pagination config ─────────────────────────────────────────
+const PAGE_SIZE = 50;
+let lastUserDoc = null;      // Firestore cursor for next page
+let hasMoreUsers = false;    // whether more pages exist
+let totalLoaded  = 0;
 
+// ── Load users (paginated) ────────────────────────────────────
+window.loadUsers = async (reset = true) => {
+  const btn  = document.getElementById("refresh-btn");
   const list = document.getElementById("user-list");
 
-  try {
-    list.innerHTML = `<div class="empty"><span class="spinner"></span> &nbsp; Fetching users from Firestore…</div>`;
-    const usersSnap = await getDocs(collection(db, "users"));
+  if (reset) {
+    btn.innerHTML = '<span class="spinner"></span> Loading…';
+    btn.disabled  = true;
+    allUsers      = [];
+    lastUserDoc   = null;
+    hasMoreUsers  = false;
+    totalLoaded   = 0;
+    list.innerHTML = `<div class="empty"><span class="spinner"></span> &nbsp; Fetching users…</div>`;
+  }
 
-    if (usersSnap.empty) {
-      list.innerHTML = `<div class="empty"><div class="empty-icon">📭</div>No user documents found in Firestore.<br><br>
-        <span style="font-size:12px;color:var(--muted)">Users appear here after they sign in to the app at least once.</span></div>`;
+  try {
+    // Build paginated query — ordered by createdAt descending, 50 at a time
+    let q = query(collection(db, "users"), orderBy("createdAt", "desc"), limit(PAGE_SIZE));
+    if (lastUserDoc) q = query(collection(db, "users"), orderBy("createdAt", "desc"), limit(PAGE_SIZE), startAfter(lastUserDoc));
+
+    const usersSnap = await getDocs(q);
+
+    if (usersSnap.empty && reset) {
+      list.innerHTML = `<div class="empty"><div class="empty-icon">📭</div>No users found.<br><br>
+        <span style="font-size:12px;color:var(--muted)">Users appear here after they sign in to the app.</span></div>`;
       updateStats([]);
       return;
     }
 
-    allUsers = [];
+    hasMoreUsers  = usersSnap.docs.length === PAGE_SIZE;
+    lastUserDoc   = usersSnap.docs[usersSnap.docs.length - 1] || null;
+    totalLoaded  += usersSnap.docs.length;
 
-    // Fetch all users in parallel for speed
-    await Promise.all(usersSnap.docs.map(async (userDoc) => {
-      const uid      = userDoc.id;
-      const profile  = userDoc.data(); // name, email, businessName, createdAt written by app on login
+    // Fetch plan for each user in this page in parallel
+    const pageUsers = await Promise.all(usersSnap.docs.map(async (userDoc) => {
+      const uid     = userDoc.id;
+      const profile = userDoc.data();
 
-      const name         = profile.name         || profile.businessName || "Unknown User";
+      const name         = profile.name         || profile.businessName || "Unknown";
       const email        = profile.email        || "";
       const businessName = profile.businessName || "";
       const joined       = profile.createdAt    || null;
-      const lastSeen     = profile.lastSeen      || null;
+      const lastSeen     = profile.lastSeen     || null;
+      const industry     = profile.industry     || "";
+      const phone        = profile.phone        || "";
+      const onboarded    = profile.onboarded    || false;
 
-      // Get plan + full subscription details
       let plan = "free", planInfo = {};
       try {
         const planSnap = await getDoc(doc(db, "users", uid, "settings", "plan"));
-        if (planSnap.exists()) {
-          planInfo = planSnap.data();
-          plan = planInfo.plan || "free";
-        }
-      } catch(planErr) {
-        console.warn("Could not read plan for", uid, planErr.message);
-      }
+        if (planSnap.exists()) { planInfo = planSnap.data(); plan = planInfo.plan || "free"; }
+      } catch(e) { console.warn("Plan read failed:", uid, e.message); }
 
-      const industry = profile.industry || "";
-      const phone    = profile.phone    || "";
-      const onboarded = profile.onboarded || false;
-
-      allUsers.push({ uid, name, email, businessName, industry, phone, onboarded, plan, planInfo, joined, lastSeen });
+      return { uid, name, email, businessName, industry, phone, onboarded, plan, planInfo, joined, lastSeen };
     }));
 
-    // Sort by most recently seen
+    // Append to allUsers (for Load More) or replace (for refresh)
+    if (reset) allUsers = pageUsers;
+    else       allUsers = [...allUsers, ...pageUsers];
+
+    // Sort by last seen
     allUsers.sort((a, b) => {
       if (!a.lastSeen && !b.lastSeen) return 0;
       if (!a.lastSeen) return 1;
@@ -654,18 +669,20 @@ window.loadUsers = async () => {
       return new Date(b.lastSeen) - new Date(a.lastSeen);
     });
 
-    renderUsers(allUsers);
-    updateStats(allUsers);
     filteredUsers = [...allUsers];
     populateIndustryFilter();
+
+    renderUsers(filteredUsers);
+    updateStats(allUsers);
+    renderLoadMore();
+
     const countEl = document.getElementById("filter-count");
-    if (countEl) countEl.textContent = `Showing ${allUsers.length} of ${allUsers.length} users`;
-    toast("✅ Loaded " + allUsers.length + " users", "success");
+    if (countEl) countEl.textContent = `Showing ${filteredUsers.length} users · ${totalLoaded} loaded${hasMoreUsers ? " (more available)" : " (all loaded)"}`;
+
+    toast(`✅ Loaded ${totalLoaded} users`, "success");
 
   } catch(e) {
     console.error("loadUsers error:", e);
-
-    // Show the actual error on-screen so it's easy to diagnose
     const isPermission = e.code === "permission-denied" || e.message.includes("Missing or insufficient permissions");
     list.innerHTML = `
       <div class="empty" style="padding:40px 28px">
@@ -675,38 +692,43 @@ window.loadUsers = async () => {
         </div>
         <div style="font-size:13px;color:var(--muted);line-height:1.7;max-width:480px;margin:0 auto">
           ${isPermission
-            ? `Your Firestore security rules are blocking the admin from reading all user documents.<br><br>
-               <strong style="color:var(--text)">Fix:</strong> Open Firebase Console → Firestore → Rules, and add the admin rule shown below.`
-            : `<code style="color:var(--free);font-size:12px">${esc(e.message)}</code>`
-          }
+            ? `Your Firestore rules are blocking admin access.<br><br>
+               <strong style="color:var(--text)">Fix:</strong> Add the admin rule in Firebase Console → Firestore → Rules.`
+            : `<code style="color:var(--free);font-size:12px">${esc(e.message)}</code>`}
         </div>
-        ${isPermission ? `
-          <div style="margin-top:20px;text-align:left;background:rgba(0,0,0,.4);border-radius:12px;padding:16px 18px;font-family:var(--mono);font-size:12px;line-height:1.8;color:#a8d8a8;overflow-x:auto">
-<span style="color:#666">// Add this block to your Firestore rules:</span><br>
-<span style="color:#f5c842">match /users/{userId}</span> {<br>
-&nbsp;&nbsp;<span style="color:#4a9eff">allow read, write:</span> <span style="color:#fff">if request.auth.token.email == "v.bookenterprise@gmail.com";</span><br>
-}<br>
-<br>
-<span style="color:#666">// And for sub-collections (plan, entries, budgets):</span><br>
-<span style="color:#f5c842">match /users/{userId}/{document=**}</span> {<br>
-&nbsp;&nbsp;<span style="color:#4a9eff">allow read, write:</span> <span style="color:#fff">if request.auth.token.email == "v.bookenterprise@gmail.com";</span><br>
-}
-          </div>
-          <a href="https://console.firebase.google.com/project/ledgerbook-1db5d/firestore/rules"
-             target="_blank" rel="noopener noreferrer"
-             style="display:inline-block;margin-top:16px;padding:11px 22px;background:linear-gradient(135deg,var(--green),var(--green2));
-             color:#fff;border-radius:12px;font-size:13px;font-weight:800;text-decoration:none">
-            Open Firebase Rules →
-          </a>
-        ` : ""}
-      </div>
-    `;
-    toast("❌ " + (isPermission ? "Permission denied — see rules fix below" : e.message), "error");
+      </div>`;
+    toast("❌ " + e.message, "error");
   } finally {
     btn.innerHTML = "↻ Refresh";
     btn.disabled  = false;
   }
 };
+
+window.loadMoreUsers = () => loadUsers(false);
+
+function renderLoadMore() {
+  // Remove existing load more button if any
+  const existing = document.getElementById("load-more-wrap");
+  if (existing) existing.remove();
+
+  if (!hasMoreUsers) return;
+
+  const wrap = document.createElement("div");
+  wrap.id = "load-more-wrap";
+  wrap.style.cssText = "text-align:center;padding:20px;border-top:1px solid var(--border)";
+  wrap.innerHTML = `
+    <button onclick="loadMoreUsers()"
+      style="padding:11px 28px;background:rgba(37,211,102,.1);border:1px solid var(--border);
+        color:var(--lime);border-radius:12px;font-size:13px;font-weight:800;cursor:pointer;
+        font-family:var(--font)">
+      Load next ${PAGE_SIZE} users ↓
+    </button>
+    <div style="font-size:11px;color:var(--muted);margin-top:8px">
+      ${totalLoaded} loaded so far
+    </div>
+  `;
+  document.querySelector(".table-wrap").appendChild(wrap);
+}
 
 // ── Populate industry filter dropdown from actual user data ───
 function populateIndustryFilter() {

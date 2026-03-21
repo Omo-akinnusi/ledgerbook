@@ -19,7 +19,7 @@ import {
   reload,
   doc, getDoc, setDoc, updateDoc,
   collection, addDoc, deleteDoc,
-  onSnapshot, query, orderBy, serverTimestamp,
+  onSnapshot, query, orderBy, limit, serverTimestamp,
 } from "./firebase.js";
 
 // ── Inject global CSS for safe-area, viewport, scrollbar hiding ─
@@ -3129,7 +3129,9 @@ function AppCore({ user, onLogout, onUserUpdate }) {
   const [currency, setCurrency]  = useState(DEFAULT_CURRENCY);
   const [incCats,  setIncCats]   = useState(DEFAULT_INC_CATS);
   const [expCats,  setExpCats]   = useState(DEFAULT_EXP_CATS);
-  const [loading,  setLoading]   = useState(true); // show spinner while data loads
+  const [loading,  setLoading]   = useState(true);
+  const [hasMoreEntries, setHasMoreEntries] = useState(false);
+  const ENTRIES_LIMIT = 500; // load latest 500 entries; Pro users with more can load older ones
 
   const [view,      setView]      = useState("home");
   const [form,      setForm]      = useState({type:"income",amount:"",category:"",note:"",date:new Date().toISOString().split("T")[0]});
@@ -3194,11 +3196,13 @@ function AppCore({ user, onLogout, onUserUpdate }) {
           }
           setPlanInfo(planData);
         }
-        // Real-time listener for entries
-        const q = query(entriesCol(uid), orderBy("date", "desc"));
+        // Real-time listener for entries — limited to latest 500 for performance
+        const q = query(entriesCol(uid), orderBy("date", "desc"), limit(ENTRIES_LIMIT));
         unsubEntries = onSnapshot(q, (snapshot) => {
           const data = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
           setEntries(data);
+          // If we got exactly the limit, there may be more older entries
+          setHasMoreEntries(snapshot.docs.length === ENTRIES_LIMIT);
           setLoading(false);
         }, (err) => {
           Sentry.captureException(err, { tags: { operation: "entries_snapshot" } });
@@ -3940,6 +3944,18 @@ function AppCore({ user, onLogout, onUserUpdate }) {
                     {datePreset!=="all"&&<div style={{ fontSize:12, marginTop:6 }}>
                       <button onClick={()=>handleDateChange("all",{from:"",to:""})} style={{ background:"none", border:"none", color:p, cursor:"pointer", fontWeight:700, fontSize:13 }}>Clear date filter</button>
                     </div>}
+                  </div>
+                )}
+                {/* Older entries notice — shown when 500 entry limit is reached */}
+                {hasMoreEntries && histFilt.length > 0 && (
+                  <div style={{ textAlign:"center", padding:"16px 0 8px",
+                    borderTop:"1px solid #f0f0f0", marginTop:8 }}>
+                    <div style={{ fontSize:12, color:"#aaa", marginBottom:8 }}>
+                      Showing your most recent {ENTRIES_LIMIT} entries.
+                    </div>
+                    <div style={{ fontSize:11, color:"#bbb" }}>
+                      Older entries are stored safely — use CSV or PDF export to access your full history.
+                    </div>
                   </div>
                 )}
               </div>
