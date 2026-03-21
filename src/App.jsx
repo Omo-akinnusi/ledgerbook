@@ -12,9 +12,11 @@ import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   sendPasswordResetEmail,
+  sendEmailVerification,
   updateProfile,
   onAuthStateChanged,
   signOut,
+  reload,
   doc, getDoc, setDoc, updateDoc,
   collection, addDoc, deleteDoc,
   onSnapshot, query, orderBy, serverTimestamp,
@@ -1663,6 +1665,12 @@ function AuthScreen() {
       const cred = await createUserWithEmailAndPassword(auth, form.email, form.password);
       await updateProfile(cred.user, { displayName: form.name });
       DB.set(`lb_bname_${cred.user.uid}`, form.businessName);
+      // Send verification email — user must verify before accessing the app
+      await sendEmailVerification(cred.user);
+      // Sign out immediately so they can't slip into the app unverified
+      await signOut(auth);
+      setSuccess(`Verification email sent to ${form.email}. Please check your inbox and click the link to activate your account.`);
+      switchMode("login");
     } catch (e) {
       if (e.code === "auth/email-already-in-use") setErr("Account already exists. Sign in instead.");
       else if (e.code === "auth/invalid-email") setErr("That email address doesn't look right.");
@@ -2599,6 +2607,133 @@ const INDUSTRIES = [
   "Other",
 ];
 
+// ═══════════════════════════════════════════════════════════════
+// EMAIL VERIFICATION SCREEN
+// shown when a user signs in but hasn't verified their email yet
+// ═══════════════════════════════════════════════════════════════
+function EmailVerificationScreen({ email, onVerified, onLogout }) {
+  const [checking,  setChecking]  = useState(false);
+  const [resending, setResending] = useState(false);
+  const [resent,    setResent]    = useState(false);
+  const [err,       setErr]       = useState("");
+
+  const EV_CSS = `
+    @keyframes ev-in{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
+    .ev-card{animation:ev-in .4s cubic-bezier(.22,.68,0,1.1) both}
+    @keyframes ev-pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}
+    .ev-icon{animation:ev-pulse 2.5s ease-in-out infinite}
+  `;
+
+  const handleCheckVerified = async () => {
+    setChecking(true); setErr("");
+    try {
+      // Force reload the Firebase user to get latest emailVerified status
+      await reload(auth.currentUser);
+      if (auth.currentUser?.emailVerified) {
+        onVerified();
+      } else {
+        setErr("Email not verified yet. Please click the link in your inbox first.");
+      }
+    } catch(e) {
+      setErr("Could not check verification status. Try again.");
+    } finally { setChecking(false); }
+  };
+
+  const handleResend = async () => {
+    setResending(true); setErr(""); setResent(false);
+    try {
+      await sendEmailVerification(auth.currentUser);
+      setResent(true);
+    } catch(e) {
+      if (e.code === "auth/too-many-requests")
+        setErr("Too many requests. Please wait a few minutes before resending.");
+      else setErr("Failed to resend. Try again.");
+    } finally { setResending(false); }
+  };
+
+  return (
+    <div style={{ minHeight:"100vh",
+      background:"linear-gradient(175deg,#032e28 0%,#054d44 28%,#075E54 58%,#0a7a6c 82%,#128C7E 100%)",
+      display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center",
+      padding:"24px 20px" }}>
+      <style>{EV_CSS}</style>
+      <div className="ev-card" style={{ width:"100%", maxWidth:420 }}>
+
+        {/* Card */}
+        <div style={{ background:"#fff", borderRadius:28, padding:"36px 28px",
+          boxShadow:"0 24px 64px rgba(0,0,0,.3)", textAlign:"center" }}>
+
+          <div className="ev-icon" style={{ fontSize:64, marginBottom:16 }}>📧</div>
+          <div style={{ fontWeight:900, fontSize:22, color:"#0a1612",
+            letterSpacing:"-.4px", marginBottom:10 }}>
+            Verify your email
+          </div>
+          <div style={{ fontSize:14, color:"#6b7280", lineHeight:1.7, marginBottom:6 }}>
+            We sent a verification link to
+          </div>
+          <div style={{ fontWeight:800, fontSize:15, color:"#075E54",
+            background:"#f0faf7", borderRadius:10, padding:"8px 16px",
+            display:"inline-block", marginBottom:20 }}>
+            {email}
+          </div>
+          <div style={{ fontSize:13, color:"#9ca3af", lineHeight:1.65, marginBottom:24 }}>
+            Click the link in that email to activate your account, then come back here and tap the button below.
+          </div>
+
+          {/* Error */}
+          {err && (
+            <div style={{ background:"#fff3f0", border:"1px solid #ffcdd2", borderRadius:12,
+              padding:"10px 14px", color:"#c62828", fontSize:13, marginBottom:16, textAlign:"left" }}>
+              ⚠️ {err}
+            </div>
+          )}
+
+          {/* Resent success */}
+          {resent && (
+            <div style={{ background:"#f0fdf4", border:"1px solid #bbf7d0", borderRadius:12,
+              padding:"10px 14px", color:"#15803d", fontSize:13, marginBottom:16 }}>
+              ✅ Verification email resent — check your inbox.
+            </div>
+          )}
+
+          {/* I've verified button */}
+          <button onClick={handleCheckVerified} disabled={checking}
+            style={{ width:"100%", padding:"15px", marginBottom:12, border:"none",
+              borderRadius:15, fontSize:16, fontWeight:900, cursor:checking?"not-allowed":"pointer",
+              background: checking ? "#e5e7eb" : "linear-gradient(135deg,#054d44,#128C7E)",
+              color: checking ? "#9ca3af" : "#fff",
+              boxShadow: checking ? "none" : "0 6px 20px rgba(7,94,84,.3)",
+              transition:"all .2s" }}>
+            {checking ? "Checking…" : "✅ I've verified my email"}
+          </button>
+
+          {/* Resend */}
+          <button onClick={handleResend} disabled={resending}
+            style={{ width:"100%", padding:"13px", border:"1.5px solid #e5e7eb",
+              borderRadius:14, fontSize:14, fontWeight:700, cursor:resending?"not-allowed":"pointer",
+              background:"#f9fafb", color:"#555", transition:"all .2s", marginBottom:16 }}>
+            {resending ? "Sending…" : "🔁 Resend verification email"}
+          </button>
+
+          {/* Sign out */}
+          <button onClick={onLogout}
+            style={{ background:"none", border:"none", color:"#9ca3af",
+              fontSize:12, cursor:"pointer", fontWeight:600 }}>
+            Sign out and use a different account
+          </button>
+        </div>
+
+        {/* Tip */}
+        <div style={{ textAlign:"center", marginTop:16, color:"rgba(255,255,255,.45)",
+          fontSize:12, lineHeight:1.65 }}>
+          Can't find the email? Check your spam folder.<br/>
+          The link expires after 24 hours.
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function OnboardingScreen({ user, onComplete }) {
   const [step,         setStep]        = useState(1); // 1 = business, 2 = industry, 3 = phone
   const [businessName, setBusinessName]= useState(user.businessName !== "My Business" ? user.businessName : "");
@@ -2799,13 +2934,26 @@ function OnboardingScreen({ user, onComplete }) {
 
 
 export default function LedgerBookPro() {
-  const [user,setUser]             = useState(null);
-  const [authChecked,setChecked]   = useState(false);
-  const [needsOnboarding,setNeeds] = useState(false);
+  const [user,setUser]               = useState(null);
+  const [authChecked,setChecked]     = useState(false);
+  const [needsOnboarding,setNeeds]   = useState(false);
+  const [needsVerification,setNeedsVerif] = useState(false);
 
   useEffect(()=>{
     const unsub = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
+        // Email/password users must verify their email before accessing the app
+        // Google users skip this — their email is already verified by Google
+        const isEmailProvider = firebaseUser.providerData.some(p => p.providerId === "password");
+        if (isEmailProvider && !firebaseUser.emailVerified) {
+          setNeedsVerif(true);
+          setUser({ id: firebaseUser.uid, email: firebaseUser.email,
+            name: firebaseUser.displayName || firebaseUser.email.split("@")[0] });
+          setChecked(true);
+          return;
+        }
+        setNeedsVerif(false);
+
         const u = {
           id:           firebaseUser.uid,
           name:         firebaseUser.displayName || firebaseUser.email.split("@")[0],
@@ -2815,21 +2963,17 @@ export default function LedgerBookPro() {
           createdAt:    firebaseUser.metadata.creationTime || new Date().toISOString(),
         };
         try {
-          // Check Firestore for existing profile + onboarding status
           const profileSnap = await getDoc(userDoc(firebaseUser.uid));
           const profileData  = profileSnap.exists() ? profileSnap.data() : {};
 
-          // Merge all Firestore profile fields into u
           if (profileData.businessName && profileData.businessName !== "My Business") {
             u.businessName = profileData.businessName;
           }
           if (profileData.industry) u.industry = profileData.industry;
           if (profileData.phone)    u.phone    = profileData.phone;
 
-          // Show onboarding if user hasn't completed it yet
           setNeeds(!profileData.onboarded);
 
-          // Save/update profile to Firestore
           await saveProfile(firebaseUser.uid, {
             name:         u.name,
             email:        u.email,
@@ -2849,6 +2993,7 @@ export default function LedgerBookPro() {
         Sentry.setUser(null);
         setUser(null);
         setNeeds(false);
+        setNeedsVerif(false);
       }
       setChecked(true);
     });
@@ -2870,10 +3015,26 @@ export default function LedgerBookPro() {
     await signOut(auth);
     setUser(null);
     setNeeds(false);
+    setNeedsVerif(false);
+  };
+
+  // After user verifies email, reload and re-trigger onAuthStateChanged
+  const handleVerified = () => {
+    setNeedsVerif(false);
+    // onAuthStateChanged will re-fire automatically after reload
+    // but we force a reload just in case
+    if (auth.currentUser) reload(auth.currentUser);
   };
 
   if (!authChecked) return (<><GlobalStyles/><SplashScreen/></>);
   if (!user)        return (<><GlobalStyles/><AuthScreen/></>);
+  if (needsVerification) return (
+    <><GlobalStyles/><EmailVerificationScreen
+      email={user.email}
+      onVerified={handleVerified}
+      onLogout={handleLogout}
+    /></>
+  );
   if (needsOnboarding) return (
     <><GlobalStyles/><OnboardingScreen user={user} onComplete={handleOnboardingComplete}/></>
   );
