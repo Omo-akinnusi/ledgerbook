@@ -1577,6 +1577,54 @@ function AuthScreen() {
   const [busy,    setBusy]   = useState(false);
   const [busyBtn, setBusyBtn]= useState("");
   const [pwStrength, setPwStrength] = useState({ score:0, hints:[] });
+
+  // Client-side lockout — tracks failed attempts this session
+  const [failCount,   setFailCount]   = useState(0);
+  const [lockedUntil, setLockedUntil] = useState(0);
+  const [lockTimer,   setLockTimer]   = useState(0); // countdown seconds
+
+  // Countdown ticker
+  useEffect(() => {
+    if (lockedUntil <= Date.now()) return;
+    const tick = setInterval(() => {
+      const remaining = Math.ceil((lockedUntil - Date.now()) / 1000);
+      if (remaining <= 0) { setLockTimer(0); setLockedUntil(0); clearInterval(tick); }
+      else setLockTimer(remaining);
+    }, 1000);
+    return () => clearInterval(tick);
+  }, [lockedUntil]);
+
+  const isLocked = lockedUntil > Date.now();
+
+  // Record a failed attempt — lockout escalates: 3 fails = 30s, 5 = 2min, 7+ = 10min
+  const recordFailure = () => {
+    const next = failCount + 1;
+    setFailCount(next);
+    if (next >= 7)      { const t = Date.now() + 10*60*1000; setLockedUntil(t); setLockTimer(600); }
+    else if (next >= 5) { const t = Date.now() + 2*60*1000;  setLockedUntil(t); setLockTimer(120); }
+    else if (next >= 3) { const t = Date.now() + 30*1000;    setLockedUntil(t); setLockTimer(30);  }
+  };
+
+  // Check server-side rate limit before hitting Firebase
+  const checkRateLimit = async (action) => {
+    try {
+      const res  = await fetch("/api/auth-rate-limit", {
+        method:  "POST",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify({ action }),
+      });
+      const data = await res.json();
+      if (!data.allowed) {
+        setErr(data.message || "Too many attempts. Please wait before trying again.");
+        return false;
+      }
+      return true;
+    } catch {
+      // If the API is unreachable, allow through — don't block legitimate users
+      return true;
+    }
+  };
+
   const f = (k,v) => {
     setForm(p=>({...p,[k]:v}));
     if (k === "password") checkPasswordStrength(v);
@@ -1589,7 +1637,7 @@ function AuthScreen() {
     if (!/[A-Z]/.test(pw))               hints.push("One uppercase letter (A-Z)");
     if (!/[a-z]/.test(pw))               hints.push("One lowercase letter (a-z)");
     if (!/[0-9]/.test(pw))               hints.push("One number (0-9)");
-    const score = 4 - hints.length; // 0-4
+    const score = 4 - hints.length;
     setPwStrength({ score, hints });
   };
 
@@ -1655,23 +1703,29 @@ function AuthScreen() {
 
   const handleRegister = async () => {
     setErr("");
+    if (isLocked) return setErr(`Too many attempts. Please wait ${lockTimer} seconds.`);
     if (!form.name.trim())         return setErr("Enter your full name");
     if (!form.businessName.trim()) return setErr("Enter your business name");
     if (!form.email.includes("@")) return setErr("Enter a valid email address");
     if (!isStrongPassword(form.password)) return setErr("Password must be at least 8 characters with one uppercase letter, one lowercase letter, and one number");
     if (form.password !== form.confirm) return setErr("Passwords do not match");
+
     setBusy(true); setBusyBtn("email");
+
+    // Server-side rate limit check
+    const allowed = await checkRateLimit("register");
+    if (!allowed) { setBusy(false); setBusyBtn(""); return; }
+
     try {
       const cred = await createUserWithEmailAndPassword(auth, form.email, form.password);
       await updateProfile(cred.user, { displayName: form.name });
       DB.set(`lb_bname_${cred.user.uid}`, form.businessName);
-      // Send verification email — user must verify before accessing the app
       await sendEmailVerification(cred.user);
-      // Sign out immediately so they can't slip into the app unverified
       await signOut(auth);
       setSuccess(`Verification email sent to ${form.email}. Please check your inbox and click the link to activate your account.`);
       switchMode("login");
     } catch (e) {
+      recordFailure();
       if (e.code === "auth/email-already-in-use") setErr("Account already exists. Sign in instead.");
       else if (e.code === "auth/invalid-email") setErr("That email address doesn't look right.");
       else setErr(e.message || "Registration failed. Please try again.");
@@ -1680,14 +1734,23 @@ function AuthScreen() {
 
   const handleLogin = async () => {
     setErr("");
+    if (isLocked) return setErr(`Too many attempts. Please wait ${lockTimer} seconds.`);
     if (!form.email || !form.password) return setErr("Please fill in all fields");
+
     setBusy(true); setBusyBtn("email");
+
+    // Server-side rate limit check
+    const allowed = await checkRateLimit("login");
+    if (!allowed) { setBusy(false); setBusyBtn(""); return; }
+
     try {
       await signInWithEmailAndPassword(auth, form.email, form.password);
+      setFailCount(0); // reset on success
     } catch (e) {
+      recordFailure();
       if (e.code === "auth/user-not-found" || e.code === "auth/invalid-credential") setErr("No account found. Check your email or sign up.");
       else if (e.code === "auth/wrong-password") setErr("Incorrect password. Try again.");
-      else if (e.code === "auth/too-many-requests") setErr("Too many attempts. Please wait a moment.");
+      else if (e.code === "auth/too-many-requests") setErr("Too many attempts. Please wait a moment or reset your password.");
       else setErr(e.message || "Sign-in failed. Please try again.");
     } finally { setBusy(false); setBusyBtn(""); }
   };
@@ -1877,16 +1940,29 @@ function AuthScreen() {
               </div>
             )}
 
+            {/* Lockout warning */}
+            {isLocked && (
+              <div style={{ background:"#fff3f0", border:"1.5px solid #ffcdd2", borderRadius:13,
+                padding:"11px 14px", color:"#c62828", fontSize:13, marginBottom:14,
+                display:"flex", alignItems:"center", gap:8 }}>
+                <span>🔒</span>
+                <span>Too many attempts. Try again in <strong>{lockTimer}s</strong>.</span>
+              </div>
+            )}
+
             {/* Submit */}
             <button className="au-btn"
               onClick={mode==="login" ? handleLogin : mode==="register" ? handleRegister : handleForgotPassword}
-              disabled={busy}
+              disabled={busy || isLocked}
               style={{width:"100%",padding:"15px",
-                background:busy?"#ccc":"linear-gradient(135deg,#054d44 0%,#075E54 40%,#128C7E 75%,#1aab92 100%)",
-                color:"#fff",border:"none",borderRadius:15,fontSize:16,fontWeight:900,
-                cursor:busy?"not-allowed":"pointer",letterSpacing:"-.2px",
-                boxShadow:busy?"none":"0 6px 22px rgba(7,94,84,.38)"}}>
+                background: busy || isLocked ? "#e5e7eb"
+                  : "linear-gradient(135deg,#054d44 0%,#075E54 40%,#128C7E 75%,#1aab92 100%)",
+                color: busy || isLocked ? "#9ca3af" : "#fff",
+                border:"none",borderRadius:15,fontSize:16,fontWeight:900,
+                cursor: busy || isLocked ? "not-allowed" : "pointer",letterSpacing:"-.2px",
+                boxShadow: busy || isLocked ? "none" : "0 6px 22px rgba(7,94,84,.38)"}}>
               {busy ? "Please wait…"
+                : isLocked ? `🔒 Locked (${lockTimer}s)`
                 : mode==="login"    ? "Sign In →"
                 : mode==="register" ? "Create Account →"
                 : "Send Reset Link →"}
