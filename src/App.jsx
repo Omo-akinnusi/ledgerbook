@@ -7,10 +7,11 @@ import { useState, useEffect, useRef, useMemo } from "react";
 import * as Sentry from "@sentry/react";
 import {
   auth, db,
-  googleProvider, appleProvider,
+  googleProvider,
   signInWithPopup,
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
+  sendPasswordResetEmail,
   updateProfile,
   onAuthStateChanged,
   signOut,
@@ -1567,12 +1568,31 @@ function AuthField({ label, placeholder, type="text", value, onChange, icon }) {
 // AUTH SCREEN  (redesigned)
 // ═══════════════════════════════════════════════════════════════
 function AuthScreen() {
-  const [mode,    setMode]   = useState("login");
+  const [mode,    setMode]   = useState("login"); // "login" | "register" | "forgot"
   const [form,    setForm]   = useState({name:"",email:"",password:"",confirm:"",businessName:""});
   const [err,     setErr]    = useState("");
+  const [success, setSuccess]= useState("");
   const [busy,    setBusy]   = useState(false);
   const [busyBtn, setBusyBtn]= useState("");
-  const f = (k,v) => setForm(p=>({...p,[k]:v}));
+  const [pwStrength, setPwStrength] = useState({ score:0, hints:[] });
+  const f = (k,v) => {
+    setForm(p=>({...p,[k]:v}));
+    if (k === "password") checkPasswordStrength(v);
+  };
+
+  // Password strength checker
+  const checkPasswordStrength = (pw) => {
+    const hints = [];
+    if (pw.length < 8)                    hints.push("At least 8 characters");
+    if (!/[A-Z]/.test(pw))               hints.push("One uppercase letter (A-Z)");
+    if (!/[a-z]/.test(pw))               hints.push("One lowercase letter (a-z)");
+    if (!/[0-9]/.test(pw))               hints.push("One number (0-9)");
+    const score = 4 - hints.length; // 0-4
+    setPwStrength({ score, hints });
+  };
+
+  const isStrongPassword = (pw) =>
+    pw.length >= 8 && /[A-Z]/.test(pw) && /[a-z]/.test(pw) && /[0-9]/.test(pw);
 
   const AUTH_CSS = `
     @keyframes au-up{from{opacity:0;transform:translateY(28px)}to{opacity:1;transform:translateY(0)}}
@@ -1596,7 +1616,25 @@ function AuthScreen() {
     .au-tab{transition:background .2s,color .2s,box-shadow .2s}
   `;
 
-  const switchMode = (m) => { setMode(m); setErr(""); setForm({name:"",email:"",password:"",confirm:"",businessName:""}); };
+  const switchMode = (m) => {
+    setMode(m); setErr(""); setSuccess("");
+    setForm({name:"",email:"",password:"",confirm:"",businessName:""});
+    setPwStrength({ score:0, hints:[] });
+  };
+
+  const handleForgotPassword = async () => {
+    setErr(""); setSuccess("");
+    if (!form.email.includes("@")) return setErr("Enter a valid email address");
+    setBusy(true); setBusyBtn("forgot");
+    try {
+      await sendPasswordResetEmail(auth, form.email);
+      setSuccess(`Reset link sent to ${form.email} — check your inbox and spam folder.`);
+    } catch(e) {
+      if (e.code === "auth/user-not-found" || e.code === "auth/invalid-credential")
+        setErr("No account found with that email address.");
+      else setErr(e.message || "Failed to send reset email. Try again.");
+    } finally { setBusy(false); setBusyBtn(""); }
+  };
 
   const handleSocial = async (provider, name) => {
     setErr(""); setBusyBtn(name); setBusy(true);
@@ -1618,7 +1656,7 @@ function AuthScreen() {
     if (!form.name.trim())         return setErr("Enter your full name");
     if (!form.businessName.trim()) return setErr("Enter your business name");
     if (!form.email.includes("@")) return setErr("Enter a valid email address");
-    if (form.password.length < 6)  return setErr("Password must be at least 6 characters");
+    if (!isStrongPassword(form.password)) return setErr("Password must be at least 8 characters with one uppercase letter, one lowercase letter, and one number");
     if (form.password !== form.confirm) return setErr("Passwords do not match");
     setBusy(true); setBusyBtn("email");
     try {
@@ -1711,23 +1749,37 @@ function AuthScreen() {
         <div style={{background:"rgba(255,255,255,.97)",borderRadius:28,
           boxShadow:"0 24px 64px rgba(0,0,0,.28),0 0 0 1px rgba(255,255,255,.4)",overflow:"hidden"}}>
 
-          {/* Tabs */}
-          <div style={{display:"flex",background:"#f2f2f2",padding:5,gap:4,margin:"16px 16px 0",borderRadius:18}}>
-            {[["login","Sign In"],["register","Create Account"]].map(([m,l])=>(
-              <button key={m} className="au-tab" onClick={()=>switchMode(m)}
-                style={{flex:1,padding:"11px 6px",border:"none",fontWeight:800,fontSize:14,cursor:"pointer",
-                  borderRadius:13,letterSpacing:"-.2px",
-                  background:mode===m?"#fff":"transparent",
-                  color:mode===m?"#075E54":"#aaa",
-                  boxShadow:mode===m?"0 2px 8px rgba(0,0,0,.1)":"none"}}>
-                {l}
-              </button>
-            ))}
-          </div>
+          {/* Tabs — hidden on forgot mode */}
+          {mode !== "forgot" && (
+            <div style={{display:"flex",background:"#f2f2f2",padding:5,gap:4,margin:"16px 16px 0",borderRadius:18}}>
+              {[["login","Sign In"],["register","Create Account"]].map(([m,l])=>(
+                <button key={m} className="au-tab" onClick={()=>switchMode(m)}
+                  style={{flex:1,padding:"11px 6px",border:"none",fontWeight:800,fontSize:14,cursor:"pointer",
+                    borderRadius:13,letterSpacing:"-.2px",
+                    background:mode===m?"#fff":"transparent",
+                    color:mode===m?"#075E54":"#aaa",
+                    boxShadow:mode===m?"0 2px 8px rgba(0,0,0,.1)":"none"}}>
+                  {l}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {/* Forgot password header */}
+          {mode === "forgot" && (
+            <div style={{padding:"20px 22px 0",textAlign:"center"}}>
+              <div style={{fontSize:36,marginBottom:8}}>🔑</div>
+              <div style={{fontWeight:900,fontSize:18,color:"#0a1612",marginBottom:6}}>Reset your password</div>
+              <div style={{fontSize:13,color:"#9ca3af",marginBottom:4}}>
+                Enter your email and we'll send you a reset link.
+              </div>
+            </div>
+          )}
 
           <div style={{padding:"20px 22px 26px"}}>
 
-            {/* Social buttons */}
+            {/* Social buttons — hidden on forgot mode */}
+            {mode !== "forgot" && (
             <div style={{display:"flex",flexDirection:"column",gap:10,marginBottom:18}}>
               <button className="au-soc" onClick={()=>handleSocial(googleProvider,"google")} disabled={busy}
                 style={{width:"100%",padding:"13px 16px",border:"1.5px solid #e5e5e5",borderRadius:14,
@@ -1745,36 +1797,58 @@ function AuthScreen() {
                   Continue with Google
                 </>}
               </button>
-              <button className="au-soc" onClick={()=>handleSocial(appleProvider,"apple")} disabled={busy}
-                style={{width:"100%",padding:"13px 16px",border:"1.5px solid #1a1a1a",borderRadius:14,
-                  background:"#000",cursor:busy?"not-allowed":"pointer",
-                  display:"flex",alignItems:"center",justifyContent:"center",gap:11,
-                  fontWeight:700,fontSize:15,color:"#fff",
-                  boxShadow:"0 2px 8px rgba(0,0,0,.2)"}}>
-                {busyBtn==="apple" ? <span style={{fontSize:13,color:"#aaa"}}>Connecting…</span> : <>
-                  <svg width="17" height="21" viewBox="0 0 814 1000" fill="white">
-                    <path d="M788.1 340.9c-5.8 4.5-108.2 62.2-108.2 190.5 0 148.4 130.3 200.9 134.2 202.2-.6 3.2-20.7 71.9-68.7 141.9-42.8 61.6-87.5 123.1-155.5 123.1s-85.5-39.5-164-39.5c-76 0-103.7 40.8-165.9 40.8s-105-57.8-155.5-127.4C46 790.7 0 663 0 541.8c0-207.5 135.4-317.5 269-317.5 70.1 0 128.4 46.4 172.5 46.4 42.8 0 109.6-49 192-49 30.8 0 110.7 2.6 173.3 66.5zm-245.7-191.4c33.4-39.5 56.7-95.3 56.7-151.1 0-7.7-.6-15.4-1.9-22.4-53.5 2-116.8 35.5-154.2 79.5-29.5 33.9-57.1 89.6-57.1 146.1 0 8.3 1.3 16.6 1.9 19.2 3.2.6 8.3 1.3 13.4 1.3 47.9 0 109.6-32.1 141.2-72.6z"/>
-                  </svg>
-                  Continue with Apple
-                </>}
-              </button>
             </div>
+            )}
 
-            {/* Divider */}
+            {/* Divider — hidden on forgot mode */}
+            {mode !== "forgot" && (
             <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:18}}>
               <div style={{flex:1,height:1,background:"#efefef"}}/>
               <span style={{fontSize:11,color:"#ccc",fontWeight:700,letterSpacing:.5}}>OR</span>
               <div style={{flex:1,height:1,background:"#efefef"}}/>
             </div>
+            )}
 
             {/* Form fields */}
             {mode==="register" && <>
               <AuthField label="Full Name"     placeholder="e.g. Oluwasegun Akinnusi" value={form.name}         onChange={v=>f("name",v)}         icon="👤"/>
               <AuthField label="Business Name" placeholder="e.g. Ade Electronics"     value={form.businessName} onChange={v=>f("businessName",v)} icon="🏪"/>
             </>}
-            <AuthField label="Email Address"    placeholder="you@example.com"   type="email"    value={form.email}    onChange={v=>f("email",v)}    icon="📧"/>
-            <AuthField label="Password"         placeholder="Min. 6 characters" type="password" value={form.password} onChange={v=>f("password",v)} icon="🔒"/>
-            {mode==="register" && <AuthField label="Confirm Password" placeholder="Re-enter password" type="password" value={form.confirm} onChange={v=>f("confirm",v)} icon="🔒"/>}
+            <AuthField label="Email Address"    placeholder="you@example.com"         type="email"    value={form.email}    onChange={v=>f("email",v)}    icon="📧"/>
+
+            {mode !== "forgot" && <>
+              <AuthField label="Password" placeholder="Min. 8 chars, uppercase, number" type="password" value={form.password} onChange={v=>f("password",v)} icon="🔒"/>
+
+              {/* Password strength bar — show on register */}
+              {mode === "register" && form.password.length > 0 && (
+                <div style={{marginBottom:14, marginTop:-8}}>
+                  <div style={{display:"flex", gap:4, marginBottom:6}}>
+                    {[0,1,2,3].map(i => (
+                      <div key={i} style={{
+                        flex:1, height:3, borderRadius:2,
+                        background: i < pwStrength.score
+                          ? pwStrength.score <= 1 ? "#ef4444"
+                          : pwStrength.score <= 2 ? "#f97316"
+                          : pwStrength.score <= 3 ? "#eab308"
+                          : "#22c55e"
+                          : "#e5e7eb",
+                        transition:"background .2s"
+                      }}/>
+                    ))}
+                  </div>
+                  {pwStrength.hints.length > 0 && (
+                    <div style={{fontSize:11, color:"#9ca3af", lineHeight:1.6}}>
+                      Still needed: {pwStrength.hints.join(" · ")}
+                    </div>
+                  )}
+                  {pwStrength.score === 4 && (
+                    <div style={{fontSize:11, color:"#22c55e", fontWeight:700}}>✓ Strong password</div>
+                  )}
+                </div>
+              )}
+
+              {mode === "register" && <AuthField label="Confirm Password" placeholder="Re-enter password" type="password" value={form.confirm} onChange={v=>f("confirm",v)} icon="🔒"/>}
+            </>}
 
             {/* Error */}
             {err && (
@@ -1786,19 +1860,47 @@ function AuthScreen() {
               </div>
             )}
 
+            {/* Success (forgot password) */}
+            {success && (
+              <div style={{background:"#f0fdf4",border:"1.5px solid #bbf7d0",borderRadius:13,
+                padding:"11px 14px",color:"#15803d",fontSize:13,marginBottom:14,
+                lineHeight:1.55,display:"flex",gap:8,alignItems:"flex-start"}}>
+                <span style={{flexShrink:0}}>✅</span><span>{success}</span>
+              </div>
+            )}
+
             {/* Submit */}
-            <button className="au-btn" onClick={mode==="login"?handleLogin:handleRegister} disabled={busy}
+            <button className="au-btn"
+              onClick={mode==="login" ? handleLogin : mode==="register" ? handleRegister : handleForgotPassword}
+              disabled={busy}
               style={{width:"100%",padding:"15px",
                 background:busy?"#ccc":"linear-gradient(135deg,#054d44 0%,#075E54 40%,#128C7E 75%,#1aab92 100%)",
                 color:"#fff",border:"none",borderRadius:15,fontSize:16,fontWeight:900,
                 cursor:busy?"not-allowed":"pointer",letterSpacing:"-.2px",
                 boxShadow:busy?"none":"0 6px 22px rgba(7,94,84,.38)"}}>
-              {busyBtn==="email" ? "Please wait…" : mode==="login" ? "Sign In →" : "Create Account →"}
+              {busy ? "Please wait…"
+                : mode==="login"    ? "Sign In →"
+                : mode==="register" ? "Create Account →"
+                : "Send Reset Link →"}
             </button>
 
-            {/* Switch */}
-            <div style={{textAlign:"center",marginTop:15,fontSize:13,color:"#aaa"}}>
-              {mode==="login" ? <>
+            {/* Forgot password link — shown on login */}
+            {mode === "login" && (
+              <div style={{textAlign:"center", marginTop:12}}>
+                <button onClick={()=>switchMode("forgot")}
+                  style={{background:"none",border:"none",color:"#9ca3af",fontWeight:600,
+                    cursor:"pointer",fontSize:12}}>
+                  Forgot your password?
+                </button>
+              </div>
+            )}
+
+            {/* Switch mode */}
+            <div style={{textAlign:"center",marginTop: mode==="forgot" ? 16 : 8,fontSize:13,color:"#aaa"}}>
+              {mode === "forgot" ? <>
+                Remember it?{" "}
+                <button onClick={()=>switchMode("login")} style={{background:"none",border:"none",color:"#075E54",fontWeight:800,cursor:"pointer",fontSize:13}}>Back to sign in</button>
+              </> : mode==="login" ? <>
                 Don't have an account?{" "}
                 <button onClick={()=>switchMode("register")} style={{background:"none",border:"none",color:"#075E54",fontWeight:800,cursor:"pointer",fontSize:13}}>Sign up free</button>
               </> : <>
