@@ -6,6 +6,14 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import * as Sentry from "@sentry/react";
 import {
+  trackSignup, trackLogin, trackLogout, trackPasswordReset,
+  trackOnboardingStart, trackOnboardingComplete, trackOnboardingSkip,
+  trackPage, trackEntryAdded, trackEntryEdited, trackEntryDeleted,
+  trackUpgradeModalOpen, trackUpgradeInitiated, trackUpgradeSuccess,
+  trackLimitReached, trackAdClick, trackBudgetCreated,
+  trackExportCSV, trackExportPDF, trackQuickEntry, trackEmailVerified,
+} from "./analytics.js";
+import {
   auth, db,
   googleProvider,
   signInWithPopup,
@@ -883,6 +891,7 @@ function UpgradeModal({ onClose, reason="default", monthCount=0, p="#075E54", us
     }
     setLoading(true);
     setError("");
+    trackUpgradeInitiated(selectedPlan);
     try {
       // Store uid in sessionStorage so the callback page can use it
       sessionStorage.setItem("lb_pending_uid", user.id);
@@ -1678,6 +1687,7 @@ function AuthScreen() {
     setBusy(true); setBusyBtn("forgot");
     try {
       await sendPasswordResetEmail(auth, form.email);
+      trackPasswordReset();
       setSuccess(`Reset link sent to ${form.email} — check your inbox and spam folder.`);
     } catch(e) {
       if (e.code === "auth/user-not-found" || e.code === "auth/invalid-credential")
@@ -1691,6 +1701,9 @@ function AuthScreen() {
     try {
       const result = await signInWithPopup(auth, provider);
       const uid = result.user.uid;
+      const isNew = result._tokenResponse?.isNewUser;
+      if (isNew) trackSignup("google");
+      else        trackLogin("google");
       if (!DB.get(`lb_bname_${uid}`)) {
         DB.set(`lb_bname_${uid}`, result.user.displayName?.split(" ")[0] + "'s Business" || "My Business");
       }
@@ -1722,6 +1735,7 @@ function AuthScreen() {
       DB.set(`lb_bname_${cred.user.uid}`, form.businessName);
       await sendEmailVerification(cred.user);
       await signOut(auth);
+      trackSignup("email");
       setSuccess(`Verification email sent to ${form.email}. Please check your inbox and click the link to activate your account.`);
       switchMode("login");
     } catch (e) {
@@ -1746,6 +1760,7 @@ function AuthScreen() {
     try {
       await signInWithEmailAndPassword(auth, form.email, form.password);
       setFailCount(0); // reset on success
+      trackLogin("email");
     } catch (e) {
       recordFailure();
       if (e.code === "auth/user-not-found" || e.code === "auth/invalid-credential") setErr("No account found. Check your email or sign up.");
@@ -2706,6 +2721,7 @@ function EmailVerificationScreen({ email, onVerified, onLogout }) {
       // Force reload the Firebase user to get latest emailVerified status
       await reload(auth.currentUser);
       if (auth.currentUser?.emailVerified) {
+        trackEmailVerified();
         onVerified();
       } else {
         setErr("Email not verified yet. Please click the link in your inbox first.");
@@ -2811,12 +2827,14 @@ function EmailVerificationScreen({ email, onVerified, onLogout }) {
 }
 
 function OnboardingScreen({ user, onComplete }) {
-  const [step,         setStep]        = useState(1); // 1 = business, 2 = industry, 3 = phone
+  const [step,         setStep]        = useState(1);
   const [businessName, setBusinessName]= useState(user.businessName !== "My Business" ? user.businessName : "");
   const [industry,     setIndustry]    = useState("");
   const [phone,        setPhone]       = useState("");
   const [saving,       setSaving]      = useState(false);
   const [err,          setErr]         = useState("");
+
+  useEffect(() => { trackOnboardingStart(); }, []);
 
   const OB_CSS = `
     @keyframes ob-in{from{opacity:0;transform:translateY(28px)}to{opacity:1;transform:translateY(0)}}
@@ -2853,6 +2871,7 @@ function OnboardingScreen({ user, onComplete }) {
         onboarded:   true,
         onboardedAt: new Date().toISOString(),
       }, { merge: true });
+      trackOnboardingComplete(industry);
       onComplete({ businessName: businessName.trim(), industry, phone: phone.trim() });
     } catch(e) {
       setErr("Failed to save. Please try again.");
@@ -2997,7 +3016,7 @@ function OnboardingScreen({ user, onComplete }) {
         </div>
 
         {/* Skip */}
-        <button onClick={()=>onComplete({})}
+        <button onClick={()=>{ trackOnboardingSkip(); onComplete({}); }}
           style={{ display:"block", margin:"16px auto 0", background:"none", border:"none",
             color:"rgba(255,255,255,.45)", fontSize:12, cursor:"pointer", fontWeight:600 }}>
           Skip for now
@@ -3088,6 +3107,7 @@ export default function LedgerBookPro() {
   };
 
   const handleLogout = async () => {
+    trackLogout();
     await signOut(auth);
     setUser(null);
     setNeeds(false);
@@ -3147,7 +3167,11 @@ function AppCore({ user, onLogout, onUserUpdate }) {
   const [budgets,   setBudgets]   = useState([]);
   const [plan,      setPlan]      = useState("free"); // "free" | "pro"
   const [planInfo,  setPlanInfo]  = useState(null);   // full plan doc data
-  const [showUpgrade, setShowUpgrade] = useState(false); // upgrade modal
+  const [showUpgrade, setShowUpgrade] = useState(false);
+  const openUpgrade = (reason = "default") => {
+    trackUpgradeModalOpen(reason);
+    setShowUpgrade(true);
+  };
   const [editingEntry, setEditingEntry] = useState(null); // entry being edited
   const [budgetView,setBudgetView]= useState("list"); // "list"|"create"|"detail"
   const [activeBudget,setActiveBudget] = useState(null); // budget being viewed/edited
@@ -3252,12 +3276,13 @@ function AppCore({ user, onLogout, onUserUpdate }) {
   const showToast = (msg,color) => { setToast({msg,color:color||p}); setTimeout(()=>setToast(null),2600); };
 
   const handleAdd = async () => {
-    if (atLimit) return setShowUpgrade(true);
+    if (atLimit) { trackLimitReached(); return openUpgrade("limit"); }
     if (!form.amount||!form.category) return showToast("⚠️ Fill all required fields","#c62828");
     const selectedDate = form.date || new Date().toISOString().split("T")[0];
     const entry = { ...form, amount: parseFloat(form.amount), date: new Date(selectedDate).toISOString() };
     try {
       await addEntry(uid, entry);
+      trackEntryAdded(entry.type, entry.category);
       setForm({type:"income",amount:"",category:"",note:"",date:new Date().toISOString().split("T")[0]});
       showToast(entry.type==="income"?"✅ Income recorded!":"📤 Expense recorded!","#25D366");
       setView("home");
@@ -3270,6 +3295,7 @@ function AppCore({ user, onLogout, onUserUpdate }) {
   const handleDel = async (id) => {
     try {
       await delEntry(uid, id);
+      trackEntryDeleted();
       showToast("Removed","#888");
     } catch(e) {
       Sentry.captureException(e, { tags: { operation: "delete_entry" } });
@@ -3280,6 +3306,7 @@ function AppCore({ user, onLogout, onUserUpdate }) {
   const handleEditSave = async (id, data) => {
     try {
       await updateEntry(uid, id, data);
+      trackEntryEdited(data.type);
       showToast("✅ Entry updated!","#25D366");
     } catch(e) {
       Sentry.captureException(e, { tags: { operation: "edit_entry" } });
@@ -3289,9 +3316,10 @@ function AppCore({ user, onLogout, onUserUpdate }) {
 
   const handleKB = async (data) => {
     if (data) {
-      if (atLimit) { setShowKB(false); return setShowUpgrade(true); }
+      if (atLimit) { setShowKB(false); trackLimitReached(); return openUpgrade("limit"); }
       try {
         await addEntry(uid, { ...data, date: new Date().toISOString() });
+        trackQuickEntry();
         showToast("⌨️ Quick entry saved!");
       } catch(e) {
         Sentry.captureException(e, { tags: { operation: "quick_entry" } });
@@ -3369,7 +3397,7 @@ function AppCore({ user, onLogout, onUserUpdate }) {
       <nav style={{ flex:1, padding:"16px 14px" }}>
         <div style={{ fontSize:10, opacity:.45, textTransform:"uppercase", letterSpacing:1.5, padding:"0 10px", marginBottom:8 }}>Navigation</div>
         {NAV_ITEMS.map(({id,icon,label})=>(
-          <button key={id} onClick={()=>setView(id)}
+          <button key={id} onClick={()=>{ setView(id); trackPage(label); }}
             style={{ width:"100%", display:"flex", alignItems:"center", gap:13, padding:"12px 14px", borderRadius:14,
               marginBottom:3, border:"none", cursor:"pointer", textAlign:"left", fontSize:14,
               fontWeight:view===id?800:500, transition:"all 0.15s",
@@ -3456,8 +3484,8 @@ function AppCore({ user, onLogout, onUserUpdate }) {
             </div>
             <div style={{ display:"flex", gap:8, flexShrink:0 }}>
               {isDesktop ? [
-                ["📊","Export CSV",()=>{exportCSV(entries,currency,branding,"All Time");showToast("📊 CSV downloaded!","#1b5e20");}],
-                ["🖨️","PDF Report",()=>{exportPDF(dateFilt,currency,branding,rLabel,entries,budgets);showToast("🖨️ Opening PDF…","#1a237e");}],
+                ["📊","Export CSV",()=>{exportCSV(entries,currency,branding,"All Time");trackExportCSV();showToast("📊 CSV downloaded!","#1b5e20");}],
+                ["🖨️","PDF Report",()=>{exportPDF(dateFilt,currency,branding,rLabel,entries,budgets);trackExportPDF();showToast("🖨️ Opening PDF…","#1a237e");}],
               ].map(([icon,label,fn])=>(
                 <button key={label} onClick={fn}
                   style={{ background:"rgba(255,255,255,0.18)", border:"1px solid rgba(255,255,255,0.25)", borderRadius:11, color:"#fff",
@@ -3484,7 +3512,7 @@ function AppCore({ user, onLogout, onUserUpdate }) {
 
               {/* ── Free tier usage banner ── */}
               {!isPro && (
-                <div onClick={()=>setShowUpgrade(true)} style={{ cursor:"pointer",
+                <div onClick={()=>openUpgrade()} style={{ cursor:"pointer",
                   background: atLimit ? "#fff3f0" : `${p}0f`,
                   border: `1.5px solid ${atLimit ? "#ffcdd2" : p+"33"}`,
                   borderRadius:14, padding:"11px 14px", marginBottom:14,
@@ -3552,13 +3580,13 @@ function AppCore({ user, onLogout, onUserUpdate }) {
                   <div style={{ fontSize:11, color:"#FF9800", marginTop:3 }}>Cost, bill, purchase</div>
                 </button>
                 {isDesktop&&<>
-                  <button className="lb-card-action" onClick={()=>{exportCSV(entries,currency,branding,"All Time");showToast("📊 CSV downloaded!","#1b5e20");}}
+                  <button className="lb-card-action" onClick={()=>{exportCSV(entries,currency,branding,"All Time");trackExportCSV();showToast("📊 CSV downloaded!","#1b5e20");}}
                     style={{ background:"#F0FBF0", border:"2px solid #C8E6C9", borderRadius:16, padding:"16px 14px", cursor:"pointer", textAlign:"left" }}>
                     <div style={{ fontSize:28, marginBottom:10 }}>📊</div>
                     <div style={{ fontWeight:800, color:"#2E7D32", fontSize:15 }}>Export CSV</div>
                     <div style={{ fontSize:11, color:"#66BB6A", marginTop:3 }}>Download spreadsheet</div>
                   </button>
-                  <button className="lb-card-action" onClick={()=>{exportPDF(dateFilt,currency,branding,rLabel,entries,budgets);showToast("🖨️ Opening PDF…","#1a237e");}}
+                  <button className="lb-card-action" onClick={()=>{exportPDF(dateFilt,currency,branding,rLabel,entries,budgets);trackExportPDF();showToast("🖨️ Opening PDF…","#1a237e");}}
                     style={{ background:"#F3F0FF", border:"2px solid #C5CAE9", borderRadius:16, padding:"16px 14px", cursor:"pointer", textAlign:"left" }}>
                     <div style={{ fontSize:28, marginBottom:10 }}>🖨️</div>
                     <div style={{ fontWeight:800, color:"#283593", fontSize:15 }}>PDF Report</div>
@@ -3569,18 +3597,18 @@ function AppCore({ user, onLogout, onUserUpdate }) {
 
               {/* Export row — mobile/tablet only */}
               {!isDesktop&&<div style={{ display:"flex", gap:10, marginBottom:16 }}>
-                <button onClick={()=>{exportCSV(entries,currency,branding,"All Time");showToast("📊 CSV downloaded!","#1b5e20");}}
+                <button onClick={()=>{exportCSV(entries,currency,branding,"All Time");trackExportCSV();showToast("📊 CSV downloaded!","#1b5e20");}}
                   style={{ flex:1, padding:"10px", background:"#F0FBF0", border:"1.5px solid #C8E6C9", borderRadius:12, fontSize:12, fontWeight:700, cursor:"pointer", color:"#2E7D32" }}>
                   📊 Export CSV
                 </button>
-                <button onClick={()=>{exportPDF(entries,currency,branding,"All Time",entries,budgets);showToast("🖨️ Opening PDF…","#1a237e");}}
+                <button onClick={()=>{exportPDF(entries,currency,branding,"All Time",entries,budgets);trackExportPDF();showToast("🖨️ Opening PDF…","#1a237e");}}
                   style={{ flex:1, padding:"10px", background:"#F3F0FF", border:"1.5px solid #C5CAE9", borderRadius:12, fontSize:12, fontWeight:700, cursor:"pointer", color:"#283593" }}>
                   🖨️ PDF Report
                 </button>
               </div>}
 
               {/* ── Ad banner (free tier only) ── */}
-              {!isPro && <AdBanner onUpgrade={()=>setShowUpgrade(true)} p={p} slot="home"/>}
+              {!isPro && <AdBanner onUpgrade={()=>openUpgrade()} p={p} slot="home"/>}
 
               {/* Recent Transactions + Charts */}
               <div className="lb-page-grid">
@@ -3684,7 +3712,7 @@ function AppCore({ user, onLogout, onUserUpdate }) {
                           <span style={{ fontWeight:800, fontSize:13, color: atLimit?"#c62828":"#16a34a" }}>
                             {atLimit ? "🚫 Limit reached" : `${remaining} entries left this month`}
                           </span>
-                          <button onClick={()=>setShowUpgrade(true)}
+                          <button onClick={()=>openUpgrade()}
                             style={{ background: atLimit?"#c62828":"#16a34a", color:"#fff", border:"none",
                               borderRadius:8, padding:"4px 10px", fontSize:11, fontWeight:800, cursor:"pointer" }}>
                             {atLimit ? "Upgrade" : "Go Pro ✨"}
@@ -3702,7 +3730,7 @@ function AppCore({ user, onLogout, onUserUpdate }) {
                     )}
 
                     {/* Mobile ad */}
-                    {!isPro && !isDesktop && <AdBanner onUpgrade={()=>setShowUpgrade(true)} p={p} slot="add"/>}
+                    {!isPro && !isDesktop && <AdBanner onUpgrade={()=>openUpgrade()} p={p} slot="add"/>}
 
                     {/* Date */}
                     <div style={{ marginBottom:18 }}>
@@ -3828,7 +3856,7 @@ function AppCore({ user, onLogout, onUserUpdate }) {
                       <span style={{ fontWeight:800, fontSize:13, color: atLimit?"#c62828":"#16a34a" }}>
                         {atLimit ? "🚫 Limit reached" : `${remaining} entries left`}
                       </span>
-                      <button onClick={()=>setShowUpgrade(true)}
+                      <button onClick={()=>openUpgrade()}
                         style={{ background: atLimit?"#c62828":"#16a34a", color:"#fff", border:"none",
                           borderRadius:8, padding:"4px 10px", fontSize:11, fontWeight:800, cursor:"pointer" }}>
                         Go Pro ✨
@@ -3906,11 +3934,11 @@ function AppCore({ user, onLogout, onUserUpdate }) {
               )}
               {datePreset!=="all"&&histFilt.length>0&&(
                 <div style={{ display:"flex", gap:9, marginTop:10 }}>
-                  <button onClick={()=>{exportCSV(histFilt,currency,branding,rLabel);showToast("📊 Exported!","#1b5e20");}}
+                  <button onClick={()=>{exportCSV(histFilt,currency,branding,rLabel);trackExportCSV();showToast("📊 Exported!","#1b5e20");}}
                     style={{ flex:1, padding:"9px", background:"#F0FBF0", border:"1.5px solid #C8E6C9", borderRadius:10, fontSize:12, fontWeight:700, cursor:"pointer", color:"#2E7D32" }}>
                     📊 CSV
                   </button>
-                  <button onClick={()=>{exportPDF(histFilt,currency,branding,rLabel,entries,budgets);showToast("🖨️ Opening…","#1a237e");}}
+                  <button onClick={()=>{exportPDF(histFilt,currency,branding,rLabel,entries,budgets);trackExportPDF();showToast("🖨️ Opening…","#1a237e");}}
                     style={{ flex:1, padding:"9px", background:"#F3F0FF", border:"1.5px solid #C5CAE9", borderRadius:10, fontSize:12, fontWeight:700, cursor:"pointer", color:"#283593" }}>
                     🖨️ PDF
                   </button>
@@ -3923,7 +3951,7 @@ function AppCore({ user, onLogout, onUserUpdate }) {
               paddingTop:14,
               paddingBottom:isDesktop?40:`calc(${S.navH}px + env(safe-area-inset-bottom,0px) + 10px)` }}>
               {/* Ad banner in history (free only) */}
-              {!isPro && <AdBanner onUpgrade={()=>setShowUpgrade(true)} p={p} slot="history"/>}
+              {!isPro && <AdBanner onUpgrade={()=>openUpgrade()} p={p} slot="history"/>}
               <div className={isDesktop?"lb-section":""} style={{ padding: isDesktop?"24px 26px":undefined }}>
                 {Object.keys(grouped).sort((a,b)=>b.localeCompare(a)).map((day, dayIdx)=>(
                   <div key={day}>
@@ -3933,7 +3961,7 @@ function AppCore({ user, onLogout, onUserUpdate }) {
                     {grouped[day].map(e=><TxRow key={e.id} entry={e} currency={currency} onDelete={handleDel} onEdit={setEditingEntry} isPro={isPro} p={p}/>)}
                     {/* Inline ad after every 5th day group */}
                     {!isPro && dayIdx > 0 && (dayIdx + 1) % 5 === 0 && (
-                      <AdBanner onUpgrade={()=>setShowUpgrade(true)} p={p} slot="inline"/>
+                      <AdBanner onUpgrade={()=>openUpgrade()} p={p} slot="inline"/>
                     )}
                   </div>
                 ))}
@@ -3997,7 +4025,7 @@ function AppCore({ user, onLogout, onUserUpdate }) {
                     </div>
                   ))}
                 </div>
-                <button onClick={()=>setShowUpgrade(true)}
+                <button onClick={()=>openUpgrade()}
                   style={{ marginTop:28, padding:"15px 36px",
                     background:"linear-gradient(135deg,#054d44,#128C7E)",
                     color:"#fff", border:"none", borderRadius:16,
@@ -4012,7 +4040,7 @@ function AppCore({ user, onLogout, onUserUpdate }) {
             ) : (
               <>
                 {budgetView==="list"   && <BudgetList   budgets={budgets} entries={entries} currency={currency} p={p} isDesktop={isDesktop} uid={uid} onNew={()=>{ setActiveBudget(null); setBudgetView("create"); }} onView={(b)=>{ setActiveBudget(b); setBudgetView("detail"); }} onDelete={async(id)=>{ await delBudget(uid,id); showToast("Budget deleted","#888"); }} showToast={showToast}/>}
-                {budgetView==="create" && <BudgetCreate  budget={activeBudget} expCats={expCats} incCats={incCats} currency={currency} p={p} isDesktop={isDesktop} uid={uid} onSave={async(b)=>{ try { if(b.id){ await saveBudget(uid,b.id,b); showToast("✅ Budget updated!",p); } else { await addBudget(uid,b); showToast("✅ Budget created!",p); } setBudgetView("list"); } catch(e){ Sentry.captureException(e); showToast("❌ Failed to save","#c62828"); }}} onBack={()=>setBudgetView("list")}/>}
+                {budgetView==="create" && <BudgetCreate  budget={activeBudget} expCats={expCats} incCats={incCats} currency={currency} p={p} isDesktop={isDesktop} uid={uid} onSave={async(b)=>{ try { if(b.id){ await saveBudget(uid,b.id,b); showToast("✅ Budget updated!",p); } else { await addBudget(uid,b); trackBudgetCreated(); showToast("✅ Budget created!",p); } setBudgetView("list"); } catch(e){ Sentry.captureException(e); showToast("❌ Failed to save","#c62828"); }}} onBack={()=>setBudgetView("list")}/>}
                 {budgetView==="detail" && <BudgetDetail  budget={activeBudget} entries={entries} currency={currency} p={p} bg={bg} isDesktop={isDesktop} onBack={()=>setBudgetView("list")} onEdit={(b)=>{ setActiveBudget(b); setBudgetView("create"); }} onDelete={async(id)=>{ await delBudget(uid,id); setBudgetView("list"); showToast("Budget deleted","#888"); }}/>}
               </>
             )}
@@ -4135,11 +4163,11 @@ function AppCore({ user, onLogout, onUserUpdate }) {
 
               {/* Action buttons */}
               <div style={{ display:"flex", gap:12, marginTop: isDesktop?0:4, marginBottom:12, flexWrap:"wrap" }}>
-                <button onClick={()=>{exportCSV(dateFilt,currency,branding,rLabel);showToast("📊 CSV downloaded!","#1b5e20");}}
+                <button onClick={()=>{exportCSV(dateFilt,currency,branding,rLabel);trackExportCSV();showToast("📊 CSV downloaded!","#1b5e20");}}
                   style={{ flex:1, minWidth:140, padding:"13px", background:"#F0FBF0", border:"1.5px solid #C8E6C9", borderRadius:14, fontWeight:700, cursor:"pointer", fontSize:13, color:"#2E7D32" }}>
                   📊 Export CSV
                 </button>
-                <button onClick={()=>{exportPDF(dateFilt,currency,branding,rLabel,entries,budgets);showToast("🖨️ Opening PDF…","#1a237e");}}
+                <button onClick={()=>{exportPDF(dateFilt,currency,branding,rLabel,entries,budgets);trackExportPDF();showToast("🖨️ Opening PDF…","#1a237e");}}
                   style={{ flex:1, minWidth:140, padding:"13px", background:"#F3F0FF", border:"1.5px solid #C5CAE9", borderRadius:14, fontWeight:700, cursor:"pointer", fontSize:13, color:"#283593" }}>
                   🖨️ PDF Report
                 </button>
@@ -4165,7 +4193,7 @@ function AppCore({ user, onLogout, onUserUpdate }) {
             {id:"budget", icon:"🎯", label:"Budget", proOnly:true},
             {id:"summary",icon:"📊", label:"Summary"},
           ].map(tab=>(
-            <button key={tab.id} onClick={()=>{ if(tab.id==="add")setForm({type:"income",amount:"",category:"",note:""}); setView(tab.id); }}
+            <button key={tab.id} onClick={()=>{ if(tab.id==="add")setForm({type:"income",amount:"",category:"",note:""}); setView(tab.id); trackPage(tab.label); }}
               style={{ flex:1, padding:"13px 4px 10px", border:"none", background:"none", cursor:"pointer",
                 display:"flex", flexDirection:"column", alignItems:"center", gap:3, position:"relative" }}>
               <span style={{ fontSize:22 }}>{tab.icon}</span>
@@ -4190,7 +4218,7 @@ function AppCore({ user, onLogout, onUserUpdate }) {
         {showSt&&<SettingsScreen branding={branding} setBranding={setBranding} currency={currency} setCurrency={setCurrency}
           incCats={incCats} setIncCats={setIncCats} expCats={expCats} setExpCats={setExpCats}
           user={user} onLogout={onLogout} onClose={()=>setShowSt(false)}
-          isPro={isPro} onUpgrade={()=>{ setShowSt(false); setShowUpgrade(true); }}
+          isPro={isPro} onUpgrade={()=>{ setShowSt(false); openUpgrade(); }}
           planInfo={planInfo} onUserUpdate={onUserUpdate}/>}
         {showDP&&<DateRangePicker preset={datePreset} dateRange={dateRange} onChange={handleDateChange} onClose={()=>setShowDP(false)} primaryColor={p}/>}
         {showUpgrade&&<UpgradeModal onClose={()=>setShowUpgrade(false)} reason={atLimit?"limit":"default"} monthCount={monthCount} p={p} user={user} currency={currency}/>}

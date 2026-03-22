@@ -5,6 +5,14 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>Payment Successful — LedgerBook Pro</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;700;900&display=swap" rel="stylesheet"/>
+<!-- Google Analytics 4 — replace G-XXXXXXXXXX with your Measurement ID -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){ dataLayer.push(arguments); }
+  gtag('js', new Date());
+  gtag('config', 'G-XXXXXXXXXX');
+</script>
 <style>
   *{box-sizing:border-box;margin:0;padding:0}
   body{font-family:'DM Sans',sans-serif;background:linear-gradient(135deg,#054d44,#075E54,#128C7E);
@@ -60,6 +68,17 @@
     pillWrap.innerHTML  = `<div class="plan-pill">✨ LedgerBook Pro · ${labels[interval]||"Pro Plan"}</div>`;
     ctaEl.style.display = "block";
     loadEl.style.display = "none";
+
+    // Track purchase in Google Analytics
+    const prices = { monthly: 1500, biannually: 7500, annually: 13500 };
+    if (typeof gtag === "function") {
+      gtag("event", "purchase", {
+        transaction_id: new URLSearchParams(window.location.search).get("reference") || "",
+        value:          prices[interval] || 1500,
+        currency:       "NGN",
+        items: [{ item_name: `LedgerBook Pro - ${labels[interval] || "Pro Plan"}` }],
+      });
+    }
   }
 
   function showError(msg) {
