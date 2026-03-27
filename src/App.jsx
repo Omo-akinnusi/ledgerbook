@@ -207,25 +207,24 @@ const planDoc = (uid) => doc(db, "users", uid, "settings", "plan");
 // Create these 3 plans in your Paystack dashboard, then paste the plan codes here.
 // Amounts in their respective currencies (Paystack handles FX).
 const PAYSTACK_PLANS = {
-  monthly:    { code: "PLN_gh2mcit6fixix9k",  label:"Monthly",  months:1,  usd:1,  discount:null },
-  biannually: { code: "PLN_gxtrrhn8z2tfqmf",  label:"6 Months", months:6,  usd:5,  discount:"17% off" },
-  annually:   { code: "PLN_87ghrcbnb4p8aaa",  label:"Annual",   months:12, usd:9,  discount:"25% off" },
+  monthly:    { code: "PLN_gh2mcit6fixix9k",  label:"Monthly",  months:1,  usd:5,  discount:null },
+  biannually: { code: "PLN_gxtrrhn8z2tfqmf",  label:"6 Months", months:6,  usd:27, discount:"Save 10%" },
+  annually:   { code: "PLN_87ghrcbnb4p8aaa",  label:"Annual",   months:12, usd:50, discount:"Save 17%" },
 };
 
-// Price display per currency (matching the app's supported currencies)
-// Base: $1/mo · $5/6mo · $9/yr
+// Price display per currency — Base: $5/mo · $27/6mo · $50/yr
 const PLAN_PRICES = {
-  NGN: { monthly: "₦1,500",  biannually: "₦7,500",  annually:  "₦13,500", note:"NGN" },
-  USD: { monthly: "$1",      biannually: "$5",       annually:  "$9",      note:"USD" },
-  GBP: { monthly: "£0.80",   biannually: "£4",       annually:  "£7",      note:"GBP" },
-  EUR: { monthly: "€0.90",   biannually: "€4.50",    annually:  "€8",      note:"EUR" },
-  GHS: { monthly: "₵15",     biannually: "₵75",      annually:  "₵135",    note:"GHS" },
-  KES: { monthly: "KSh130",  biannually: "KSh650",   annually:  "KSh1,170",note:"KES" },
-  ZAR: { monthly: "R18",     biannually: "R90",      annually:  "R162",    note:"ZAR" },
-  XOF: { monthly: "CFA600",  biannually: "CFA3,000", annually:  "CFA5,400",note:"XOF" },
-  EGP: { monthly: "E£50",    biannually: "E£250",    annually:  "E£450",   note:"EGP" },
-  INR: { monthly: "₹85",     biannually: "₹425",     annually:  "₹765",    note:"INR" },
-  default: { monthly: "$1",  biannually: "$5",       annually:  "$9",      note:"USD" },
+  NGN: { monthly: "₦5,000",   biannually: "₦27,000",   annually: "₦50,000",   note:"NGN" },
+  USD: { monthly: "$5",        biannually: "$27",        annually: "$50",        note:"USD" },
+  GBP: { monthly: "£4",        biannually: "£21",        annually: "£39",        note:"GBP" },
+  EUR: { monthly: "€4.60",     biannually: "€25",        annually: "€46",        note:"EUR" },
+  GHS: { monthly: "₵75",       biannually: "₵405",       annually: "₵750",       note:"GHS" },
+  KES: { monthly: "KSh645",    biannually: "KSh3,480",   annually: "KSh6,450",   note:"KES" },
+  ZAR: { monthly: "R92",       biannually: "R497",       annually: "R920",       note:"ZAR" },
+  XOF: { monthly: "CFA3,050",  biannually: "CFA16,470",  annually: "CFA30,500",  note:"XOF" },
+  EGP: { monthly: "E£250",     biannually: "E£1,350",    annually: "E£2,500",    note:"EGP" },
+  INR: { monthly: "₹420",      biannually: "₹2,268",     annually: "₹4,200",     note:"INR" },
+  default: { monthly: "$5",    biannually: "$27",        annually: "$50",        note:"USD" },
 };
 
 const CURRENCIES = [
@@ -871,7 +870,7 @@ function UpgradeModal({ onClose, reason="default", monthCount=0, p="#075E54", us
       label: "6 Months",
       price: prices.biannually,
       perMonth: null,
-      discount: "Save 16.7%",
+      discount: "Save 10%",
       detail: "One payment every 6 months",
       popular: true,
     },
@@ -880,7 +879,7 @@ function UpgradeModal({ onClose, reason="default", monthCount=0, p="#075E54", us
       label: "Annual",
       price: prices.annually,
       perMonth: null,
-      discount: "Save 25%",
+      discount: "Save 17%",
       detail: "Best value — one payment per year",
     },
   ];

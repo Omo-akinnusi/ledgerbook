@@ -20,9 +20,9 @@ function isValidUid(uid) {
 
 // Amount map in kobo — server-side, users cannot manipulate prices
 const PLAN_AMOUNTS = {
-  PLN_gh2mcit6fixix9k: 150000,   // Monthly  ₦1,500
-  PLN_gxtrrhn8z2tfqmf: 750000,   // 6-Month  ₦7,500
-  PLN_87ghrcbnb4p8aaa: 1350000,  // Annual   ₦13,500
+  PLN_gh2mcit6fixix9k: 500000,   // Monthly  ₦5,000
+  PLN_gxtrrhn8z2tfqmf: 2700000,  // 6-Month  ₦27,000
+  PLN_87ghrcbnb4p8aaa: 5000000,  // Annual   ₦50,000
 };
 
 module.exports = async function handler(req, res) {

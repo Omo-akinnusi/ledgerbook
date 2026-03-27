@@ -70,7 +70,7 @@
     loadEl.style.display = "none";
 
     // Track purchase in Google Analytics
-    const prices = { monthly: 1500, biannually: 7500, annually: 13500 };
+    const prices = { monthly: 5000, biannually: 27000, annually: 50000 };
     if (typeof gtag === "function") {
       gtag("event", "purchase", {
         transaction_id: new URLSearchParams(window.location.search).get("reference") || "",
