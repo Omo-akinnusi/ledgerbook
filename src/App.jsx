@@ -4447,6 +4447,35 @@ function BudgetList({ budgets, entries, currency, p, isDesktop, onNew, onView, o
 // ═══════════════════════════════════════════════════════════════
 // BUDGET CREATE / EDIT
 // ═══════════════════════════════════════════════════════════════
+// ── CatInput — defined outside BudgetCreate so it has a stable
+//    reference and never causes the keyboard to close on mobile ──
+function CatInput({ cat, value, onChange, type, currency, p }) {
+  return (
+    <div style={{ display:"flex", alignItems:"center", gap:12, marginBottom:12,
+      padding:"10px 14px", background:"#fafafa", borderRadius:13, border:"1.5px solid #eee" }}>
+      <div style={{ flex:1, fontWeight:700, fontSize:14, color:"#333" }}>
+        {type==="income"?"💰":"📤"} {cat}
+      </div>
+      <div style={{ position:"relative", width:150, flexShrink:0 }}>
+        <span style={{ position:"absolute", left:11, top:"50%", transform:"translateY(-50%)",
+          fontSize:13, color:"#aaa", fontWeight:700, pointerEvents:"none" }}>
+          {currency.symbol}
+        </span>
+        <input
+          type="number"
+          inputMode="decimal"
+          placeholder="—"
+          value={value ?? ""}
+          onChange={e => onChange(cat, e.target.value)}
+          style={{ width:"100%", padding:"9px 10px 9px 26px",
+            border:`2px solid ${value > 0 ? p : "#e5e5e5"}`,
+            borderRadius:10, fontSize:14, outline:"none",
+            boxSizing:"border-box", background:"#fff" }}/>
+      </div>
+    </div>
+  );
+}
+
 function BudgetCreate({ budget, expCats, incCats, currency, p, isDesktop, onSave, onBack }) {
   const isEdit = !!budget;
   const [name,          setName]         = useState(budget?.name || "");
@@ -4491,22 +4520,6 @@ function BudgetCreate({ budget, expCats, incCats, currency, p, isDesktop, onSave
   const inputStyle = { width:"100%", padding:"13px 15px", border:"2px solid #e5e5e5", borderRadius:13,
     fontSize:15, outline:"none", marginBottom:16, boxSizing:"border-box", background:"#fafafa", fontFamily:"inherit" };
   const labelStyle = { fontSize:11, fontWeight:800, color:"#999", textTransform:"uppercase", letterSpacing:.5, marginBottom:7, display:"block" };
-
-  const CatInput = ({ cat, value, onChange, type }) => (
-    <div style={{ display:"flex", alignItems:"center", gap:12, marginBottom:12,
-      padding:"10px 14px", background:"#fafafa", borderRadius:13, border:"1.5px solid #eee" }}>
-      <div style={{ flex:1, fontWeight:700, fontSize:14, color:"#333" }}>
-        {type==="income"?"💰":"📤"} {cat}
-      </div>
-      <div style={{ position:"relative", width:150, flexShrink:0 }}>
-        <span style={{ position:"absolute", left:11, top:"50%", transform:"translateY(-50%)",
-          fontSize:13, color:"#aaa", fontWeight:700, pointerEvents:"none" }}>{currency.symbol}</span>
-        <input type="number" placeholder="—" value={value??""} onChange={e=>onChange(cat, e.target.value)}
-          style={{ width:"100%", padding:"9px 10px 9px 26px", border:`2px solid ${value>0?p:"#e5e5e5"}`,
-            borderRadius:10, fontSize:14, outline:"none", boxSizing:"border-box", background:"#fff" }}/>
-      </div>
-    </div>
-  );
 
   const incCatsWithValues = Object.values(incCatBudgets).filter(v=>parseFloat(v)>0).length;
   const expCatsWithValues = Object.values(expCatBudgets).filter(v=>parseFloat(v)>0).length;
@@ -4626,7 +4639,7 @@ function BudgetCreate({ budget, expCats, incCats, currency, p, isDesktop, onSave
               </div>
             </div>
             {incCats.map(cat=>(
-              <CatInput key={cat} cat={cat} value={incCatBudgets[cat]} onChange={setIncCat} type="income"/>
+              <CatInput key={cat} cat={cat} value={incCatBudgets[cat]} onChange={setIncCat} type="income" currency={currency} p={p}/>
             ))}
             {totalIncome > 0 && (
               <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center",
@@ -4648,7 +4661,7 @@ function BudgetCreate({ budget, expCats, incCats, currency, p, isDesktop, onSave
               </div>
             </div>
             {expCats.map(cat=>(
-              <CatInput key={cat} cat={cat} value={expCatBudgets[cat]} onChange={setExpCat} type="expense"/>
+              <CatInput key={cat} cat={cat} value={expCatBudgets[cat]} onChange={setExpCat} type="expense" currency={currency} p={p}/>
             ))}
             {totalExpense > 0 && (
               <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center",
