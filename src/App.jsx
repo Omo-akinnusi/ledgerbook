@@ -32,8 +32,10 @@ import {
 
 // ── Inject global CSS for safe-area, viewport, scrollbar hiding ─
 const GLOBAL_CSS = `
+  @import url('https://fonts.googleapis.com/css2?family=Funnel+Display:wght@300;400;500;600;700;800&display=swap');
+
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  html, body { height: 100%; overflow-x: hidden; }
+  html, body { height: 100%; overflow-x: hidden; font-family: 'Funnel Display', sans-serif; }
   body { -webkit-font-smoothing: antialiased; }
   ::-webkit-scrollbar { display: none; }
   * { scrollbar-width: none; -ms-overflow-style: none; }
