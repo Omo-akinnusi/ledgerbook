@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Payment Successful — LedgerBook Pro</title>
+<title>Payment Successful — Cash Counter</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;700;900&display=swap" rel="stylesheet"/>
 <!-- Google Analytics 4 — replace G-ER07EQ4THQ with your Measurement ID -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-ER07EQ4THQ"></script>
@@ -40,8 +40,8 @@
   <p class="sub" id="sub">Please wait while we confirm your subscription.</p>
   <div class="error-box" id="error-box"></div>
   <div id="plan-pill-wrap"></div>
-  <a href="https://ledgerbook-nu.vercel.app" class="btn" id="cta-btn" style="display:none">
-    Open LedgerBook Pro ✨
+  <a href="https://cashcounter.vbookng.com" class="btn" id="cta-btn" style="display:none">
+    Open Cash Counter ✨
   </a>
   <div class="loading" id="loading">Contacting payment server…</div>
 </div>
@@ -65,7 +65,7 @@
     iconEl.textContent  = "🎉";
     titleEl.textContent = "You're now on Pro!";
     subEl.textContent   = "Your payment was confirmed. All Pro features are now unlocked — enjoy unlimited entries, budgets, and no ads.";
-    pillWrap.innerHTML  = `<div class="plan-pill">✨ LedgerBook Pro · ${labels[interval]||"Pro Plan"}</div>`;
+    pillWrap.innerHTML  = `<div class="plan-pill">✨ Cash Counter · ${labels[interval]||"Pro Plan"}</div>`;
     ctaEl.style.display = "block";
     loadEl.style.display = "none";
 
@@ -76,7 +76,7 @@
         transaction_id: new URLSearchParams(window.location.search).get("reference") || "",
         value:          prices[interval] || 1500,
         currency:       "NGN",
-        items: [{ item_name: `LedgerBook Pro - ${labels[interval] || "Pro Plan"}` }],
+        items: [{ item_name: `Cash Counter - ${labels[interval] || "Pro Plan"}` }],
       });
     }
   }
@@ -87,7 +87,7 @@
     subEl.textContent   = "We couldn't verify your payment automatically. Your account will be upgraded once our team reviews it.";
     errEl.textContent   = msg;
     errEl.style.display = "block";
-    ctaEl.textContent   = "Return to LedgerBook";
+    ctaEl.textContent   = "Return to Cash Counter";
     ctaEl.style.display = "block";
     loadEl.style.display = "none";
   }

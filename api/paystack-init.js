@@ -1,7 +1,7 @@
 // api/paystack-init.js
 // Security: CORS, input validation, Redis rate limiting
 
-const ALLOWED_ORIGIN = process.env.APP_URL || "https://ledgerbook-nu.vercel.app";
+const ALLOWED_ORIGIN = process.env.APP_URL || "https://cashcounter.vbookng.com";
 const { increment, ttl } = require("./redis.js");
 
 // 5 checkout attempts per IP per minute
@@ -65,7 +65,7 @@ module.exports = async function handler(req, res) {
   const secret = process.env.PAYSTACK_SECRET_KEY;
   if (!secret) return res.status(500).json({ error: "Payment service not configured" });
 
-  const appUrl = process.env.APP_URL || "https://ledgerbook-nu.vercel.app";
+  const appUrl = process.env.APP_URL || "https://cashcounter.vbookng.com";
 
   try {
     const response = await fetch("https://api.paystack.co/transaction/initialize", {

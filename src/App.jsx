@@ -1,5 +1,5 @@
 // ================================================================
-// LedgerBook Pro v3 — Business Finance Tracker
+// Cash Counter — Business Finance Tracker by VBook Enterprise
 // UI Fix: Proper mobile padding, safe-area insets, responsive layout
 // ================================================================
 
@@ -771,7 +771,7 @@ ${(() => {
 
 <!-- ═══ FOOTER ═══════════════════════════════════════════════════ -->
 <div class="doc-footer">
-  <span>${branding.businessName} · Prepared by LedgerBook Pro</span>
+  <span>${branding.businessName} · Powered by Cash Counter</span>
   <span>Generated: ${dateStr}</span>
 </div>
 
@@ -800,7 +800,7 @@ const buildWAReport = (entries, currency, branding, rangeLabel) => {
     `━━━━━━━━━━━━━━━━━━━`,``,`📋 *Transactions (${entries.length}):*`,
     ...entries.slice(0,5).map(e=>`${e.type==="income"?"➕":"➖"} *${e.category}* — ${fmtAmt(e.amount,currency)}${e.note?`\n   _${e.note}_`:""}`),
     entries.length>5?`_...and ${entries.length-5} more_`:"",
-    ``,`_${branding.tagline}_`,`_Powered by LedgerBook Pro_`,
+    ``,`_${branding.tagline}_`,`_Powered by Cash Counter_`,
   ].filter(x=>x!==undefined).join("\n");
 };
 
@@ -836,7 +836,7 @@ function UpgradeModal({ onClose, reason="default", monthCount=0, p="#075E54", us
     limit:   { icon:"🚫", title:"Monthly limit reached", sub:`You've used all ${FREE_LIMITS.ENTRIES_PER_MONTH} free entries for ${new Date().toLocaleString("default",{month:"long"})}. Upgrade for unlimited entries.` },
     budget:  { icon:"🎯", title:"Budget feature is Pro",  sub:"Create and track budgets, set targets per category, and see detailed budget vs actual reports." },
     cats:    { icon:"🏷️", title:"Custom categories are Pro", sub:"Edit, add, and remove income and expense categories to match your exact business structure." },
-    default: { icon:"⚡", title:"Upgrade to LedgerBook Pro", sub:"Unlock the full power of LedgerBook and grow your business faster." },
+    default: { icon:"⚡", title:"Upgrade to Cash Counter", sub:"Unlock the full power of Cash Counter and grow your business faster." },
   };
   const { icon, title, sub } = reasons[reason] || reasons.default;
 
@@ -1195,8 +1195,8 @@ const CAROUSEL_INTERVAL = 5000; // ms between slides
 
 function AdBanner({ onUpgrade, p="#075E54", slot="home" }) {
   const upgradeAd = {
-    active:true, logo:"✨", brand:"LedgerBook Pro", isUpgrade:true,
-    title:"Upgrade to LedgerBook Pro",
+    active:true, logo:"✨", brand:"Cash Counter", isUpgrade:true,
+    title:"Upgrade to Cash Counter",
     body:"Remove ads, unlock budgets & unlimited entries.",
     cta:"Upgrade ✨", color:"#075E54", url:"",
   };
@@ -1530,7 +1530,7 @@ function SplashScreen() {
           📒
         </div>
         <div className="sp-title" style={{color:"#fff",fontWeight:900,fontSize:30,letterSpacing:"-.7px",textShadow:"0 2px 18px rgba(0,0,0,.3)",marginBottom:6}}>
-          LedgerBook Pro
+          Cash Counter
         </div>
         <div className="sp-tag" style={{color:"rgba(255,255,255,.6)",fontSize:14,fontWeight:500,letterSpacing:".3px",marginBottom:44}}>
           Track · Grow · Prosper
@@ -1820,7 +1820,7 @@ function AuthScreen() {
           📒
         </div>
         <div style={{color:"#fff",fontWeight:900,fontSize:22,letterSpacing:"-.5px",textShadow:"0 2px 12px rgba(0,0,0,.22)"}}>
-          LedgerBook Pro
+          Cash Counter
         </div>
         <div style={{color:"rgba(255,255,255,.55)",fontSize:13,marginTop:4}}>
           {mode==="login" ? "Welcome back 👋" : "Let's get you started 🚀"}
@@ -2011,9 +2011,9 @@ function AuthScreen() {
             {/* Legal */}
             <div style={{textAlign:"center",marginTop:13,fontSize:11,color:"#ccc",lineHeight:1.65}}>
               By continuing you agree to our{" "}
-              <a href="https://ledgerbook-nu.vercel.app/terms" target="_blank" rel="noopener noreferrer" style={{color:"#075E54",fontWeight:700,textDecoration:"none"}}>Terms</a>
+              <a href="https://cashcounter.vbookng.com/terms" target="_blank" rel="noopener noreferrer" style={{color:"#075E54",fontWeight:700,textDecoration:"none"}}>Terms</a>
               {" "}and{" "}
-              <a href="https://ledgerbook-nu.vercel.app/privacy" target="_blank" rel="noopener noreferrer" style={{color:"#075E54",fontWeight:700,textDecoration:"none"}}>Privacy Policy</a>
+              <a href="https://cashcounter.vbookng.com/privacy" target="_blank" rel="noopener noreferrer" style={{color:"#075E54",fontWeight:700,textDecoration:"none"}}>Privacy Policy</a>
             </div>
 
           </div>
@@ -2454,8 +2454,8 @@ function SettingsScreen({ branding, setBranding, currency, setCurrency, incCats,
             <div style={{ fontSize:11, fontWeight:800, color:"#bbb", textTransform:"uppercase", letterSpacing:1, marginBottom:12 }}>Legal</div>
             <div style={{ background:"#fff", borderRadius:16, overflow:"hidden", border:"1px solid #f0f0f0" }}>
               {[
-                ["🔒", "Privacy Policy",   "https://ledgerbook-nu.vercel.app/privacy"],
-                ["📋", "Terms of Service", "https://ledgerbook-nu.vercel.app/terms"],
+                ["🔒", "Privacy Policy",   "https://cashcounter.vbookng.com/privacy"],
+                ["📋", "Terms of Service", "https://cashcounter.vbookng.com/terms"],
                 ["📧", "Contact Support",  "mailto:v.bookenterprise@gmail.com"],
               ].map(([icon, label, href]) => (
                 <a key={label} href={href} target="_blank" rel="noopener noreferrer"
@@ -2471,7 +2471,7 @@ function SettingsScreen({ branding, setBranding, currency, setCurrency, incCats,
               ))}
             </div>
             <div style={{ textAlign:"center", fontSize:11, color:"#ccc", marginTop:12 }}>
-              LedgerBook Pro · VBook Enterprise · v1.0
+              Cash Counter · VBook Enterprise · v1.0
             </div>
           </div>
         </>}
@@ -3028,7 +3028,7 @@ function OnboardingScreen({ user, onComplete }) {
 }
 
 
-export default function LedgerBookPro() {
+export default function CashCounter() {
   const [user,setUser]               = useState(null);
   const [authChecked,setChecked]     = useState(false);
   const [needsOnboarding,setNeeds]   = useState(false);

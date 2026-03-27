@@ -2,7 +2,7 @@
 // Rate limits registration and login attempts by IP using Upstash Redis.
 // Falls back to allowing requests if Redis is unavailable.
 
-const ALLOWED_ORIGIN = process.env.APP_URL || "https://ledgerbook-nu.vercel.app";
+const ALLOWED_ORIGIN = process.env.APP_URL || "https://cashcounter.vbookng.com";
 const { increment, ttl } = require("./redis.js");
 
 // Limits

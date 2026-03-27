@@ -1,7 +1,7 @@
 // api/paystack-verify.js
 // Security: reference validation, uid validation, idempotency check, CORS
 
-const ALLOWED_ORIGIN = process.env.APP_URL || "https://ledgerbook-nu.vercel.app";
+const ALLOWED_ORIGIN = process.env.APP_URL || "https://cashcounter.vbookng.com";
 
 let admin;
 function getDb() {
