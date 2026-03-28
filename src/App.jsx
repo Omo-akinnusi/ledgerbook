@@ -1197,7 +1197,7 @@ const CAROUSEL_INTERVAL = 5000; // ms between slides
 function AdBanner({ onUpgrade, p="#075E54", slot="home" }) {
   const upgradeAd = {
     active:true, logo:"✨", brand:"Cash Counter", isUpgrade:true,
-    title:"Upgrade to Cash Counter",
+    title:"Upgrade to Cash Counter Pro",
     body:"Remove ads, unlock budgets & unlimited entries.",
     cta:"Upgrade ✨", color:"#075E54", url:"",
   };
