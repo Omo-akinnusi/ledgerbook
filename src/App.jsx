@@ -872,7 +872,6 @@ function UpgradeModal({ onClose, reason="default", monthCount=0, p="#075E54", us
       perMonth: null,
       discount: "Save 10%",
       detail: "One payment every 6 months",
-      popular: true,
     },
     {
       id: "annually",
@@ -881,6 +880,7 @@ function UpgradeModal({ onClose, reason="default", monthCount=0, p="#075E54", us
       perMonth: null,
       discount: "Save 17%",
       detail: "Best value — one payment per year",
+      popular: true,
     },
   ];
 
