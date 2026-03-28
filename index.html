@@ -2,10 +2,31 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link href="https://fonts.googleapis.com/css2?family=Funnel+Display:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>Cash Counter — Business Finance Tracker</title>
+    <meta name="description" content="Track your business income, expenses and budgets. Built for Nigerian SMEs."/>
+    <meta name="theme-color" content="#075E54"/>
+
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="/manifest.json"/>
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg"/>
+
+    <!-- iOS home screen support -->
+    <meta name="apple-mobile-web-app-capable" content="yes"/>
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+    <meta name="apple-mobile-web-app-title" content="Cash Counter"/>
+    <link rel="apple-touch-icon" href="/favicon.svg"/>
+
+    <!-- Open Graph (for link sharing) -->
+    <meta property="og:title" content="Cash Counter"/>
+    <meta property="og:description" content="Business finance tracker for Nigerian SMEs"/>
+    <meta property="og:url" content="https://cashcounter.vbookng.com"/>
+    <meta property="og:type" content="website"/>
+
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Funnel+Display:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
 
     <!-- Google Analytics 4 -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-ER07EQ4THQ"></script>
@@ -16,24 +37,18 @@
       gtag('config', 'G-ER07EQ4THQ', {
         send_page_view: false,
       });
-
       window.trackEvent = function(eventName, params) {
-        if (typeof gtag === 'function') {
-          gtag('event', eventName, params || {});
-        }
+        if (typeof gtag === 'function') gtag('event', eventName, params || {});
       };
-
       window.trackPage = function(pageName) {
-        if (typeof gtag === 'function') {
-          gtag('event', 'page_view', {
-            page_title: pageName,
-            page_location: window.location.href,
-          });
-        }
+        if (typeof gtag === 'function') gtag('event', 'page_view', {
+          page_title: pageName,
+          page_location: window.location.href,
+        });
       };
     </script>
 
-    <!-- Google AdSense — uncomment and replace publisher ID when approved -->
+    <!-- Google AdSense — uncomment when approved -->
     <!--
     <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-XXXXXXXXXXXXXXXX"
       crossorigin="anonymous"></script>
