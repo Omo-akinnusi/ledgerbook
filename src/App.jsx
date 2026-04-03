@@ -1603,7 +1603,8 @@ function AuthScreen() {
   // Client-side lockout — tracks failed attempts this session
   const [failCount,   setFailCount]   = useState(0);
   const [lockedUntil, setLockedUntil] = useState(0);
-  const [lockTimer,   setLockTimer]   = useState(0); // countdown seconds
+  const [lockTimer,   setLockTimer]   = useState(0);
+  const [termsAccepted, setTermsAccepted] = useState(false); // countdown seconds
 
   // Countdown ticker
   useEffect(() => {
@@ -1692,6 +1693,7 @@ function AuthScreen() {
     setMode(m); setErr(""); setSuccess("");
     setForm({name:"",email:"",password:"",confirm:"",businessName:""});
     setPwStrength({ score:0, hints:[] });
+    setTermsAccepted(false);
   };
 
   const handleForgotPassword = async () => {
@@ -1735,6 +1737,7 @@ function AuthScreen() {
     if (!form.email.includes("@")) return setErr("Enter a valid email address");
     if (!isStrongPassword(form.password)) return setErr("Password must be at least 8 characters with one uppercase letter, one lowercase letter, and one number");
     if (form.password !== form.confirm) return setErr("Passwords do not match");
+    if (!termsAccepted) return setErr("Please read and accept the Terms of Service and Privacy Policy to continue.");
 
     setBusy(true); setBusyBtn("email");
 
@@ -1981,14 +1984,15 @@ function AuthScreen() {
             {/* Submit */}
             <button className="au-btn"
               onClick={mode==="login" ? handleLogin : mode==="register" ? handleRegister : handleForgotPassword}
-              disabled={busy || isLocked}
+              disabled={busy || isLocked || (mode==="register" && !termsAccepted)}
               style={{width:"100%",padding:"15px",
-                background: busy || isLocked ? "#e5e7eb"
+                background: busy || isLocked || (mode==="register" && !termsAccepted) ? "#e5e7eb"
                   : "linear-gradient(135deg,#054d44 0%,#075E54 40%,#128C7E 75%,#1aab92 100%)",
-                color: busy || isLocked ? "#9ca3af" : "#fff",
+                color: busy || isLocked || (mode==="register" && !termsAccepted) ? "#9ca3af" : "#fff",
                 border:"none",borderRadius:15,fontSize:16,fontWeight:900,
-                cursor: busy || isLocked ? "not-allowed" : "pointer",letterSpacing:"-.2px",
-                boxShadow: busy || isLocked ? "none" : "0 6px 22px rgba(7,94,84,.38)"}}>
+                cursor: busy || isLocked || (mode==="register" && !termsAccepted) ? "not-allowed" : "pointer",
+                letterSpacing:"-.2px",
+                boxShadow: busy || isLocked || (mode==="register" && !termsAccepted) ? "none" : "0 6px 22px rgba(7,94,84,.38)"}}>
               {busy ? "Please wait…"
                 : isLocked ? `🔒 Locked (${lockTimer}s)`
                 : mode==="login"    ? "Sign In →"
@@ -2022,12 +2026,47 @@ function AuthScreen() {
             </div>
 
             {/* Legal */}
-            <div style={{textAlign:"center",marginTop:13,fontSize:11,color:"#ccc",lineHeight:1.65}}>
-              By continuing you agree to our{" "}
-              <a href="https://cashcounter.vbookng.com/terms" target="_blank" rel="noopener noreferrer" style={{color:"#075E54",fontWeight:700,textDecoration:"none"}}>Terms</a>
-              {" "}and{" "}
-              <a href="https://cashcounter.vbookng.com/privacy" target="_blank" rel="noopener noreferrer" style={{color:"#075E54",fontWeight:700,textDecoration:"none"}}>Privacy Policy</a>
-            </div>
+            {mode === "register" ? (
+              <div style={{display:"flex", alignItems:"flex-start", gap:10, marginTop:12,
+                padding:"12px 14px", background:"#f9fafb", borderRadius:12,
+                border: `1.5px solid ${termsAccepted ? "#bbf7d0" : "#e5e7eb"}`}}>
+                <div style={{flexShrink:0, marginTop:1}}>
+                  <input
+                    type="checkbox"
+                    id="terms-checkbox"
+                    checked={termsAccepted}
+                    onChange={e => setTermsAccepted(e.target.checked)}
+                    style={{width:18, height:18, cursor:"pointer", accentColor:"#075E54"}}/>
+                </div>
+                <label htmlFor="terms-checkbox"
+                  style={{fontSize:12, color:"#555", lineHeight:1.6, cursor:"pointer"}}>
+                  I have read and agree to the{" "}
+                  <a href="https://cashcounter.vbookng.com/terms" target="_blank"
+                    rel="noopener noreferrer"
+                    style={{color:"#075E54", fontWeight:700, textDecoration:"none"}}
+                    onClick={e => e.stopPropagation()}>
+                    Terms of Service
+                  </a>
+                  {" "}and{" "}
+                  <a href="https://cashcounter.vbookng.com/privacy" target="_blank"
+                    rel="noopener noreferrer"
+                    style={{color:"#075E54", fontWeight:700, textDecoration:"none"}}
+                    onClick={e => e.stopPropagation()}>
+                    Privacy Policy
+                  </a>
+                  , including the subscription and refund policy.
+                </label>
+              </div>
+            ) : mode === "login" ? (
+              <div style={{textAlign:"center", marginTop:13, fontSize:11, color:"#ccc", lineHeight:1.65}}>
+                By signing in you agree to our{" "}
+                <a href="https://cashcounter.vbookng.com/terms" target="_blank" rel="noopener noreferrer"
+                  style={{color:"#075E54", fontWeight:700, textDecoration:"none"}}>Terms</a>
+                {" "}and{" "}
+                <a href="https://cashcounter.vbookng.com/privacy" target="_blank" rel="noopener noreferrer"
+                  style={{color:"#075E54", fontWeight:700, textDecoration:"none"}}>Privacy Policy</a>
+              </div>
+            ) : null}
 
           </div>
         </div>
