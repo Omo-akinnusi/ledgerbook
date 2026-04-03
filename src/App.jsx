@@ -5344,5 +5344,3 @@ function BudgetDetail({ budget, entries, currency, p, bg, isDesktop, onBack, onE
   );
 }
 
-/ /   t r i g g e r  
- 
