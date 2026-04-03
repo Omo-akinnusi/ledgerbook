@@ -11,11 +11,16 @@ import {
   onAuthStateChanged,
   signOut,
   reload,
+  deleteUser,
+  reauthenticateWithCredential,
+  reauthenticateWithPopup,
+  EmailAuthProvider,
 } from "firebase/auth";
 import {
   getFirestore,
   doc,
   getDoc,
+  getDocs,
   setDoc,
   updateDoc,
   collection,
@@ -56,8 +61,12 @@ export {
   onAuthStateChanged,
   signOut,
   reload,
+  deleteUser,
+  reauthenticateWithCredential,
+  reauthenticateWithPopup,
+  EmailAuthProvider,
   // Firestore
-  doc, getDoc, setDoc, updateDoc,
+  doc, getDoc, getDocs, setDoc, updateDoc,
   collection, addDoc, deleteDoc,
   onSnapshot, query, orderBy, limit, serverTimestamp,
 };

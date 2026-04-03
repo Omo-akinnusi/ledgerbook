@@ -25,7 +25,11 @@ import {
   onAuthStateChanged,
   signOut,
   reload,
-  doc, getDoc, setDoc, updateDoc,
+  deleteUser,
+  reauthenticateWithCredential,
+  reauthenticateWithPopup,
+  EmailAuthProvider,
+  doc, getDoc, getDocs, setDoc, updateDoc,
   collection, addDoc, deleteDoc,
   onSnapshot, query, orderBy, limit, serverTimestamp,
 } from "./firebase.js";
@@ -2094,8 +2098,176 @@ function KeyboardWidget({ currency, branding, incCats, expCats, onClose }) {
 // ═══════════════════════════════════════════════════════════════
 const COLORS = ["#075E54","#1a237e","#880e4f","#bf360c","#1b5e20","#4a148c","#006064","#212121","#b71c1c","#e65100","#f57f17","#37474f"];
 
+// ═══════════════════════════════════════════════════════════════
+// DELETE ACCOUNT MODAL
+// ═══════════════════════════════════════════════════════════════
+function DeleteAccountModal({ user, onDeleted, onClose }) {
+  const isGoogle    = auth.currentUser?.providerData?.some(p => p.providerId === "google.com");
+  const [step,      setStep]     = useState(1); // 1=confirm, 2=reauth, 3=deleting
+  const [password,  setPassword] = useState("");
+  const [err,       setErr]      = useState("");
+  const [busy,      setBusy]     = useState(false);
+
+  // Delete all Firestore subcollections then the profile doc
+  const deleteAllUserData = async (uid) => {
+    const db = auth.currentUser ? (await import("./firebase.js")).db : null;
+    if (!db) return;
+    // Delete subcollections in parallel
+    const cols = ["entries", "budgets", "notifications"];
+    await Promise.all(cols.map(async (colName) => {
+      const snap = await getDocs(collection(db, "users", uid, colName));
+      await Promise.all(snap.docs.map(d => deleteDoc(d.ref)));
+    }));
+    // Delete settings docs
+    const settingsSnap = await getDocs(collection(db, "users", uid, "settings"));
+    await Promise.all(settingsSnap.docs.map(d => deleteDoc(d.ref)));
+    // Delete profile doc
+    await deleteDoc(doc(db, "users", uid));
+  };
+
+  const handleDelete = async () => {
+    setErr(""); setBusy(true); setStep(3);
+    try {
+      const firebaseUser = auth.currentUser;
+
+      // Re-authenticate
+      if (isGoogle) {
+        await reauthenticateWithPopup(firebaseUser, googleProvider);
+      } else {
+        if (!password) { setErr("Please enter your password."); setBusy(false); setStep(2); return; }
+        const credential = EmailAuthProvider.credential(firebaseUser.email, password);
+        await reauthenticateWithCredential(firebaseUser, credential);
+      }
+
+      // Delete all Firestore data
+      await deleteAllUserData(firebaseUser.uid);
+
+      // Delete Firebase Auth account
+      await deleteUser(firebaseUser);
+
+      // Notify parent — triggers sign out and redirect to auth screen
+      onDeleted();
+
+    } catch(e) {
+      setBusy(false);
+      setStep(isGoogle ? 1 : 2);
+      if (e.code === "auth/wrong-password" || e.code === "auth/invalid-credential") {
+        setErr("Incorrect password. Please try again.");
+      } else if (e.code === "auth/popup-closed-by-user") {
+        setErr("Sign-in cancelled. Please try again.");
+      } else if (e.code === "auth/requires-recent-login") {
+        setErr("Please sign out and sign back in before deleting your account.");
+      } else {
+        setErr(e.message || "Failed to delete account. Please try again.");
+      }
+    }
+  };
+
+  return (
+    <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.6)", zIndex:600,
+      display:"flex", alignItems:"center", justifyContent:"center",
+      padding:"24px 20px", backdropFilter:"blur(3px)" }}
+      onClick={e => { if (e.target === e.currentTarget && !busy) onClose(); }}>
+
+      <div style={{ width:"100%", maxWidth:420, background:"#fff",
+        borderRadius:24, padding:"28px 24px",
+        boxShadow:"0 24px 64px rgba(0,0,0,0.3)" }}>
+
+        {step === 3 ? (
+          // Deleting state
+          <div style={{ textAlign:"center", padding:"20px 0" }}>
+            <div style={{ fontSize:48, marginBottom:16 }}>🗑️</div>
+            <div style={{ fontWeight:900, fontSize:18, color:"#1a1a1a", marginBottom:8 }}>
+              Deleting your account…
+            </div>
+            <div style={{ fontSize:14, color:"#9ca3af" }}>
+              Please wait while we erase all your data.
+            </div>
+          </div>
+        ) : step === 1 ? (
+          // Step 1 — Confirm
+          <>
+            <div style={{ textAlign:"center", marginBottom:20 }}>
+              <div style={{ fontSize:48, marginBottom:12 }}>⚠️</div>
+              <div style={{ fontWeight:900, fontSize:18, color:"#c62828", marginBottom:8 }}>
+                Delete your account?
+              </div>
+              <div style={{ fontSize:14, color:"#6b7280", lineHeight:1.65 }}>
+                This will permanently delete:
+              </div>
+            </div>
+            <div style={{ background:"#fff3f0", border:"1px solid #ffcdd2",
+              borderRadius:14, padding:"14px 16px", marginBottom:20 }}>
+              {["All your financial entries", "All your budgets", "Your business profile and settings",
+                "Your subscription (no refund for unused period)", "All notifications"].map(item => (
+                <div key={item} style={{ fontSize:13, color:"#c62828", marginBottom:5, display:"flex", gap:8 }}>
+                  <span>✗</span><span>{item}</span>
+                </div>
+              ))}
+            </div>
+            <p style={{ fontSize:13, color:"#9ca3af", textAlign:"center", marginBottom:20 }}>
+              This action is <strong>permanent</strong> and cannot be undone.
+            </p>
+            {err && <div style={{ color:"#c62828", fontSize:13, marginBottom:12 }}>⚠️ {err}</div>}
+            <div style={{ display:"flex", gap:10 }}>
+              <button onClick={onClose}
+                style={{ flex:1, padding:"13px", background:"#f5f5f5", border:"none",
+                  borderRadius:13, fontWeight:700, fontSize:14, cursor:"pointer", color:"#555" }}>
+                Cancel
+              </button>
+              <button onClick={() => isGoogle ? handleDelete() : setStep(2)}
+                style={{ flex:1, padding:"13px", background:"#c62828", border:"none",
+                  borderRadius:13, fontWeight:900, fontSize:14, cursor:"pointer", color:"#fff" }}>
+                {isGoogle ? "Continue with Google" : "Continue →"}
+              </button>
+            </div>
+          </>
+        ) : (
+          // Step 2 — Re-auth with password
+          <>
+            <div style={{ textAlign:"center", marginBottom:20 }}>
+              <div style={{ fontSize:40, marginBottom:10 }}>🔒</div>
+              <div style={{ fontWeight:900, fontSize:17, color:"#1a1a1a", marginBottom:6 }}>
+                Confirm your password
+              </div>
+              <div style={{ fontSize:13, color:"#9ca3af" }}>
+                Enter your password to confirm account deletion.
+              </div>
+            </div>
+            <input
+              type="password"
+              placeholder="Your password"
+              value={password}
+              onChange={e => setPassword(e.target.value)}
+              autoFocus
+              style={{ width:"100%", padding:"13px 16px", border:"1.5px solid #e5e7eb",
+                borderRadius:13, fontSize:15, outline:"none", boxSizing:"border-box",
+                fontFamily:"inherit", marginBottom:err ? 8 : 16 }}/>
+            {err && <div style={{ color:"#c62828", fontSize:13, marginBottom:12 }}>⚠️ {err}</div>}
+            <div style={{ display:"flex", gap:10 }}>
+              <button onClick={() => { setStep(1); setErr(""); }}
+                style={{ flex:1, padding:"13px", background:"#f5f5f5", border:"none",
+                  borderRadius:13, fontWeight:700, fontSize:14, cursor:"pointer", color:"#555" }}>
+                ← Back
+              </button>
+              <button onClick={handleDelete} disabled={busy || !password}
+                style={{ flex:1, padding:"13px", background: busy || !password ? "#e5e7eb" : "#c62828",
+                  border:"none", borderRadius:13, fontWeight:900, fontSize:14,
+                  cursor: busy || !password ? "not-allowed" : "pointer",
+                  color: busy || !password ? "#9ca3af" : "#fff" }}>
+                {busy ? "Deleting…" : "Delete Account"}
+              </button>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function SettingsScreen({ branding, setBranding, currency, setCurrency, incCats, setIncCats, expCats, setExpCats, user, onLogout, onClose, isPro=false, onUpgrade, planInfo=null, onUserUpdate }) {
   const [editingProfile, setEditingProfile] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [profileForm,    setProfileForm]    = useState({
     businessName: user.businessName || "",
     industry:     user.industry     || "",
@@ -2457,6 +2629,23 @@ function SettingsScreen({ branding, setBranding, currency, setCurrency, incCats,
             )}
           </div>
           <button onClick={onLogout} style={{ width:"100%", padding:"15px", background:"#fff", border:"2px solid #ffcdd2", borderRadius:14, color:"#c62828", fontWeight:900, cursor:"pointer", fontSize:15 }}>🚪 Sign Out</button>
+
+          {/* Delete account */}
+          <button onClick={() => setShowDeleteModal(true)}
+            style={{ width:"100%", padding:"12px", background:"none", border:"none",
+              color:"#9ca3af", fontWeight:600, cursor:"pointer", fontSize:13,
+              marginTop:8, textDecoration:"underline" }}>
+            Delete my account
+          </button>
+
+          {/* Delete Account Modal */}
+          {showDeleteModal && (
+            <DeleteAccountModal
+              user={user}
+              onDeleted={() => { setShowDeleteModal(false); onLogout(); }}
+              onClose={() => setShowDeleteModal(false)}
+            />
+          )}
 
           {/* ── Legal links ── */}
           <div style={{ marginTop:24 }}>
