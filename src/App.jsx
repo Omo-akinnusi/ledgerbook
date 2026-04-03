@@ -3272,11 +3272,8 @@ function AppCore({ user, onLogout, onUserUpdate }) {
   const [form,      setForm]      = useState({type:"income",amount:"",category:"",note:"",date:new Date().toISOString().split("T")[0]});
   const [txFilter,  setTxFilter]  = useState("all");
   const [toast,     setToast]     = useState(null);
-  const [showKB,    setShowKB]    = useState(false);
   const [showSt,    setShowSt]    = useState(false);
-  const [showWA,    setShowWA]    = useState(false);
   const [showDP,    setShowDP]    = useState(false);
-  const [waPhone,   setWaPhone]   = useState("");
   const [datePreset,setDatePreset]= useState("all");
   const [dateRange, setDateRange] = useState({from:"",to:""});
   const [budgets,   setBudgets]   = useState([]);
@@ -3510,21 +3507,6 @@ function AppCore({ user, onLogout, onUserUpdate }) {
     }
   };
 
-  const handleKB = async (data) => {
-    if (data) {
-      if (atLimit) { setShowKB(false); trackLimitReached(); return openUpgrade("limit"); }
-      try {
-        await addEntry(uid, { ...data, date: new Date().toISOString() });
-        trackQuickEntry();
-        showToast("⌨️ Quick entry saved!");
-      } catch(e) {
-        Sentry.captureException(e, { tags: { operation: "quick_entry" } });
-        showToast("❌ Failed to save.","#c62828");
-      }
-    }
-    setShowKB(false);
-  };
-
   // ── Responsive breakpoint ────────────────────────────────────
   const bp = useBreakpoint();
   const isDesktop = bp === "desktop";
@@ -3608,7 +3590,7 @@ function AppCore({ user, onLogout, onUserUpdate }) {
         {/* Divider */}
         <div style={{ height:1, background:"rgba(255,255,255,0.1)", margin:"14px 4px" }}/>
         <div style={{ fontSize:10, opacity:.45, textTransform:"uppercase", letterSpacing:1.5, padding:"0 10px", marginBottom:8 }}>Tools</div>
-        {[["⌨️","Quick Entry",()=>setShowKB(true)],["💬","WhatsApp Share",()=>setShowWA(true)],["⚙️","Settings",()=>setShowSt(true)]].map(([icon,label,fn])=>(
+        {[["⚙️","Settings",()=>setShowSt(true)]].map(([icon,label,fn])=>(
           <button key={label} onClick={fn}
             style={{ width:"100%", display:"flex", alignItems:"center", gap:13, padding:"11px 14px", borderRadius:14,
               marginBottom:3, border:"none", cursor:"pointer", textAlign:"left", fontSize:13, fontWeight:500,
@@ -3689,7 +3671,7 @@ function AppCore({ user, onLogout, onUserUpdate }) {
                     display:"flex", alignItems:"center", gap:7, backdropFilter:"blur(4px)" }}>
                   {icon} {label}
                 </button>
-              )) : [["⌨️",()=>setShowKB(true),"Quick Entry"],["💬",()=>setShowWA(true),"WhatsApp"],["⚙️",()=>setShowSt(true),"Settings"]].map(([icon,fn,title])=>(
+              )) : [["⚙️",()=>setShowSt(true),"Settings"]].map(([icon,fn,title])=>(
                 <button key={title} onClick={fn} title={title}
                   style={{ background:"rgba(255,255,255,0.18)", border:"none", borderRadius:10, color:"#fff",
                     width:36, height:36, cursor:"pointer", fontSize:15, display:"flex", alignItems:"center", justifyContent:"center" }}>
@@ -4378,10 +4360,6 @@ function AppCore({ user, onLogout, onUserUpdate }) {
                   style={{ flex:1, minWidth:140, padding:"13px", background:"#F3F0FF", border:"1.5px solid #C5CAE9", borderRadius:14, fontWeight:700, cursor:"pointer", fontSize:13, color:"#283593" }}>
                   🖨️ PDF Report
                 </button>
-                <button onClick={()=>setShowWA(true)}
-                  style={{ flex:1, minWidth:140, padding:"13px", background:"#25D366", color:"#fff", border:"none", borderRadius:14, fontSize:13, fontWeight:900, cursor:"pointer" }}>
-                  💬 WhatsApp
-                </button>
               </div>
             </div>
           </div>
@@ -4421,8 +4399,7 @@ function AppCore({ user, onLogout, onUserUpdate }) {
         </div>
 
         {/* ── OVERLAYS ── */}
-        {showKB&&<KeyboardWidget currency={currency} branding={branding} incCats={incCats} expCats={expCats} onClose={handleKB}/>}
-        {showSt&&<SettingsScreen branding={branding} setBranding={setBranding} currency={currency} setCurrency={setCurrency}
+                {showSt&&<SettingsScreen branding={branding} setBranding={setBranding} currency={currency} setCurrency={setCurrency}
           incCats={incCats} setIncCats={setIncCats} expCats={expCats} setExpCats={setExpCats}
           user={user} onLogout={onLogout} onClose={()=>setShowSt(false)}
           isPro={isPro} onUpgrade={()=>{ setShowSt(false); openUpgrade(); }}
@@ -4431,34 +4408,6 @@ function AppCore({ user, onLogout, onUserUpdate }) {
         {showUpgrade&&<UpgradeModal onClose={()=>setShowUpgrade(false)} reason={atLimit?"limit":"default"} monthCount={monthCount} p={p} user={user} currency={currency}/>}
         {editingEntry&&<EditEntryModal entry={editingEntry} onClose={()=>setEditingEntry(null)} onSave={handleEditSave} incCats={incCats} expCats={expCats} currency={currency}/>}
         {showNotifs&&<NotificationPanel uid={uid} notifs={notifs} onClose={()=>setShowNotifs(false)} onMarkAllRead={()=>markAllRead(uid,notifs)}/>}
-
-        {/* WhatsApp Modal */}
-        {showWA&&(
-          <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.5)", zIndex:180, display:"flex", alignItems:"flex-end" }}
-            onClick={e=>{if(e.target===e.currentTarget)setShowWA(false);}}>
-          <div style={{ background:"#fff", borderRadius:"24px 24px 0 0", width:"100%",
-            paddingLeft:S.px, paddingRight:S.px, paddingTop:26,
-            paddingBottom:`max(26px, calc(env(safe-area-inset-bottom,0px) + 26px))` }}>
-              <div style={{ fontWeight:900, fontSize:17, marginBottom:4, color:"#222" }}>💬 Share via WhatsApp</div>
-              <div style={{ fontSize:12, color:"#999", marginBottom:12 }}>
-                Period: <span style={{ color:p, fontWeight:700 }}>{rLabel}</span> · {dateFilt.length} transactions
-              </div>
-              <div style={{ background:"#f0f7f0", borderRadius:14, padding:14, fontSize:12, color:"#555", marginBottom:16,
-                whiteSpace:"pre-wrap", maxHeight:160, overflow:"auto", fontFamily:"monospace", lineHeight:1.6 }}>
-                {buildWAReport(dateFilt,currency,branding,rLabel)}
-              </div>
-              <div style={{ fontSize:12, color:"#999", marginBottom:7 }}>Phone number (optional, with country code)</div>
-              <input value={waPhone} onChange={e=>setWaPhone(e.target.value)} placeholder="e.g. 2348012345678"
-                style={{ width:"100%", padding:"12px 15px", borderRadius:12, border:"2px solid #eee", fontSize:14, marginBottom:16, boxSizing:"border-box", outline:"none" }}/>
-              <div style={{ display:"flex", gap:10 }}>
-                <button onClick={()=>{navigator.clipboard.writeText(buildWAReport(dateFilt,currency,branding,rLabel));showToast("📋 Copied!");setShowWA(false);}}
-                  style={{ flex:1, padding:"13px", background:"#f2f2f2", border:"none", borderRadius:13, fontWeight:700, cursor:"pointer", fontSize:14 }}>📋 Copy</button>
-                <button onClick={()=>{ const t=buildWAReport(dateFilt,currency,branding,rLabel); window.open(waPhone?`https://wa.me/${waPhone}?text=${encodeURIComponent(t)}`:`https://wa.me/?text=${encodeURIComponent(t)}`,"_blank"); setShowWA(false); }}
-                  style={{ flex:2, padding:"13px", background:"#25D366", color:"#fff", border:"none", borderRadius:13, fontWeight:900, cursor:"pointer", fontSize:15 }}>💬 Open WhatsApp</button>
-              </div>
-            </div>
-          </div>
-        )}
 
         {/* Toast */}
         {toast&&(
