@@ -1539,8 +1539,52 @@ function SplashScreen() {
 
       {/* ── Logo + title + dots ── */}
       <div style={{position:"relative",zIndex:10,display:"flex",flexDirection:"column",alignItems:"center",marginTop:-55}}>
-        <div className="sp-logo" style={{width:96,height:96,borderRadius:26,background:"rgba(255,255,255,.14)",backdropFilter:"blur(14px)",border:"2px solid rgba(255,255,255,.24)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:52,marginBottom:20,boxShadow:"0 10px 36px rgba(0,0,0,.32),inset 0 1px 0 rgba(255,255,255,.28)"}}>
-          📒
+        <div className="sp-logo" style={{width:96,height:96,borderRadius:26,background:"#075E54",display:"flex",alignItems:"center",justifyContent:"center",marginBottom:20,boxShadow:"0 10px 36px rgba(0,0,0,.32),inset 0 1px 0 rgba(255,255,255,.18)"}}>
+          <svg width="64" height="64" viewBox="0 0 500 500" xmlns="http://www.w3.org/2000/svg">
+            {/* Stack 1 — 2 coins */}
+            <ellipse cx="155" cy="320" rx="48" ry="13" fill="#c8960c"/>
+            <rect x="107" y="290" width="96" height="30" fill="#f5c842"/>
+            <ellipse cx="155" cy="290" rx="48" ry="13" fill="#ffe066"/>
+            <ellipse cx="155" cy="350" rx="48" ry="13" fill="#c8960c"/>
+            <rect x="107" y="320" width="96" height="30" fill="#f5c842"/>
+            <ellipse cx="155" cy="320" rx="48" ry="13" fill="#ffe066"/>
+            {/* Stack 2 — 4 coins */}
+            <ellipse cx="250" cy="260" rx="48" ry="13" fill="#c8960c"/>
+            <rect x="202" y="230" width="96" height="30" fill="#f5c842"/>
+            <ellipse cx="250" cy="230" rx="48" ry="13" fill="#ffe066"/>
+            <ellipse cx="250" cy="290" rx="48" ry="13" fill="#c8960c"/>
+            <rect x="202" y="260" width="96" height="30" fill="#f5c842"/>
+            <ellipse cx="250" cy="260" rx="48" ry="13" fill="#ffe066"/>
+            <ellipse cx="250" cy="320" rx="48" ry="13" fill="#c8960c"/>
+            <rect x="202" y="290" width="96" height="30" fill="#f5c842"/>
+            <ellipse cx="250" cy="290" rx="48" ry="13" fill="#ffe066"/>
+            <ellipse cx="250" cy="350" rx="48" ry="13" fill="#c8960c"/>
+            <rect x="202" y="320" width="96" height="30" fill="#f5c842"/>
+            <ellipse cx="250" cy="320" rx="48" ry="13" fill="#ffe066"/>
+            {/* Stack 3 — 6 coins */}
+            <ellipse cx="345" cy="200" rx="48" ry="13" fill="#c8960c"/>
+            <rect x="297" y="170" width="96" height="30" fill="#f5c842"/>
+            <ellipse cx="345" cy="170" rx="48" ry="13" fill="#ffe066"/>
+            <ellipse cx="345" cy="230" rx="48" ry="13" fill="#c8960c"/>
+            <rect x="297" y="200" width="96" height="30" fill="#f5c842"/>
+            <ellipse cx="345" cy="200" rx="48" ry="13" fill="#ffe066"/>
+            <ellipse cx="345" cy="260" rx="48" ry="13" fill="#c8960c"/>
+            <rect x="297" y="230" width="96" height="30" fill="#f5c842"/>
+            <ellipse cx="345" cy="230" rx="48" ry="13" fill="#ffe066"/>
+            <ellipse cx="345" cy="290" rx="48" ry="13" fill="#c8960c"/>
+            <rect x="297" y="260" width="96" height="30" fill="#f5c842"/>
+            <ellipse cx="345" cy="260" rx="48" ry="13" fill="#ffe066"/>
+            <ellipse cx="345" cy="320" rx="48" ry="13" fill="#c8960c"/>
+            <rect x="297" y="290" width="96" height="30" fill="#f5c842"/>
+            <ellipse cx="345" cy="290" rx="48" ry="13" fill="#ffe066"/>
+            <ellipse cx="345" cy="350" rx="48" ry="13" fill="#c8960c"/>
+            <rect x="297" y="320" width="96" height="30" fill="#f5c842"/>
+            <ellipse cx="345" cy="320" rx="48" ry="13" fill="#ffe066"/>
+            {/* Base line */}
+            <rect x="107" y="350" width="286" height="8" rx="4" fill="rgba(255,255,255,0.25)"/>
+            {/* Teal dot */}
+            <circle cx="345" cy="150" r="22" fill="#5fafc6"/>
+          </svg>
         </div>
         <div className="sp-title" style={{color:"#fff",fontWeight:900,fontSize:30,letterSpacing:"-.7px",textShadow:"0 2px 18px rgba(0,0,0,.3)",marginBottom:6}}>
           Cash Counter
