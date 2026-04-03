@@ -18,6 +18,7 @@ import {
 } from "firebase/auth";
 import {
   getFirestore,
+  enableIndexedDbPersistence,
   doc,
   getDoc,
   getDocs,
@@ -45,6 +46,19 @@ const firebaseConfig = {
 const app  = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db   = getFirestore(app);
+
+// Enable offline persistence — queues writes locally when offline
+// and syncs automatically when connection is restored.
+// Fails silently if already enabled (e.g. multiple tabs) or unsupported.
+enableIndexedDbPersistence(db).catch((e) => {
+  if (e.code === "failed-precondition") {
+    // Multiple tabs open — persistence only works in one tab at a time
+    console.warn("Offline persistence unavailable: multiple tabs open");
+  } else if (e.code === "unimplemented") {
+    // Browser doesn't support IndexedDB (very rare)
+    console.warn("Offline persistence not supported in this browser");
+  }
+});
 
 const googleProvider = new GoogleAuthProvider();
 googleProvider.setCustomParameters({ prompt: "select_account" });
