@@ -1742,13 +1742,21 @@ function AuthScreen() {
 
   const handleForgotPassword = async () => {
     setErr(""); setSuccess("");
+    if (isLocked) return setErr(`Too many attempts. Please wait ${lockTimer} seconds.`);
     if (!form.email.includes("@")) return setErr("Enter a valid email address");
     setBusy(true); setBusyBtn("forgot");
+
+    // Server-side rate limit check
+    const allowed = await checkRateLimit("forgot");
+    if (!allowed) { setBusy(false); setBusyBtn(""); return; }
+
     try {
       await sendPasswordResetEmail(auth, form.email);
       trackPasswordReset();
+      setFailCount(0);
       setSuccess(`Reset link sent to ${form.email} — check your inbox and spam folder.`);
     } catch(e) {
+      recordFailure();
       if (e.code === "auth/user-not-found" || e.code === "auth/invalid-credential")
         setErr("No account found with that email address.");
       else setErr(e.message || "Failed to send reset email. Try again.");

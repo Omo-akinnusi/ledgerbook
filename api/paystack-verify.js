@@ -1,7 +1,12 @@
 // api/paystack-verify.js
-// Security: reference validation, uid validation, idempotency check, CORS
+// Security: reference validation, uid validation, idempotency check, CORS, Redis rate limiting
 
 const ALLOWED_ORIGIN = process.env.APP_URL || "https://cashcounter.vbookng.com";
+const { increment, ttl } = require("./redis.js");
+
+// Max 10 verify attempts per IP per 10 minutes
+const VERIFY_LIMIT  = 10;
+const VERIFY_WINDOW = 10 * 60; // 10 minutes in seconds
 
 let admin;
 function getDb() {
@@ -42,6 +47,23 @@ module.exports = async function handler(req, res) {
 
   if (req.method === "OPTIONS") return res.status(200).end();
   if (req.method !== "GET") return res.status(405).json({ error: "Method not allowed" });
+
+  // Redis rate limiting — prevent brute force reference scanning
+  const ip = req.headers["x-forwarded-for"]?.split(",")[0]?.trim()
+    || req.socket?.remoteAddress || "unknown";
+  try {
+    const key   = `rl:verify:${ip}`;
+    const count = await increment(key, VERIFY_WINDOW);
+    if (count > VERIFY_LIMIT) {
+      const remaining = await ttl(key);
+      return res.status(429).json({
+        error: `Too many requests. Please wait ${Math.ceil(remaining / 60)} minute(s).`
+      });
+    }
+  } catch(e) {
+    // Redis down — fail open
+    console.error("Rate limit error:", e.message);
+  }
 
   const reference = req.query.reference;
   const uid       = req.query.uid;
