@@ -155,6 +155,14 @@ const S = {
 // ── Firestore helpers ────────────────────────────────────────────
 // User profile doc: users/{uid}
 const userDoc   = (uid) => doc(db, "users", uid);
+
+const notifsCol  = (uid) => collection(db, "users", uid, "notifications");
+const addNotif   = (uid, n) => addDoc(notifsCol(uid), { ...n, read: false, createdAt: serverTimestamp() });
+const markNotifRead = (uid, id) => updateDoc(doc(db, "users", uid, "notifications", id), { read: true });
+const markAllRead   = async (uid, notifs) => {
+  const unread = notifs.filter(n => !n.read);
+  await Promise.all(unread.map(n => markNotifRead(uid, n.id)));
+};
 // Settings doc: users/{uid}/settings/prefs
 const settingsDoc = (uid) => doc(db, "users", uid, "settings", "prefs");
 // Entries collection: users/{uid}/entries
@@ -1197,7 +1205,7 @@ const CAROUSEL_INTERVAL = 5000; // ms between slides
 function AdBanner({ onUpgrade, p="#075E54", slot="home" }) {
   const upgradeAd = {
     active:true, logo:"✨", brand:"Cash Counter", isUpgrade:true,
-    title:"Upgrade to Cash Counter Pro",
+    title:"Upgrade to Cash Counter",
     body:"Remove ads, unlock budgets & unlimited entries.",
     cta:"Upgrade ✨", color:"#075E54", url:"",
   };
@@ -3141,6 +3149,112 @@ export default function CashCounter() {
 // ═══════════════════════════════════════════════════════════════
 // APP CORE — Firestore powered
 // ═══════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════
+// NOTIFICATION PANEL
+// ═══════════════════════════════════════════════════════════════
+const NOTIF_ICONS = {
+  budget_warning:  "⚠️",
+  budget_exceeded: "🚫",
+  subscription:    "💳",
+  welcome:         "👋",
+  summary:         "📊",
+  info:            "ℹ️",
+};
+
+function NotificationPanel({ uid, notifs, onClose, onMarkAllRead }) {
+  const NP_CSS = `
+    @keyframes np-in{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+    .np-card{animation:np-in .25s cubic-bezier(.22,.68,0,1.1) both}
+  `;
+
+  const timeAgo = (ts) => {
+    if (!ts) return "";
+    const secs = Math.floor((Date.now() - (ts.toDate ? ts.toDate() : new Date(ts))) / 1000);
+    if (secs < 60)    return "just now";
+    if (secs < 3600)  return Math.floor(secs/60) + "m ago";
+    if (secs < 86400) return Math.floor(secs/3600) + "h ago";
+    return Math.floor(secs/86400) + "d ago";
+  };
+
+  const unreadCount = notifs.filter(n => !n.read).length;
+
+  return (
+    <div style={{ position:"fixed", inset:0, zIndex:600,
+      background:"rgba(0,0,0,0.45)", backdropFilter:"blur(3px)",
+      display:"flex", alignItems:"flex-end", justifyContent:"center" }}
+      onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
+      <style>{NP_CSS}</style>
+      <div className="np-card" style={{ width:"100%", maxWidth:520,
+        background:"#fff", borderRadius:"24px 24px 0 0",
+        maxHeight:"80vh", display:"flex", flexDirection:"column",
+        boxShadow:"0 -8px 40px rgba(0,0,0,0.2)" }}>
+
+        {/* Header */}
+        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between",
+          padding:"18px 20px 14px", borderBottom:"1px solid #f0f0f0", flexShrink:0 }}>
+          <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+            <span style={{ fontSize:20 }}>🔔</span>
+            <span style={{ fontWeight:900, fontSize:17, color:"#1a1a1a" }}>Notifications</span>
+            {unreadCount > 0 && (
+              <span style={{ background:"#ef4444", color:"#fff", borderRadius:20,
+                fontSize:11, fontWeight:800, padding:"2px 8px" }}>{unreadCount}</span>
+            )}
+          </div>
+          <div style={{ display:"flex", gap:8, alignItems:"center" }}>
+            {unreadCount > 0 && (
+              <button onClick={() => onMarkAllRead()}
+                style={{ background:"none", border:"none", color:"#075E54",
+                  fontSize:12, fontWeight:700, cursor:"pointer" }}>
+                Mark all read
+              </button>
+            )}
+            <button onClick={onClose}
+              style={{ background:"#f5f5f5", border:"none", borderRadius:8,
+                width:32, height:32, cursor:"pointer", fontSize:16, display:"flex",
+                alignItems:"center", justifyContent:"center" }}>×</button>
+          </div>
+        </div>
+
+        {/* List */}
+        <div style={{ overflowY:"auto", flex:1 }}>
+          {notifs.length === 0 ? (
+            <div style={{ textAlign:"center", padding:"48px 24px", color:"#bbb" }}>
+              <div style={{ fontSize:48, marginBottom:12 }}>🔔</div>
+              <div style={{ fontWeight:700, fontSize:15, marginBottom:6 }}>No notifications yet</div>
+              <div style={{ fontSize:13 }}>We'll notify you about budgets, subscriptions and more.</div>
+            </div>
+          ) : notifs.map(n => (
+            <div key={n.id}
+              onClick={() => !n.read && markNotifRead(uid, n.id)}
+              style={{ display:"flex", gap:14, padding:"14px 20px",
+                borderBottom:"1px solid #f5f5f5", cursor: n.read ? "default" : "pointer",
+                background: n.read ? "#fff" : "#f0fdf4",
+                transition:"background .15s" }}>
+              <div style={{ fontSize:24, flexShrink:0, marginTop:2 }}>
+                {NOTIF_ICONS[n.type] || "🔔"}
+              </div>
+              <div style={{ flex:1, minWidth:0 }}>
+                <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", gap:8 }}>
+                  <div style={{ fontWeight: n.read ? 600 : 800, fontSize:14, color:"#1a1a1a", lineHeight:1.4 }}>
+                    {n.title}
+                  </div>
+                  {!n.read && (
+                    <div style={{ width:8, height:8, borderRadius:"50%",
+                      background:"#075E54", flexShrink:0, marginTop:4 }}/>
+                  )}
+                </div>
+                <div style={{ fontSize:13, color:"#666", marginTop:3, lineHeight:1.5 }}>{n.body}</div>
+                <div style={{ fontSize:11, color:"#bbb", marginTop:5 }}>{timeAgo(n.createdAt)}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+      </div>
+    </div>
+  );
+}
+
 function AppCore({ user, onLogout, onUserUpdate }) {
   const uid = user.id;
 
@@ -3173,8 +3287,11 @@ function AppCore({ user, onLogout, onUserUpdate }) {
     trackUpgradeModalOpen(reason);
     setShowUpgrade(true);
   };
-  const [editingEntry, setEditingEntry] = useState(null); // entry being edited
-  const [budgetView,setBudgetView]= useState("list"); // "list"|"create"|"detail"
+  const [editingEntry, setEditingEntry] = useState(null);
+  const [budgetView,setBudgetView]= useState("list");
+  const [notifs,       setNotifs]      = useState([]);
+  const [showNotifs,   setShowNotifs]  = useState(false);
+  const notifSentRef = useRef({}); // tracks which alerts have been sent this session
   const [activeBudget,setActiveBudget] = useState(null); // budget being viewed/edited
 
   const handleDateChange = (preset,range) => { setDatePreset(preset); setDateRange(range); };
@@ -3183,6 +3300,7 @@ function AppCore({ user, onLogout, onUserUpdate }) {
   useEffect(() => {
     let unsubEntries;
     let unsubBudgets;
+    let unsubNotifs;
     const loadData = async () => {
       try {
         // Load profile fields (industry, phone) that may have been set during onboarding
@@ -3195,6 +3313,16 @@ function AppCore({ user, onLogout, onUserUpdate }) {
           if (pd.businessName && pd.businessName !== user.businessName)
             updates.businessName = pd.businessName;
           if (Object.keys(updates).length > 0 && onUserUpdate) onUserUpdate(updates);
+
+          // Send welcome notification on first ever login
+          if (!pd.welcomeNotifSent) {
+            await addNotif(uid, {
+              type:  "welcome",
+              title: `Welcome to Cash Counter, ${user.name.split(" ")[0]}! 👋`,
+              body:  "Start by adding your first income or expense entry. Upgrade to Pro to unlock budgets and unlimited entries.",
+            });
+            await setDoc(userDoc(uid), { welcomeNotifSent: true }, { merge: true });
+          }
         }
         // Load settings (branding, currency, categories)
         const snap = await getDoc(settingsDoc(uid));
@@ -3213,20 +3341,37 @@ function AppCore({ user, onLogout, onUserUpdate }) {
           // Auto-downgrade if Pro subscription has expired
           if (planData.plan === "pro" && expiresAt && new Date(expiresAt) < new Date()) {
             setPlan("free");
-            // Write downgrade back to Firestore so it persists
             setDoc(planDoc(uid), { plan: "free", status: "expired", expiredAt: new Date().toISOString() }, { merge: true })
               .catch(()=>{});
           } else {
             setPlan(planData.plan);
+            // Subscription expiry alerts
+            if (planData.plan === "pro" && expiresAt) {
+              const daysLeft = Math.ceil((new Date(expiresAt) - new Date()) / 86400000);
+              if (daysLeft <= 7 && daysLeft > 1 && !notifSentRef.current["sub_7"]) {
+                notifSentRef.current["sub_7"] = true;
+                await addNotif(uid, {
+                  type:  "subscription",
+                  title: `Your Pro plan expires in ${daysLeft} days`,
+                  body:  "Renew your subscription to keep unlimited entries, budgets and an ad-free experience.",
+                });
+              } else if (daysLeft === 1 && !notifSentRef.current["sub_1"]) {
+                notifSentRef.current["sub_1"] = true;
+                await addNotif(uid, {
+                  type:  "subscription",
+                  title: "Your Pro plan expires tomorrow",
+                  body:  "Renew today to avoid losing access to Pro features.",
+                });
+              }
+            }
           }
           setPlanInfo(planData);
         }
-        // Real-time listener for entries — limited to latest 500 for performance
+        // Real-time listener for entries
         const q = query(entriesCol(uid), orderBy("date", "desc"), limit(ENTRIES_LIMIT));
         unsubEntries = onSnapshot(q, (snapshot) => {
           const data = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
           setEntries(data);
-          // If we got exactly the limit, there may be more older entries
           setHasMoreEntries(snapshot.docs.length === ENTRIES_LIMIT);
           setLoading(false);
         }, (err) => {
@@ -3240,13 +3385,22 @@ function AppCore({ user, onLogout, onUserUpdate }) {
         }, (err) => {
           Sentry.captureException(err, { tags: { operation: "budgets_snapshot" } });
         });
+        // Real-time listener for notifications
+        const qn = query(notifsCol(uid), orderBy("createdAt", "desc"), limit(30));
+        unsubNotifs = onSnapshot(qn, (snapshot) => {
+          setNotifs(snapshot.docs.map(d => ({ id: d.id, ...d.data() })));
+        }, () => {});
       } catch(e) {
         Sentry.captureException(e, { tags: { operation: "load_user_data" } });
         setLoading(false);
       }
     };
     loadData();
-    return () => { if (unsubEntries) unsubEntries(); if (unsubBudgets) unsubBudgets(); };
+    return () => {
+      if (unsubEntries) unsubEntries();
+      if (unsubBudgets) unsubBudgets();
+      if (unsubNotifs)  unsubNotifs();
+    };
   }, [uid]);
 
   // ── Save settings to Firestore whenever they change ──────────
@@ -3273,6 +3427,47 @@ function AppCore({ user, onLogout, onUserUpdate }) {
   const monthCount = countThisMonth(entries);
   const atLimit    = !isPro && monthCount >= FREE_LIMITS.ENTRIES_PER_MONTH;
   const remaining  = Math.max(0, FREE_LIMITS.ENTRIES_PER_MONTH - monthCount);
+
+  // ── Budget alerts — fire when usage crosses 80% or 100% ──────
+  useEffect(() => {
+    if (!isPro || !budgets.length || loading) return;
+    const now = new Date();
+    budgets.forEach(async (b) => {
+      if (!b.startDate || !b.endDate) return;
+      const start = new Date(b.startDate);
+      const end   = new Date(b.endDate + "T23:59:59");
+      if (now < start || now > end) return; // budget not active
+
+      // Get actual spending within budget date range
+      const budgetEntries = entries.filter(e => {
+        const d = new Date(e.date);
+        return d >= start && d <= end && e.type === "expense";
+      });
+      const actualExp = budgetEntries.reduce((s, e) => s + e.amount, 0);
+      const budgetExp = b.totalExpense || 0;
+      if (budgetExp <= 0) return;
+
+      const pct = (actualExp / budgetExp) * 100;
+      const key80  = `budget_80_${b.id}`;
+      const key100 = `budget_100_${b.id}`;
+
+      if (pct >= 100 && !notifSentRef.current[key100]) {
+        notifSentRef.current[key100] = true;
+        await addNotif(uid, {
+          type:  "budget_exceeded",
+          title: `Budget exceeded: ${b.name}`,
+          body:  `Your expenses have exceeded your budget for "${b.name}". Consider reviewing your spending.`,
+        });
+      } else if (pct >= 80 && pct < 100 && !notifSentRef.current[key80]) {
+        notifSentRef.current[key80] = true;
+        await addNotif(uid, {
+          type:  "budget_warning",
+          title: `80% of budget used: ${b.name}`,
+          body:  `You've used ${Math.round(pct)}% of your budget for "${b.name}". You have ${fmtAmt(budgetExp - actualExp, currency)} remaining.`,
+        });
+      }
+    });
+  }, [budgets, entries, isPro, loading]);
 
   const showToast = (msg,color) => { setToast({msg,color:color||p}); setTimeout(()=>setToast(null),2600); };
 
@@ -3501,6 +3696,17 @@ function AppCore({ user, onLogout, onUserUpdate }) {
                   {icon}
                 </button>
               ))}
+              {/* Bell icon — shown on both mobile and desktop */}
+              <button onClick={()=>setShowNotifs(true)} title="Notifications"
+                style={{ background:"rgba(255,255,255,0.18)", border:"none", borderRadius:10, color:"#fff",
+                  width:36, height:36, cursor:"pointer", fontSize:15, display:"flex",
+                  alignItems:"center", justifyContent:"center", position:"relative" }}>
+                🔔
+                {notifs.filter(n=>!n.read).length > 0 && (
+                  <span style={{ position:"absolute", top:4, right:4, width:8, height:8,
+                    background:"#ef4444", borderRadius:"50%", border:"1.5px solid rgba(255,255,255,0.8)" }}/>
+                )}
+              </button>
             </div>
           </div>
         </div>
@@ -4224,6 +4430,7 @@ function AppCore({ user, onLogout, onUserUpdate }) {
         {showDP&&<DateRangePicker preset={datePreset} dateRange={dateRange} onChange={handleDateChange} onClose={()=>setShowDP(false)} primaryColor={p}/>}
         {showUpgrade&&<UpgradeModal onClose={()=>setShowUpgrade(false)} reason={atLimit?"limit":"default"} monthCount={monthCount} p={p} user={user} currency={currency}/>}
         {editingEntry&&<EditEntryModal entry={editingEntry} onClose={()=>setEditingEntry(null)} onSave={handleEditSave} incCats={incCats} expCats={expCats} currency={currency}/>}
+        {showNotifs&&<NotificationPanel uid={uid} notifs={notifs} onClose={()=>setShowNotifs(false)} onMarkAllRead={()=>markAllRead(uid,notifs)}/>}
 
         {/* WhatsApp Modal */}
         {showWA&&(

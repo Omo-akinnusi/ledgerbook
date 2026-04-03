@@ -62,6 +62,17 @@ service cloud.firestore {
                       && request.resource.data.name.size() > 0;
         allow delete: if isOwner(userId) || isAdmin();
       }
+
+      // ── Notifications subcollection ───────────────────────
+      match /notifications/{notifId} {
+        allow read:   if isOwner(userId) || isAdmin();
+        allow create: if isOwner(userId)
+                      && request.resource.data.keys().hasAll(["title","body","type","read"])
+                      && request.resource.data.title is string
+                      && request.resource.data.read is bool;
+        allow update: if isOwner(userId); // for marking as read
+        allow delete: if isOwner(userId) || isAdmin();
+      }
     }
 
     // ── Deny everything else ─────────────────────────────────
