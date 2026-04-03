@@ -3751,10 +3751,36 @@ function AppCore({ user, onLogout, onUserUpdate }) {
   const handleAdd = async () => {
     if (atLimit) { trackLimitReached(); return openUpgrade("limit"); }
     if (!form.amount||!form.category) return showToast("⚠️ Fill all required fields","#c62828");
+
     const selectedDate = form.date || new Date().toISOString().split("T")[0];
     const entry = { ...form, amount: parseFloat(form.amount), date: new Date(selectedDate).toISOString() };
+
     try {
-      await addEntry(uid, entry);
+      // Server-side free tier cap — re-verify count before writing
+      // This catches users who bypass the UI check via devtools or API calls
+      if (!isPro) {
+        const now       = new Date();
+        const yearMonth = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}`;
+        const profileSnap = await getDoc(userDoc(uid));
+        const pd          = profileSnap.exists() ? profileSnap.data() : {};
+        const savedMonth  = pd.entryMonth || "";
+        const savedCount  = savedMonth === yearMonth ? (pd.entryCount || 0) : 0;
+
+        if (savedCount >= FREE_LIMITS.ENTRIES_PER_MONTH) {
+          trackLimitReached();
+          return openUpgrade("limit");
+        }
+
+        // Write entry and update counter atomically
+        await addEntry(uid, entry);
+        await setDoc(userDoc(uid), {
+          entryCount: savedCount + 1,
+          entryMonth: yearMonth,
+        }, { merge: true });
+      } else {
+        await addEntry(uid, entry);
+      }
+
       trackEntryAdded(entry.type, entry.category);
       setForm({type:"income",amount:"",category:"",note:"",date:new Date().toISOString().split("T")[0]});
       showToast(entry.type==="income"?"✅ Income recorded!":"📤 Expense recorded!","#25D366");
