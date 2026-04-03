@@ -1,413 +1,377 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Privacy Policy — Cash Counter</title>
-  <style>
-    :root {
-      --brand:   #075E54;
-      --accent:  #128C7E;
-      --green:   #25D366;
-      --bg:      #f4f6f5;
-      --card:    #ffffff;
-      --text:    #1a1a1a;
-      --muted:   #666666;
-      --border:  #e0e6e4;
-      --info-bg: #e8f5e9;
-      --info-border: #a5d6a7;
-    }
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    html { scroll-behavior: smooth; }
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      line-height: 1.7;
-      font-size: 16px;
-    }
-
-    /* ── Top bar ── */
-    .topbar {
-      background: var(--brand);
-      color: #fff;
-      padding: 14px 24px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      position: sticky;
-      top: 0;
-      z-index: 100;
-      box-shadow: 0 2px 12px rgba(0,0,0,0.18);
-    }
-    .topbar-brand { display: flex; align-items: center; gap: 10px; text-decoration: none; color: #fff; }
-    .topbar-brand .logo { width: 34px; height: 34px; background: var(--green); border-radius: 10px;
-      display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
-    .topbar-brand .name { font-weight: 900; font-size: 16px; letter-spacing: -.2px; }
-    .topbar-brand .sub  { font-size: 11px; opacity: .65; margin-top: 1px; }
-    .topbar-other { font-size: 12px; opacity: .7; }
-    .topbar-other a { color: rgba(255,255,255,0.8); text-decoration: none; }
-    .topbar-other a:hover { color: #fff; text-decoration: underline; }
-
-    /* ── Layout ── */
-    .page-wrap { max-width: 780px; margin: 0 auto; padding: 40px 24px 80px; }
-
-    /* ── Cover ── */
-    .cover {
-      background: var(--card);
-      border-radius: 20px;
-      padding: 40px 36px 32px;
-      margin-bottom: 32px;
-      border-top: 5px solid var(--brand);
-      box-shadow: 0 2px 16px rgba(0,0,0,0.06);
-    }
-    .cover-label { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 2px;
-      color: var(--accent); margin-bottom: 8px; }
-    .cover-title { font-size: 34px; font-weight: 900; color: var(--brand); letter-spacing: -.8px;
-      margin-bottom: 10px; line-height: 1.15; }
-    .cover-subtitle { font-size: 15px; color: var(--muted); margin-bottom: 22px; line-height: 1.5; }
-    .cover-meta { display: flex; flex-wrap: wrap; gap: 8px; }
-    .meta-pill { background: var(--bg); border: 1px solid var(--border); border-radius: 20px;
-      padding: 5px 14px; font-size: 12px; color: var(--muted); }
-    .meta-pill strong { color: var(--text); }
-
-    /* ── Info box ── */
-    .info-box {
-      background: var(--info-bg);
-      border: 1.5px solid var(--info-border);
-      border-left: 4px solid var(--brand);
-      border-radius: 14px;
-      padding: 16px 20px;
-      margin: 24px 0;
-      font-size: 14px;
-      color: #1B5E20;
-      line-height: 1.65;
-    }
-    .info-box p { margin: 0; }
-    .info-box p + p { margin-top: 6px; }
-
-    /* ── TOC ── */
-    .toc {
-      background: var(--card);
-      border-radius: 16px;
-      padding: 24px 28px;
-      margin-bottom: 32px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-      border: 1px solid var(--border);
-    }
-    .toc-title { font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 1.5px;
-      color: var(--muted); margin-bottom: 14px; }
-    .toc ol { padding-left: 20px; }
-    .toc li { margin-bottom: 6px; }
-    .toc a { color: var(--accent); text-decoration: none; font-size: 14px; font-weight: 500; }
-    .toc a:hover { text-decoration: underline; color: var(--brand); }
-
-    /* ── Sections ── */
-    .section {
-      background: var(--card);
-      border-radius: 18px;
-      padding: 28px 32px;
-      margin-bottom: 20px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.04);
-      border: 1px solid var(--border);
-    }
-    .section:target { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(18,140,126,0.12); }
-
-    h2 {
-      font-size: 20px;
-      font-weight: 900;
-      color: var(--brand);
-      margin-bottom: 14px;
-      letter-spacing: -.3px;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-    h2 .num {
-      background: var(--brand);
-      color: #fff;
-      width: 28px;
-      height: 28px;
-      border-radius: 8px;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 13px;
-      font-weight: 900;
-      flex-shrink: 0;
-    }
-    h3 {
-      font-size: 15px;
-      font-weight: 800;
-      color: var(--accent);
-      margin: 18px 0 8px;
-    }
-    p { margin-bottom: 12px; font-size: 15px; color: #333; }
-    p:last-child { margin-bottom: 0; }
-    ul, ol { padding-left: 22px; margin-bottom: 12px; }
-    li { margin-bottom: 7px; font-size: 15px; color: #333; }
-    strong { color: var(--text); }
-
-    /* ── Table ── */
-    .table-wrap { overflow-x: auto; margin: 16px 0; border-radius: 12px; border: 1px solid var(--border); }
-    table { width: 100%; border-collapse: collapse; font-size: 14px; }
-    thead tr { background: var(--brand); color: #fff; }
-    thead th { padding: 12px 16px; text-align: left; font-weight: 700; font-size: 13px; }
-    tbody tr:nth-child(even) { background: #f9fafb; }
-    tbody td { padding: 11px 16px; border-bottom: 1px solid var(--border); color: #333; }
-    tbody tr:last-child td { border-bottom: none; }
-
-    /* ── Contact box ── */
-    .contact-box {
-      background: linear-gradient(135deg, var(--brand) 0%, var(--accent) 100%);
-      border-radius: 16px;
-      padding: 24px 28px;
-      color: #fff;
-      margin-top: 16px;
-    }
-    .contact-box .co-name  { font-size: 18px; font-weight: 900; margin-bottom: 10px; }
-    .contact-box .co-line  { font-size: 14px; opacity: .85; margin-bottom: 6px; display: flex; align-items: center; gap: 8px; }
-    .contact-box a         { color: rgba(255,255,255,0.9); }
-
-    /* ── Footer ── */
-    .page-footer {
-      text-align: center;
-      font-size: 12px;
-      color: var(--muted);
-      margin-top: 48px;
-      padding-top: 24px;
-      border-top: 1px solid var(--border);
-    }
-    .page-footer a { color: var(--accent); text-decoration: none; }
-    .page-footer a:hover { text-decoration: underline; }
-
-    /* ── Responsive ── */
-    @media (max-width: 600px) {
-      .page-wrap { padding: 24px 16px 60px; }
-      .cover { padding: 28px 22px 24px; }
-      .cover-title { font-size: 26px; }
-      .section { padding: 22px 20px; }
-      h2 { font-size: 17px; }
-    }
-  </style>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Privacy Policy — Cash Counter</title>
+<link href="https://fonts.googleapis.com/css2?family=Funnel+Display:wght@400;500;700;800&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --brand:        #075E54;
+    --accent:       #128C7E;
+    --green:        #25D366;
+    --bg:           #f4f6f5;
+    --card:         #ffffff;
+    --text:         #1a1a1a;
+    --muted:        #666666;
+    --border:       #e0e6e4;
+    --info-bg:      #e8f5e9;
+    --info-border:  #a5d6a7;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: 'Funnel Display', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.7;
+    font-size: 16px;
+  }
+  .topbar {
+    background: var(--brand); color: #fff; padding: 14px 24px;
+    display: flex; align-items: center; justify-content: space-between;
+    position: sticky; top: 0; z-index: 100;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.18);
+  }
+  .topbar-brand { display: flex; align-items: center; gap: 10px; text-decoration: none; color: #fff; }
+  .topbar-brand .logo { width: 34px; height: 34px; background: var(--green); border-radius: 10px;
+    display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
+  .topbar-brand .name { font-weight: 900; font-size: 16px; letter-spacing: -.2px; }
+  .topbar-brand .sub  { font-size: 11px; opacity: .65; margin-top: 1px; }
+  .topbar-other { font-size: 12px; opacity: .7; }
+  .topbar-other a { color: rgba(255,255,255,0.8); text-decoration: none; }
+  .topbar-other a:hover { color: #fff; text-decoration: underline; }
+  .page-wrap { max-width: 780px; margin: 0 auto; padding: 40px 24px 80px; }
+  .cover {
+    background: var(--card); border-radius: 20px; padding: 40px 36px 32px;
+    margin-bottom: 32px; border-top: 5px solid var(--brand);
+    box-shadow: 0 2px 16px rgba(0,0,0,0.06);
+  }
+  .cover-label { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 2px;
+    color: var(--accent); margin-bottom: 8px; }
+  .cover-title { font-size: 34px; font-weight: 900; color: var(--brand); letter-spacing: -.8px;
+    margin-bottom: 10px; line-height: 1.15; }
+  .cover-subtitle { font-size: 15px; color: var(--muted); margin-bottom: 22px; line-height: 1.5; }
+  .cover-meta { display: flex; flex-wrap: wrap; gap: 8px; }
+  .meta-pill { background: var(--bg); border: 1px solid var(--border); border-radius: 20px;
+    padding: 5px 14px; font-size: 12px; color: var(--muted); }
+  .meta-pill strong { color: var(--text); }
+  .info-box {
+    background: var(--info-bg); border: 1.5px solid var(--info-border);
+    border-left: 4px solid var(--brand); border-radius: 14px;
+    padding: 16px 20px; margin: 24px 0; font-size: 14px;
+    color: #1B5E20; line-height: 1.65;
+  }
+  .info-box p { margin: 0; }
+  .info-box p + p { margin-top: 6px; }
+  .toc {
+    background: var(--card); border-radius: 16px; padding: 24px 28px;
+    margin-bottom: 32px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    border: 1px solid var(--border);
+  }
+  .toc-title { font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 1.5px;
+    color: var(--muted); margin-bottom: 14px; }
+  .toc ol { padding-left: 20px; }
+  .toc li { margin-bottom: 6px; }
+  .toc a { color: var(--accent); text-decoration: none; font-size: 14px; font-weight: 500; }
+  .toc a:hover { text-decoration: underline; color: var(--brand); }
+  .section {
+    background: var(--card); border-radius: 18px; padding: 28px 32px;
+    margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    border: 1px solid var(--border);
+  }
+  .section:target { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(18,140,126,0.12); }
+  h2 { font-size: 20px; font-weight: 900; color: var(--brand); margin-bottom: 14px; letter-spacing: -.3px; }
+  h3 { font-size: 15px; font-weight: 800; color: var(--accent); margin: 18px 0 8px; }
+  p { margin-bottom: 12px; font-size: 15px; color: #333; }
+  p:last-child { margin-bottom: 0; }
+  ul, ol { padding-left: 22px; margin-bottom: 12px; }
+  li { margin-bottom: 7px; font-size: 15px; color: #333; }
+  strong { color: var(--text); }
+  a { color: var(--accent); }
+  .table-wrap { overflow-x: auto; margin: 16px 0; border-radius: 12px; border: 1px solid var(--border); }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  thead tr { background: var(--brand); color: #fff; }
+  thead th { padding: 12px 16px; text-align: left; font-weight: 700; font-size: 13px; }
+  tbody tr:nth-child(even) { background: #f9fafb; }
+  tbody td { padding: 11px 16px; border-bottom: 1px solid var(--border); color: #333; vertical-align: top; }
+  tbody tr:last-child td { border-bottom: none; }
+  footer { text-align: center; color: var(--muted); font-size: 13px; padding: 32px 24px; }
+</style>
 </head>
 <body>
 
-  <!-- Top bar -->
-  <div class="topbar">
-    <a class="topbar-brand" href="https://cashcounter.vbookng.com">
-      <div class="logo">📒</div>
-      <div>
-        <div class="name">Cash Counter</div>
-        <div class="sub">by VBook Enterprise</div>
-      </div>
-    </a>
-    <div class="topbar-other">
-      <a href="/terms">Terms of Service →</a>
+<div class="topbar">
+  <a class="topbar-brand" href="https://cashcounter.vbookng.com">
+    <div class="logo">💰</div>
+    <div>
+      <div class="name">Cash Counter</div>
+      <div class="sub">by VBook Enterprise</div>
+    </div>
+  </a>
+  <div class="topbar-other">
+    <a href="/terms">Terms of Service →</a>
+  </div>
+</div>
+
+<div class="page-wrap">
+
+  <div class="cover">
+    <div class="cover-label">Legal Document</div>
+    <div class="cover-title">Privacy Policy</div>
+    <div class="cover-subtitle">
+      How we collect, use, store, and protect your personal information when you use Cash Counter.
+    </div>
+    <div class="cover-meta">
+      <span class="meta-pill"><strong>Effective:</strong> 1 April 2026</span>
+      <span class="meta-pill"><strong>Controller:</strong> VBook Enterprise</span>
+      <span class="meta-pill"><strong>Jurisdiction:</strong> Federal Republic of Nigeria</span>
+      <span class="meta-pill"><strong>Contact:</strong> v.bookenterprise@gmail.com</span>
     </div>
   </div>
 
-  <div class="page-wrap">
+  <div class="info-box">
+    <p>📌 This Privacy Policy is governed primarily by Nigeria's Data Protection Act 2023 (NDPA). International users are also protected under applicable laws including the GDPR (EU/UK).</p>
+    <p>⚡ We do not sell, rent, or trade your personal data. Ever.</p>
+  </div>
 
-    <!-- Cover -->
-    <div class="cover">
-      <div class="cover-label">Legal Document</div>
-      <div class="cover-title">Privacy Policy</div>
-      <div class="cover-subtitle">How we collect, use, store, and protect your personal information when you use Cash Counter.</div>
-      <div class="cover-meta">
-        <span class="meta-pill"><strong>Effective:</strong> 11 March 2026</span>
-        <span class="meta-pill"><strong>Governed by:</strong> Nigeria Data Protection Act 2023</span>
-        <span class="meta-pill"><strong>Contact:</strong> <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="91e7bff3fefefaf4ffe5f4e3e1e3f8e2f4d1f6fcf0f8fdbff2fefc">[email&#160;protected]</a></span>
-      </div>
-    </div>
+  <div class="toc">
+    <div class="toc-title">Table of Contents</div>
+    <ol>
+      <li><a href="#s1">Who We Are</a></li>
+      <li><a href="#s2">Information We Collect</a></li>
+      <li><a href="#s3">How We Use Your Information</a></li>
+      <li><a href="#s4">Legal Basis for Processing</a></li>
+      <li><a href="#s5">How We Store Your Data</a></li>
+      <li><a href="#s6">Data Retention</a></li>
+      <li><a href="#s7">Sharing Your Information</a></li>
+      <li><a href="#s8">International Data Transfers</a></li>
+      <li><a href="#s9">Your Rights</a></li>
+      <li><a href="#s10">Children's Privacy</a></li>
+      <li><a href="#s11">Cookies and Tracking</a></li>
+      <li><a href="#s12">Security</a></li>
+      <li><a href="#s13">Changes to This Policy</a></li>
+      <li><a href="#s14">Contact Us</a></li>
+    </ol>
+  </div>
 
-    <!-- Info box -->
+  <!-- 1 -->
+  <div class="section" id="s1">
+    <h2>1. Who We Are</h2>
+    <p>Cash Counter is a business finance tracking application developed and operated by <strong>VBook Enterprise</strong> ("we", "us", or "our"). We are registered in Nigeria and are the data controller responsible for your personal information under Nigeria's Data Protection Act 2023 (NDPA).</p>
+    <p>You can reach us at any time at <a href="mailto:v.bookenterprise@gmail.com">v.bookenterprise@gmail.com</a>.</p>
+  </div>
+
+  <!-- 2 -->
+  <div class="section" id="s2">
+    <h2>2. Information We Collect</h2>
+
+    <h3>2.1 Information you provide directly</h3>
+    <ul>
+      <li><strong>Name and email address</strong> — collected when you register via email/password or Google Sign-In.</li>
+      <li><strong>Business name, industry, and phone number</strong> — collected during the onboarding process after signup.</li>
+      <li><strong>Business branding preferences</strong> — tagline, logo, colour preferences you configure in Settings.</li>
+      <li><strong>Financial records</strong> — income amounts, expense amounts, categories, dates, and notes you enter into the App.</li>
+      <li><strong>Budget data</strong> — budget names, date ranges, and per-category income and expense targets (Pro users).</li>
+      <li><strong>Support messages</strong> — any messages you send us by email.</li>
+    </ul>
+
+    <h3>2.2 Information collected automatically</h3>
+    <ul>
+      <li><strong>Device and browser information</strong> — device type, browser, operating system, and screen resolution, collected by Sentry to diagnose technical issues.</li>
+      <li><strong>Error and performance data</strong> — crash reports, error logs, and session replays generated during your use of the App, collected by Sentry.</li>
+      <li><strong>Usage analytics</strong> — pages visited, features used, and interactions within the App, collected by Google Analytics 4. This data is anonymised and aggregated.</li>
+      <li><strong>Approximate location</strong> — country-level only, inferred from your IP address, used for analytics. We do not collect your precise location.</li>
+      <li><strong>IP address</strong> — used temporarily for security rate limiting via Upstash Redis to prevent abuse. IP addresses used for this purpose are not stored permanently.</li>
+    </ul>
+
+    <h3>2.3 Payment information</h3>
+    <p>If you subscribe to the Pro plan, your payment is processed by <strong>Paystack</strong>. We do not store your card number, bank account details, or any sensitive payment credentials. We receive only a payment reference, subscription code, and confirmation of successful payment from Paystack.</p>
+  </div>
+
+  <!-- 3 -->
+  <div class="section" id="s3">
+    <h2>3. How We Use Your Information</h2>
+    <ul>
+      <li>To create and manage your account and verify your identity when you sign in.</li>
+      <li>To store and sync your financial records securely across your devices in real time.</li>
+      <li>To generate reports, exports, and summaries that you request within the App.</li>
+      <li>To personalise your experience based on your business name, industry, and preferences.</li>
+      <li>To process Pro plan subscription payments and manage your subscription status.</li>
+      <li>To send transactional emails — email verification, password reset, and subscription receipts.</li>
+      <li>To detect, diagnose, and fix bugs, errors, and performance issues.</li>
+      <li>To analyse usage patterns and improve the App's features and design.</li>
+      <li>To protect the App from abuse, fraud, and unauthorised access through rate limiting.</li>
+      <li>To comply with applicable legal and regulatory obligations under Nigerian law.</li>
+    </ul>
     <div class="info-box">
-      <p>📌 <strong>This Privacy Policy is governed primarily by Nigeria's Data Protection Act 2023 (NDPA).</strong> International users are also protected under applicable laws including the GDPR (EU/UK).</p>
-      <p>⚡ <strong>We do not sell, rent, or trade your personal data. Ever.</strong></p>
+      <p>We do not use your financial data for advertising, profiling, resale, or any purpose beyond providing the App's core functionality.</p>
     </div>
+  </div>
 
-    <!-- TOC -->
-    <div class="toc">
-      <div class="toc-title">Table of Contents</div>
-      <ol>
-        <li><a href="#s1">Who We Are</a></li>
-        <li><a href="#s2">Information We Collect</a></li>
-        <li><a href="#s3">How We Use Your Information</a></li>
-        <li><a href="#s4">Legal Basis for Processing</a></li>
-        <li><a href="#s5">How We Store Your Data</a></li>
-        <li><a href="#s6">Data Retention</a></li>
-        <li><a href="#s7">Sharing Your Information</a></li>
-        <li><a href="#s8">International Data Transfers</a></li>
-        <li><a href="#s9">Your Rights</a></li>
-        <li><a href="#s10">Children's Privacy</a></li>
-        <li><a href="#s11">Cookies and Tracking</a></li>
-        <li><a href="#s12">Security</a></li>
-        <li><a href="#s13">Changes to This Policy</a></li>
-        <li><a href="#s14">Contact Us</a></li>
-      </ol>
+  <!-- 4 -->
+  <div class="section" id="s4">
+    <h2>4. Legal Basis for Processing</h2>
+    <p>Under the NDPA 2023 and GDPR (for EU/UK users), we process your personal data on the following legal bases:</p>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Purpose</th><th>Legal Basis</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Creating and managing your account</td><td>Performance of a contract</td></tr>
+          <tr><td>Storing and syncing your financial records</td><td>Performance of a contract</td></tr>
+          <tr><td>Processing subscription payments</td><td>Performance of a contract</td></tr>
+          <tr><td>Sending transactional emails</td><td>Performance of a contract</td></tr>
+          <tr><td>Error monitoring and security</td><td>Legitimate interests</td></tr>
+          <tr><td>Usage analytics and product improvement</td><td>Legitimate interests</td></tr>
+          <tr><td>Legal compliance</td><td>Legal obligation</td></tr>
+        </tbody>
+      </table>
     </div>
+  </div>
 
-    <!-- Sections -->
-    <div class="section" id="s1">
-      <h2><span class="num">1</span> Who We Are</h2>
-      <p>Cash Counter is a business finance tracking application developed and operated by <strong>VBook Enterprise</strong>. We are registered in Nigeria and are the data controller responsible for your personal information under Nigeria's Data Protection Act 2023.</p>
-      <p><strong>Contact us at any time:</strong></p>
-      <ul>
-        <li>Email: <a href="/cdn-cgi/l/email-protection#bec890dcd1d1d5dbd0cadbccceccd7cddbfed9d3dfd7d290ddd1d3"><span class="__cf_email__" data-cfemail="d0a6feb2bfbfbbb5bea4b5a2a0a2b9a3b590b7bdb1b9bcfeb3bfbd">[email&#160;protected]</span></a></li>
-        <li>App: <a href="https://cashcounter.vbookng.com">https://cashcounter.vbookng.com</a></li>
-      </ul>
+  <!-- 5 -->
+  <div class="section" id="s5">
+    <h2>5. How We Store Your Data</h2>
+    <p>Your data is stored using the following infrastructure:</p>
+    <ul>
+      <li><strong>Firebase Authentication</strong> — manages your account credentials and login sessions. Operated by Google LLC.</li>
+      <li><strong>Google Firestore</strong> — stores your financial records, settings, onboarding data, and subscription status. Data is hosted in the <strong>European Union (europe-west1)</strong> region.</li>
+      <li><strong>Vercel</strong> — hosts the App and processes API requests including payment callbacks. Servers are located in the United States and globally distributed.</li>
+      <li><strong>Sentry</strong> — processes error reports and session replays for debugging. Servers are located in the European Union.</li>
+      <li><strong>Google Analytics 4</strong> — collects anonymised usage data. Processed by Google LLC with servers in the United States.</li>
+      <li><strong>Paystack</strong> — processes subscription payments. Operated by Paystack Payments Limited, registered in Nigeria.</li>
+      <li><strong>Upstash Redis</strong> — stores temporary rate limiting counters by IP address to prevent abuse. Data expires automatically within minutes to hours.</li>
+    </ul>
+    <p>We implement Firestore security rules ensuring only you — authenticated with your own account — can read or write your data. No other user can access your records.</p>
+  </div>
+
+  <!-- 6 -->
+  <div class="section" id="s6">
+    <h2>6. Data Retention</h2>
+    <ul>
+      <li><strong>Account and financial data</strong> — retained for as long as your account is active.</li>
+      <li><strong>Account deletion</strong> — upon your request, all personal data and financial records will be permanently deleted within 30 days.</li>
+      <li><strong>Sentry error logs</strong> — retained for 90 days before automatic deletion.</li>
+      <li><strong>Google Analytics data</strong> — retained for 14 months in accordance with Google's default retention settings.</li>
+      <li><strong>Upstash Redis rate limit counters</strong> — expire automatically within 15 minutes to 1 hour.</li>
+      <li><strong>Paystack payment records</strong> — retained by Paystack in accordance with their own retention policy and Nigerian financial regulations.</li>
+    </ul>
+  </div>
+
+  <!-- 7 -->
+  <div class="section" id="s7">
+    <h2>7. Sharing Your Information</h2>
+    <p>We do not sell, rent, or trade your personal information. We share data only with the following trusted service providers, strictly to operate the App:</p>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Provider</th><th>Purpose</th><th>Data Location</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><strong>Google Firebase</strong></td><td>Account management and data storage</td><td>European Union</td></tr>
+          <tr><td><strong>Vercel, Inc.</strong></td><td>App hosting and serverless functions</td><td>United States / Global</td></tr>
+          <tr><td><strong>Sentry, Inc.</strong></td><td>Error monitoring and session replays</td><td>European Union</td></tr>
+          <tr><td><strong>Google Analytics</strong></td><td>Anonymised usage analytics</td><td>United States</td></tr>
+          <tr><td><strong>Paystack Payments Ltd.</strong></td><td>Subscription payment processing</td><td>Nigeria / Global</td></tr>
+          <tr><td><strong>Upstash</strong></td><td>Security rate limiting</td><td>Global (EU region)</td></tr>
+        </tbody>
+      </table>
     </div>
+    <p>Each provider is bound by their own privacy policy and applicable data protection law. We do not permit any provider to use your data for their own commercial purposes beyond the stated service.</p>
+    <p>We may also disclose your information if required to do so by law, court order, or Nigerian regulatory authority.</p>
+  </div>
 
-    <div class="section" id="s2">
-      <h2><span class="num">2</span> Information We Collect</h2>
-      <h3>2.1 Information you provide directly</h3>
-      <ul>
-        <li>Your name and email address, collected when you sign in via Google or email/password authentication.</li>
-        <li>Your business name, tagline, logo, and branding preferences that you configure within the App.</li>
-        <li>Financial records you enter into the App, including income amounts, expense amounts, categories, and transaction notes.</li>
-        <li>Support messages you send through the in-app chat widget, including the content of your message and the topic you selected.</li>
-      </ul>
-      <h3>2.2 Information collected automatically</h3>
-      <ul>
-        <li>Device type, browser, operating system, and screen resolution — collected by Sentry (our error monitoring provider) to help us diagnose and fix technical issues.</li>
-        <li>Error logs, crash reports, and performance data generated during your use of the App.</li>
-        <li>Your approximate location (country level only), inferred from your IP address, used solely for analytics and compliance purposes. We do not collect your precise location.</li>
-      </ul>
+  <!-- 8 -->
+  <div class="section" id="s8">
+    <h2>8. International Data Transfers</h2>
+    <p>As a Nigerian-based service, your data may be processed in the European Union (Firestore and Sentry servers) and the United States (Vercel, Google Analytics). Where such transfers occur, we rely on:</p>
+    <ul>
+      <li>Standard contractual clauses and data processing agreements provided by each service provider.</li>
+      <li>The European Union's adequacy mechanisms, which apply to Firestore and Sentry data stored within the EU.</li>
+      <li>Paystack's compliance with Nigerian financial regulations and the NDPA 2023.</li>
+    </ul>
+    <p>These safeguards ensure your data receives adequate protection regardless of where it is processed.</p>
+  </div>
+
+  <!-- 9 -->
+  <div class="section" id="s9">
+    <h2>9. Your Rights</h2>
+    <p>Depending on your location, you have the following rights regarding your personal data:</p>
+    <ul>
+      <li><strong>Access</strong> — request a copy of the personal data we hold about you.</li>
+      <li><strong>Correction</strong> — ask us to correct inaccurate or incomplete data. You can update your business name, industry, and phone number directly in the App under Settings → Account.</li>
+      <li><strong>Deletion</strong> — request that we delete your account and all associated data. We will complete deletion within 30 days.</li>
+      <li><strong>Portability</strong> — request your financial data in a structured, machine-readable format. CSV export is available directly within the App at any time.</li>
+      <li><strong>Objection</strong> — object to certain types of processing, including analytics and profiling.</li>
+      <li><strong>Withdraw consent</strong> — where processing is based on consent, you may withdraw it at any time without affecting the lawfulness of prior processing.</li>
+    </ul>
+    <div class="info-box">
+      <p>To exercise any of these rights, contact us at <a href="mailto:v.bookenterprise@gmail.com">v.bookenterprise@gmail.com</a>. We will acknowledge your request within 72 hours and respond fully within 30 days.</p>
     </div>
+  </div>
 
-    <div class="section" id="s3">
-      <h2><span class="num">3</span> How We Use Your Information</h2>
-      <ul>
-        <li>To create and manage your account and authenticate your identity when you sign in.</li>
-        <li>To store and sync your financial records securely across your devices in real time.</li>
-        <li>To generate reports, exports, and summaries that you request within the App.</li>
-        <li>To receive and respond to support messages you send us through the in-app chat.</li>
-        <li>To detect, diagnose, and fix bugs, errors, and performance issues using error monitoring tools.</li>
-        <li>To improve the App's features, design, and overall user experience.</li>
-        <li>To comply with applicable legal and regulatory obligations under Nigerian law and other applicable laws.</li>
-      </ul>
-      <div class="info-box">
-        <p>⚡ <strong>We do not use your financial data for advertising, profiling, resale, or any purpose other than providing the App's core functionality.</strong></p>
-      </div>
-    </div>
+  <!-- 10 -->
+  <div class="section" id="s10">
+    <h2>10. Children's Privacy</h2>
+    <p>Cash Counter is not directed at or intended for use by children under the age of 13. We do not knowingly collect personal information from children under 13. If you believe a child has created an account or provided us with their personal data, please contact us immediately at <a href="mailto:v.bookenterprise@gmail.com">v.bookenterprise@gmail.com</a> and we will delete the data promptly.</p>
+  </div>
 
-    <div class="section" id="s4">
-      <h2><span class="num">4</span> Legal Basis for Processing</h2>
-      <p>Under Nigeria's Data Protection Act 2023 and, where applicable, the GDPR, we process your personal data on the following lawful bases:</p>
-      <ul>
-        <li><strong>Contractual necessity:</strong> processing required to provide the App and its features to you.</li>
-        <li><strong>Legitimate interests:</strong> error monitoring and performance improvement to ensure App stability.</li>
-        <li><strong>Legal obligation:</strong> compliance with applicable laws and regulations.</li>
-        <li><strong>Consent:</strong> where you have actively provided information (such as support messages), your act of submission constitutes consent.</li>
-      </ul>
-    </div>
+  <!-- 11 -->
+  <div class="section" id="s11">
+    <h2>11. Cookies and Tracking</h2>
+    <p>Cash Counter does not use advertising cookies or third-party tracking pixels. The following essential session identifiers are used to operate the App:</p>
+    <ul>
+      <li><strong>Firebase Authentication tokens</strong> — required to keep you securely logged in. Expire automatically and are refreshed on each session.</li>
+      <li><strong>Sentry session identifiers</strong> — used to link error reports to a browser session for debugging. These do not identify you personally and contain no financial data.</li>
+      <li><strong>Google Analytics cookies</strong> — used to collect anonymised usage statistics. These do not contain personal financial data. You can opt out via browser settings or a Google Analytics opt-out extension.</li>
+    </ul>
+    <p>These are strictly necessary or legitimate interest cookies. No cookie consent banner is displayed because we do not use non-essential advertising cookies.</p>
+  </div>
 
-    <div class="section" id="s5">
-      <h2><span class="num">5</span> How We Store Your Data</h2>
-      <p>Your data is stored using Google Firebase, a cloud platform operated by Google LLC. Specifically:</p>
-      <ul>
-        <li>Authentication data (name and email) is managed by Firebase Authentication.</li>
-        <li>Financial records, settings, and branding data are stored in Google Firestore, hosted in the <strong>European Union (europe-west1 region)</strong>.</li>
-        <li>Error and crash data is processed and stored by Sentry, Inc., whose servers are located in the European Union.</li>
-      </ul>
-      <p>We implement Firestore security rules that ensure only you — authenticated with your own account — can read or write your data. No other user can access your records.</p>
-    </div>
+  <!-- 12 -->
+  <div class="section" id="s12">
+    <h2>12. Security</h2>
+    <p>We take the following technical and organisational measures to protect your data:</p>
+    <ul>
+      <li>Encrypted data transmission using HTTPS/TLS on all connections.</li>
+      <li>Firebase Authentication tokens with automatic expiry and refresh.</li>
+      <li>Firestore security rules restricting each user's data to their own authenticated account.</li>
+      <li>Server-side rate limiting via Upstash Redis to prevent brute force and abuse.</li>
+      <li>Input validation and CORS restrictions on all API endpoints.</li>
+      <li>Continuous error and anomaly monitoring via Sentry with EU-based data storage.</li>
+      <li>Password strength enforcement requiring minimum 8 characters with uppercase, lowercase, and a number.</li>
+    </ul>
+    <p>No method of electronic transmission or storage is 100% secure. While we use commercially reasonable means to protect your data, we cannot guarantee absolute security. We will notify affected users promptly in the event of a data breach as required by applicable law.</p>
+  </div>
 
-    <div class="section" id="s6">
-      <h2><span class="num">6</span> Data Retention</h2>
-      <ul>
-        <li>Your financial records, settings, and account data are retained until you delete your account or request deletion.</li>
-        <li>Upon account deletion or a valid deletion request, all records will be permanently erased <strong>within 30 days</strong>.</li>
-        <li>Error logs held by Sentry are retained for <strong>90 days</strong> before automatic deletion.</li>
-        <li>Support messages sent via WhatsApp are subject to WhatsApp's own retention policies once delivered.</li>
-      </ul>
-    </div>
+  <!-- 13 -->
+  <div class="section" id="s13">
+    <h2>13. Changes to This Policy</h2>
+    <p>We may update this Privacy Policy from time to time to reflect changes in our practices, technology, legal requirements, or other factors. When we do, we will revise the Effective Date at the top of this page.</p>
+    <p>For material changes — particularly those affecting how we use your data or your rights — we will notify you by email at least 7 days before the changes take effect. Continued use of the App after changes are posted constitutes your acceptance of the updated Policy.</p>
+  </div>
 
-    <div class="section" id="s7">
-      <h2><span class="num">7</span> Sharing Your Information</h2>
-      <p>We do not sell, rent, or trade your personal information. We share data only with the following trusted service providers, strictly as necessary to operate the App:</p>
-      <div class="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>Service Provider</th>
-              <th>Purpose</th>
-              <th>Data Location</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr><td>Google Firebase</td><td>Account management &amp; data storage</td><td>European Union</td></tr>
-            <tr><td>Sentry, Inc.</td><td>Error monitoring &amp; crash reporting</td><td>European Union</td></tr>
-            <tr><td>Meta Platforms (WhatsApp)</td><td>Delivery of support messages</td><td>United States</td></tr>
-            <tr><td>Vercel, Inc.</td><td>App hosting &amp; serverless functions</td><td>United States</td></tr>
-          </tbody>
-        </table>
-      </div>
-      <p>Each provider is bound by their own privacy policy and applicable data protection law. We do not permit any provider to use your data for their own commercial purposes.</p>
-    </div>
+  <!-- 14 -->
+  <div class="section" id="s14">
+    <h2>14. Contact Us</h2>
+    <p>If you have any questions, concerns, or requests regarding this Privacy Policy or how we handle your data, please contact us:</p>
+    <ul>
+      <li><strong>Email:</strong> <a href="mailto:v.bookenterprise@gmail.com">v.bookenterprise@gmail.com</a></li>
+      <li><strong>App:</strong> <a href="https://cashcounter.vbookng.com">cashcounter.vbookng.com</a></li>
+      <li><strong>Company:</strong> VBook Enterprise, Nigeria</li>
+    </ul>
+    <p>We aim to respond to all privacy enquiries within 2 business days.</p>
+  </div>
 
-    <div class="section" id="s8">
-      <h2><span class="num">8</span> International Data Transfers</h2>
-      <p>As a Nigerian-based service, your data may be processed outside Nigeria — specifically in the European Union (Firebase Firestore and Sentry) and the United States (Vercel and Meta). Where such transfers occur, we rely on:</p>
-      <ul>
-        <li>Standard contractual clauses and data processing agreements provided by each service provider.</li>
-        <li>The European Union's adequacy mechanisms, which apply to Firestore and Sentry data stored within the EU.</li>
-        <li>Compliance with Nigeria's Data Protection Act 2023, which governs cross-border data transfers from Nigeria.</li>
-      </ul>
-    </div>
+</div>
 
-    <div class="section" id="s9">
-      <h2><span class="num">9</span> Your Rights</h2>
-      <p>Depending on your location, you have the following rights regarding your personal data:</p>
-      <ul>
-        <li><strong>Access:</strong> Request a copy of the personal data we hold about you.</li>
-        <li><strong>Correction:</strong> Ask us to correct inaccurate or incomplete personal data.</li>
-        <li><strong>Deletion:</strong> Request that we permanently delete your account and all associated data.</li>
-        <li><strong>Portability:</strong> Request your financial data in a structured, machine-readable format. CSV export is available directly within the App.</li>
-        <li><strong>Objection:</strong> Object to certain types of processing, including profiling (we do not engage in profiling).</li>
-        <li><strong>Restriction:</strong> Request that we restrict processing of your data in certain circumstances.</li>
-      </ul>
-      <div class="info-box">
-        <p>📌 To exercise any of these rights, contact us at <a href="/cdn-cgi/l/email-protection#2b5d05494444404e455f4e595b5942584e6b4c464a424705484446"><strong><span class="__cf_email__" data-cfemail="34421a565b5b5f515a40514644465d4751745359555d581a575b59">[email&#160;protected]</span></strong></a>. We will acknowledge your request within 72 hours and respond fully within 30 days.</p>
-      </div>
-    </div>
+<footer>
+  &copy; 2026 VBook Enterprise &middot; Cash Counter &middot;
+  <a href="/privacy">Privacy Policy</a> &middot;
+  <a href="/terms">Terms of Service</a>
+</footer>
 
-    <div class="section" id="s10">
-      <h2><span class="num">10</span> Children's Privacy</h2>
-      <p>Cash Counter is not directed at or intended for use by children under the age of 13. We do not knowingly collect personal information from children under 13. If you believe a child has created an account or provided us with their personal data, please contact us immediately at <a href="/cdn-cgi/l/email-protection#e096ce828f8f8b858e9485929092899385a0878d81898cce838f8d"><span class="__cf_email__" data-cfemail="86f0a8e4e9e9ede3e8f2e3f4f6f4eff5e3c6e1ebe7efeaa8e5e9eb">[email&#160;protected]</span></a> and we will delete the data promptly.</p>
-    </div>
-
-    <div class="section" id="s11">
-      <h2><span class="num">11</span> Cookies and Tracking</h2>
-      <p>The App does not use advertising cookies, third-party tracking pixels, or behavioural analytics tools. The following essential technologies are used solely to operate the App:</p>
-      <ul>
-        <li><strong>Firebase Authentication session tokens</strong> — required to keep you logged in securely.</li>
-        <li><strong>Sentry session identifiers</strong> — required to link error reports to a browser session for debugging. These do not identify you personally.</li>
-      </ul>
-      <p>These are strictly necessary for the App to function and cannot be disabled without breaking core functionality. No personal financial data is included in these session identifiers.</p>
-    </div>
-
-    <div class="section" id="s12">
-      <h2><span class="num">12</span> Security</h2>
-      <p>We take reasonable technical and organisational measures to protect your personal data, including:</p>
-      <ul>
-        <li>Encrypted data transmission using HTTPS/TLS on all connections.</li>
-        <li>Firebase Authentication tokens with automatic expiry and refresh.</li>
-        <li>Firestore security rules that restrict each user's data to their own authenticated account.</li>
-        <li>Continuous error and anomaly monitoring via Sentry with EU-based data storage.</li>
-      </ul>
-      <p>No method of electronic transmission or storage is 100% secure. While we use commercially reasonable means to protect your data, we cannot guarantee absolute security. We will notify affected users promptly in the event of a data breach as required by applicable law.</p>
-    </div>
-
-    <div class="section" id="s13">
-      <h2><span class="num">13</span> Changes to This Policy</h2>
-      <p>We may update this Privacy Policy from time to time to reflect changes in our practices, technology, or legal requirements. When we do, we will revise the Effective Date at the top of this document and, where material changes are made, notify users via a notice within the App. Continued use of the App after changes are posted constitutes your acceptance of the updated Policy.</p>
-    </div>
-
-    <div class="section" id="s14">
-      <h2><span class="num">14</span> Contact Us</h2>
-      <p>If you have any questions, concerns, complaints, or requests regarding this Privacy Policy, please contact us:</p>
-      <div class="contact-box">
-        <div class="co-name">VBook Enterprise</div>
-        <div class="co-line">📧 <a href="/cdn-cgi/l/email-protection#81f7afe3eeeeeae4eff5e4f3f1f3e8f2e4c1e6ece0e8edafe2eeec"><sp
+</body>
+</html>
