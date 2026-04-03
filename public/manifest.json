@@ -1,7 +1,7 @@
 {
   "name": "Cash Counter",
   "short_name": "Cash Counter",
-  "description": "Business finance tracker for SMEs — track income, expenses and budgets",
+  "description": "Business finance tracker for SMEs \u2014 track income, expenses and budgets",
   "start_url": "/",
   "display": "standalone",
   "orientation": "portrait",
@@ -9,10 +9,9 @@
   "theme_color": "#075E54",
   "icons": [
     {
-      "src": "/favicon.svg",
-      "sizes": "any",
-      "type": "image/svg+xml",
-      "purpose": "any maskable"
+      "src": "/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png"
     },
     {
       "src": "/icon-192.png",
@@ -25,9 +24,18 @@
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
+    },
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
     }
   ],
-  "categories": ["finance", "business", "productivity"],
+  "categories": [
+    "finance",
+    "business",
+    "productivity"
+  ],
   "lang": "en-NG",
   "dir": "ltr",
   "scope": "/",
@@ -37,14 +45,24 @@
       "short_name": "Income",
       "description": "Record a new income entry",
       "url": "/?view=add&type=income",
-      "icons": [{ "src": "/favicon.svg", "sizes": "any" }]
+      "icons": [
+        {
+          "src": "/favicon.svg",
+          "sizes": "any"
+        }
+      ]
     },
     {
       "name": "Add Expense",
       "short_name": "Expense",
       "description": "Record a new expense entry",
       "url": "/?view=add&type=expense",
-      "icons": [{ "src": "/favicon.svg", "sizes": "any" }]
+      "icons": [
+        {
+          "src": "/favicon.svg",
+          "sizes": "any"
+        }
+      ]
     }
   ]
 }
