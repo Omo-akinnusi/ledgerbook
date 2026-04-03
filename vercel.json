@@ -5,6 +5,12 @@
     { "src": "/admin",                "dest": "/admin.html"                },
     { "src": "/subscription-success", "dest": "/subscription-success.html" }
   ],
+  "crons": [
+    {
+      "path": "/api/send-expiry-emails",
+      "schedule": "0 7 * * *"
+    }
+  ],
   "headers": [
     {
       "source": "/(.*)",
