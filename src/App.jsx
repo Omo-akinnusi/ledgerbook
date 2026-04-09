@@ -219,9 +219,9 @@ const planDoc = (uid) => doc(db, "users", uid, "settings", "plan");
 // Create these 3 plans in your Paystack dashboard, then paste the plan codes here.
 // Amounts in their respective currencies (Paystack handles FX).
 const PAYSTACK_PLANS = {
-  monthly:    { code: "PLN_gh2mcit6fixix9k",  label:"Monthly",  months:1,  usd:5,  discount:null },
-  biannually: { code: "PLN_gxtrrhn8z2tfqmf",  label:"6 Months", months:6,  usd:27, discount:"Save 10%" },
-  annually:   { code: "PLN_87ghrcbnb4p8aaa",  label:"Annual",   months:12, usd:50, discount:"Save 17%" },
+  monthly:    { code: "PLN_riztufvgcixap7k",  label:"Monthly",  months:1,  usd:5,  discount:null },
+  biannually: { code: "PLN_lr0mhzc8n3wa28h",  label:"6 Months", months:6,  usd:27, discount:"Save 10%" },
+  annually:   { code: "PLN_cizrk6zouo32rjs",  label:"Annual",   months:12, usd:50, discount:"Save 17%" },
 };
 
 // Price display per currency — Base: $5/mo · $27/6mo · $50/yr
