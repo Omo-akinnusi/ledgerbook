@@ -1118,7 +1118,7 @@ const HOUSE_ADS = [
 ];
 
 // Your Google AdSense publisher ID — replace with your real one from adsense.google.com
-const ADSENSE_CLIENT = "ca-pub-XXXXXXXXXXXXXXXX";
+const ADSENSE_CLIENT = "ca-pub-3514986468098625";
 const ADSENSE_SLOT   = "XXXXXXXXXX"; // Your ad unit slot ID
 
 // ── AdSense Unit ───────────────────────────────────────────────
