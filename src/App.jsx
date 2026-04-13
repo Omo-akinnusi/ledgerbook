@@ -3,7 +3,7 @@
 // UI Fix: Proper mobile padding, safe-area insets, responsive layout
 // ================================================================
 
-import { useState, useEffect, useRef, useMemo } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import * as Sentry from "@sentry/react";
 import {
   trackSignup, trackLogin, trackLogout, trackPasswordReset,
@@ -3317,6 +3317,64 @@ function OnboardingScreen({ user, onComplete }) {
 }
 
 
+// ═══════════════════════════════════════════════════════════════
+// ERROR BOUNDARY — catches IndexedDB/Firebase connection errors
+// and shows a friendly recovery screen instead of a blank crash
+// ═══════════════════════════════════════════════════════════════
+class ErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, isIndexedDB: false };
+  }
+  static getDerivedStateFromError(error) {
+    const isIndexedDB = error?.message?.includes("IndexedDB") ||
+                        error?.message?.includes("Connection to Indexed") ||
+                        error?.name === "UnknownError";
+    return { hasError: true, isIndexedDB };
+  }
+  componentDidCatch(error, info) {
+    if (!this.state.isIndexedDB) {
+      Sentry.captureException(error, { extra: info });
+    }
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div style={{ position:"fixed", inset:0, background:"#f7f9f8",
+          display:"flex", flexDirection:"column", alignItems:"center",
+          justifyContent:"center", padding:"24px", textAlign:"center",
+          fontFamily:"'Funnel Display', sans-serif" }}>
+          <div style={{ fontSize:52, marginBottom:16 }}>
+            {this.state.isIndexedDB ? "🔄" : "⚠️"}
+          </div>
+          <div style={{ fontWeight:900, fontSize:20, color:"#1a1a1a", marginBottom:10 }}>
+            {this.state.isIndexedDB ? "Connection interrupted" : "Something went wrong"}
+          </div>
+          <div style={{ fontSize:14, color:"#666", lineHeight:1.65,
+            maxWidth:320, marginBottom:28 }}>
+            {this.state.isIndexedDB
+              ? "Your browser lost connection to local storage. This can happen in private/incognito mode or when storage is full. Refresh to reconnect."
+              : "An unexpected error occurred. Please refresh the page."}
+          </div>
+          <button
+            onClick={() => window.location.reload()}
+            style={{ background:"#075E54", color:"#fff", border:"none",
+              borderRadius:14, padding:"14px 32px", fontSize:15,
+              fontWeight:900, cursor:"pointer" }}>
+            Refresh Page
+          </button>
+          {this.state.isIndexedDB && (
+            <div style={{ fontSize:12, color:"#9ca3af", marginTop:16, maxWidth:280 }}>
+              Tip: If this keeps happening, try opening the app in a regular browser window instead of private/incognito mode.
+            </div>
+          )}
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 export default function CashCounter() {
   const [user,setUser]               = useState(null);
   const [authChecked,setChecked]     = useState(false);
@@ -3411,8 +3469,8 @@ export default function CashCounter() {
     if (auth.currentUser) reload(auth.currentUser);
   };
 
-  if (!authChecked) return (<><GlobalStyles/><SplashScreen/></>);
-  if (!user)        return (<><GlobalStyles/><AuthScreen/></>);
+  if (!authChecked) return (<ErrorBoundary><GlobalStyles/><SplashScreen/></ErrorBoundary>);
+  if (!user)        return (<ErrorBoundary><GlobalStyles/><AuthScreen/></ErrorBoundary>);
   if (needsVerification) return (
     <><GlobalStyles/><EmailVerificationScreen
       email={user.email}
@@ -3423,7 +3481,7 @@ export default function CashCounter() {
   if (needsOnboarding) return (
     <><GlobalStyles/><OnboardingScreen user={user} onComplete={handleOnboardingComplete}/></>
   );
-  return (<><GlobalStyles/><AppCore user={user} onLogout={handleLogout} onUserUpdate={u=>setUser(prev=>({...prev,...u}))}/></>);
+  return (<ErrorBoundary><GlobalStyles/><AppCore user={user} onLogout={handleLogout} onUserUpdate={u=>setUser(prev=>({...prev,...u}))}/></ErrorBoundary>);
 }
 
 // ═══════════════════════════════════════════════════════════════

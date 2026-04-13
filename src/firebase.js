@@ -57,6 +57,10 @@ enableIndexedDbPersistence(db).catch((e) => {
   } else if (e.code === "unimplemented") {
     // Browser doesn't support IndexedDB (very rare)
     console.warn("Offline persistence not supported in this browser");
+  } else {
+    // Catches UnknownError (Firefox private mode, full storage, extensions blocking IndexedDB)
+    // App continues to work normally without offline persistence — data loads from server
+    console.warn("Offline persistence unavailable:", e.message || e.code);
   }
 });
 
