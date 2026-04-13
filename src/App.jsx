@@ -1118,8 +1118,9 @@ const HOUSE_ADS = [
 ];
 
 // Your Google AdSense publisher ID — replace with your real one from adsense.google.com
-const ADSENSE_CLIENT = "ca-pub-3514986468098625";
-const ADSENSE_SLOT   = "XXXXXXXXXX"; // Your ad unit slot ID
+const ADSENSE_CLIENT   = "ca-pub-3514986468098625";
+const ADSENSE_SLOT     = "XXXXXXXXXX"; // Replace with your ad unit slot ID once approved
+const ADSENSE_APPROVED = false; // ← Set to true once Google approves your AdSense account
 
 // ── AdSense Unit ───────────────────────────────────────────────
 function AdSenseUnit() {
@@ -1234,8 +1235,8 @@ function AdBanner({ onUpgrade, p="#075E54", slot="home" }) {
 
   const ad = ads[idx];
 
-  // AdSense fallback when publisher ID is configured and no house ads
-  if (activeAds.length === 0 && ADSENSE_CLIENT !== "ca-pub-XXXXXXXXXXXXXXXX") {
+  // AdSense fallback only when approved — controlled by ADSENSE_APPROVED flag
+  if (activeAds.length === 0 && ADSENSE_CLIENT !== "ca-pub-XXXXXXXXXXXXXXXX" && ADSENSE_APPROVED) {
     return <AdSenseUnit/>;
   }
 
