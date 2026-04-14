@@ -865,6 +865,7 @@ function UpgradeModal({ onClose, reason="default", monthCount=0, p="#075E54", us
   const [loading,      setLoading]      = useState(false);
   const [error,        setError]        = useState("");
   const [screen,       setScreen]       = useState("pricing"); // "pricing" | "features"
+  const [payMethod,    setPayMethod]    = useState("card");    // "card" | "transfer"
 
   const prices = PLAN_PRICES[currency?.code] || PLAN_PRICES.default;
 
@@ -906,21 +907,19 @@ function UpgradeModal({ onClose, reason="default", monthCount=0, p="#075E54", us
     setError("");
     trackUpgradeInitiated(selectedPlan);
     try {
-      // Store uid in sessionStorage so the callback page can use it
       sessionStorage.setItem("lb_pending_uid", user.id);
+
+      const body = payMethod === "transfer"
+        ? { email: user.email, uid: user.id, paymentType: "transfer", interval: selectedPlan }
+        : { email: user.email, planCode: plan.code, uid: user.id, paymentType: "card" };
 
       const res  = await fetch("/api/paystack-init", {
         method:  "POST",
         headers: { "Content-Type": "application/json" },
-        body:    JSON.stringify({
-          email:    user.email,
-          planCode: plan.code,
-          uid:      user.id,
-        }),
+        body:    JSON.stringify(body),
       });
       const data = await res.json();
       if (!res.ok || !data.authorization_url) throw new Error(data.error || "Failed to start checkout");
-      // Redirect to Paystack checkout
       window.location.href = data.authorization_url;
     } catch(e) {
       setError(e.message || "Something went wrong. Try again.");
@@ -1004,6 +1003,37 @@ function UpgradeModal({ onClose, reason="default", monthCount=0, p="#075E54", us
               </div>
             ))}
 
+            {/* Payment method selector */}
+            <div style={{ margin:"16px 0 4px" }}>
+              <div style={{ fontSize:11, fontWeight:800, color:"#aaa", textTransform:"uppercase",
+                letterSpacing:.8, marginBottom:10 }}>How would you like to pay?</div>
+              <div style={{ display:"flex", gap:10 }}>
+                {[
+                  { id:"card",     icon:"💳", label:"Card",          sub:"Auto-renews" },
+                  { id:"transfer", icon:"🏦", label:"Bank Transfer",  sub:"One-time, manual renewal" },
+                ].map(m => (
+                  <div key={m.id} onClick={()=>setPayMethod(m.id)}
+                    style={{ flex:1, padding:"12px 14px", borderRadius:14, cursor:"pointer",
+                      border: payMethod===m.id ? "2px solid #075E54" : "2px solid #f0f0f0",
+                      background: payMethod===m.id ? "#f0fdf4" : "#fafafa",
+                      transition:"all .15s" }}>
+                    <div style={{ fontSize:20, marginBottom:4 }}>{m.icon}</div>
+                    <div style={{ fontWeight:800, fontSize:13, color:"#222", marginBottom:2 }}>{m.label}</div>
+                    <div style={{ fontSize:11, color:"#aaa" }}>{m.sub}</div>
+                    {payMethod===m.id && (
+                      <div style={{ fontSize:11, color:"#075E54", fontWeight:700, marginTop:4 }}>✓ Selected</div>
+                    )}
+                  </div>
+                ))}
+              </div>
+              {payMethod==="transfer" && (
+                <div style={{ background:"#fffbeb", border:"1px solid #fde68a", borderRadius:10,
+                  padding:"10px 12px", marginTop:10, fontSize:12, color:"#92400e", lineHeight:1.6 }}>
+                  💡 Bank transfer pays for one period only. You'll need to manually renew when your plan expires. We'll remind you in-app.
+                </div>
+              )}
+            </div>
+
             {error&&(
               <div style={{ background:"#fff3f0", border:"1px solid #ffcdd2", borderRadius:10,
                 padding:"10px 14px", color:"#c62828", fontSize:12, marginTop:8 }}>
@@ -1015,10 +1045,12 @@ function UpgradeModal({ onClose, reason="default", monthCount=0, p="#075E54", us
               style={{ marginTop:14 }}>
               {loading
                 ? <><div className="um-spin"/><span>Opening checkout…</span></>
-                : <span>Pay with Paystack 🔒</span>}
+                : <span>{payMethod==="transfer" ? "Pay via Bank Transfer 🏦" : "Pay with Card 💳"}</span>}
             </button>
             <div style={{ textAlign:"center", fontSize:11, color:"#ccc", marginTop:10, marginBottom:4 }}>
-              Secured by Paystack · Cancel anytime from your Paystack email
+              {payMethod==="transfer"
+                ? "One-time payment · Supports bank transfer, USSD & more"
+                : "Secured by Paystack · Auto-renews · Cancel anytime"}
             </div>
           </>}
 

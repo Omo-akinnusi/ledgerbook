@@ -90,8 +90,15 @@ module.exports = async function handler(req, res) {
     }
 
     const txData   = data.data;
-    const interval = (txData.plan_object && txData.plan_object.interval) || "monthly";
-    const planCode = txData.plan;
+
+    // For transfer (one-time charge), interval comes from metadata
+    // For card subscription, interval comes from plan_object
+    const metaInterval = txData.metadata?.interval;
+    const interval     = metaInterval ||
+                        (txData.plan_object && txData.plan_object.interval) ||
+                        "monthly";
+    const planCode     = txData.plan || null;
+    const paymentType  = txData.metadata?.paymentType || "card";
 
     // Idempotency — don't double-activate for the same reference
     const db      = getDb();
@@ -109,8 +116,9 @@ module.exports = async function handler(req, res) {
     await planRef.set({
       plan:             "pro",
       interval:         interval,
-      planCode:         planCode,
-      subscriptionCode: subscriptionCode,
+      planCode:         planCode || "",
+      paymentType:      paymentType,
+      subscriptionCode: txData.subscription_code || "",
       expiresAt:        expiresAt,
       activatedAt:      new Date().toISOString(),
       lastPaymentRef:   reference,
