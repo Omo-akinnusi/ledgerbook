@@ -3,6 +3,8 @@
 const crypto = require("crypto");
 
 let admin;
+
+// Cash Counter Firebase (main app)
 function getDb() {
   if (!admin) admin = require("firebase-admin");
   if (!admin.apps.length) {
@@ -12,9 +14,35 @@ function getDb() {
         clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
         privateKey:  (process.env.FIREBASE_PRIVATE_KEY || "").replace(/\\n/g, "\n"),
       }),
-    });
+    }, "cashcounter");
   }
-  return admin.firestore();
+  return admin.app("cashcounter").firestore();
+}
+
+// Ninja Firebase (separate project)
+function getNinjaDb() {
+  if (!admin) admin = require("firebase-admin");
+  const ninjaProjectId   = process.env.NINJA_FIREBASE_PROJECT_ID;
+  const ninjaClientEmail = process.env.NINJA_FIREBASE_CLIENT_EMAIL;
+  const ninjaPrivateKey  = (process.env.NINJA_FIREBASE_PRIVATE_KEY || "").replace(/\\n/g, "\n");
+
+  if (!ninjaProjectId || !ninjaClientEmail || !ninjaPrivateKey) {
+    console.warn("Ninja Firebase credentials not configured — skipping commission tracking");
+    return null;
+  }
+
+  try {
+    admin.app("ninja");
+  } catch(e) {
+    admin.initializeApp({
+      credential: admin.credential.cert({
+        projectId:   ninjaProjectId,
+        clientEmail: ninjaClientEmail,
+        privateKey:  ninjaPrivateKey,
+      }),
+    }, "ninja");
+  }
+  return admin.app("ninja").firestore();
 }
 
 const PLAN_DURATIONS = {
@@ -37,23 +65,38 @@ function isValidUid(uid) {
 
 async function processCommission(db, uid, interval, userEmail, reference) {
   try {
-    // Check if user was referred by a Ninja
+    // Get referred ninja code from Cash Counter user profile
     const userDoc = await db.doc("users/" + uid).get();
     if (!userDoc.exists) return;
 
     const referredBy = userDoc.data().referredBy;
-    if (!referredBy) return; // not a referred user
+    if (!referredBy) return;
 
-    // Check if commission already exists for this reference (idempotency)
-    const existingSnap = await db.collection("ninjas").doc(referredBy)
+    // Write commission to Ninja Firestore (separate project)
+    const ninjaDb = getNinjaDb();
+    if (!ninjaDb) return;
+
+    // Find ninja by referral code in Ninja project
+    const ninjaSnap = await ninjaDb.collection("ninjas")
+      .where("referralCode", "==", referredBy).limit(1).get();
+    if (ninjaSnap.empty) {
+      console.warn("No ninja found for referral code:", referredBy);
+      return;
+    }
+
+    const ninjaDoc = ninjaSnap.docs[0];
+    const ninjaId  = ninjaDoc.id;
+
+    // Check idempotency — don't double commission for same payment
+    const existingSnap = await ninjaDb.collection("ninjas").doc(ninjaId)
       .collection("commissions")
       .where("paymentRef", "==", reference).limit(1).get();
-    if (!existingSnap.empty) return; // already processed
+    if (!existingSnap.empty) return;
 
     const commissionAmount = COMMISSION_RATES[interval] || COMMISSION_RATES.monthly;
 
-    // Add commission record
-    await db.collection("ninjas").doc(referredBy)
+    // Add commission record to Ninja project
+    await ninjaDb.collection("ninjas").doc(ninjaId)
       .collection("commissions").add({
         userId:       uid,
         userEmail:    userEmail || "",
@@ -64,13 +107,13 @@ async function processCommission(db, uid, interval, userEmail, reference) {
         createdAt:    admin.firestore.FieldValue.serverTimestamp(),
       });
 
-    // Update ninja totals
-    await db.doc("ninjas/" + referredBy).set({
+    // Update ninja totals in Ninja project
+    await ninjaDb.doc("ninjas/" + ninjaId).set({
       paidUsers:     admin.firestore.FieldValue.increment(1),
       totalEarnings: admin.firestore.FieldValue.increment(commissionAmount),
     }, { merge: true });
 
-    console.log("Commission logged for ninja:", referredBy, "amount:", commissionAmount);
+    console.log("Commission logged for ninja:", ninjaId, "amount:", commissionAmount);
   } catch(e) {
     console.error("Commission processing error:", e.message);
   }

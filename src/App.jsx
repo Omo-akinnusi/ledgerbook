@@ -3456,8 +3456,6 @@ export default function CashCounter() {
 
           setNeeds(!profileData.onboarded);
 
-          const isNewUser = !profileData.createdAt;
-
           // Check for referral code — from URL or localStorage
           const refFromUrl   = new URLSearchParams(window.location.search).get("ref");
           const refFromStore = DB.get(`lb_ref_${firebaseUser.uid}`);
@@ -3473,23 +3471,9 @@ export default function CashCounter() {
             ...(refCode && !profileData.referredBy ? { referredBy: refCode } : {}),
           });
 
-          // Increment ninja totalUsers on first signup
-          if (isNewUser && refCode && !profileData.referredBy) {
-            try {
-              // Find ninja by referral code
-              const ninjaSnap = await getDocs(
-                query(collection(db, "ninjas"), where("referralCode", "==", refCode), limit(1))
-              );
-              if (!ninjaSnap.empty) {
-                await setDoc(ninjaSnap.docs[0].ref, {
-                  totalUsers: ninjaSnap.docs[0].data().totalUsers + 1
-                }, { merge: true });
-              }
-              // Clear stored ref
-              DB.remove(`lb_ref_${firebaseUser.uid}`);
-            } catch(e) {
-              console.warn("Referral tracking failed:", e.message);
-            }
+          // Clear stored ref once saved
+          if (refCode && !profileData.referredBy) {
+            DB.remove(`lb_ref_${firebaseUser.uid}`);
           }
         } catch(e) {
           console.warn("saveProfile failed:", e.code, e.message);
