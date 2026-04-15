@@ -603,7 +603,7 @@
 import { initializeApp }                   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut }
                                             from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-import { getFirestore, doc, getDoc, setDoc, collection, getDocs, query, orderBy, limit, startAfter }
+import { getFirestore, doc, getDoc, setDoc, collection, getDocs, query, orderBy, limit, startAfter, where, writeBatch, increment }
                                             from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 // ── Firebase config ──────────────────────────────────────────
@@ -1230,7 +1230,7 @@ async function loadNinjas() {
   listEl.innerHTML = "<div class='empty'><div class='empty-icon'>🥷</div>Loading Ninjas…</div>";
 
   try {
-    const snap = await db.collection("ninjas").orderBy("appliedAt", "desc").get();
+    const snap = await getDocs(query(collection(db, "ninjas"), orderBy("appliedAt", "desc")));
     allNinjas = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     window.ninjasLoaded = true;
 
@@ -1383,7 +1383,7 @@ function toggleNinja(id) {
 
 async function updateNinjaStatus(id, status) {
   try {
-    await db.collection("ninjas").doc(id).update({ status });
+    await setDoc(doc(db, "ninjas", id), { status }, { merge: true });
     toast("Ninja status updated to " + status);
     await loadNinjas();
   } catch(e) {
@@ -1393,7 +1393,7 @@ async function updateNinjaStatus(id, status) {
 
 async function markPayoutPaid(ninjaId) {
   try {
-    const ninjaDoc = await db.collection("ninjas").doc(ninjaId).get();
+    const ninjaDoc = await getDoc(doc(db, "ninjas", ninjaId));
     if (!ninjaDoc.exists) throw new Error("Ninja not found");
     const ninja = ninjaDoc.data();
     const pending = (ninja.totalEarnings || 0) - (ninja.paidEarnings || 0);
@@ -1402,16 +1402,13 @@ async function markPayoutPaid(ninjaId) {
     if (!confirm(`Mark ₦${pending.toLocaleString()} as paid to ${ninja.name}?`)) return;
 
     // Mark all pending commissions as paid
-    const comSnap = await db.collection("ninjas").doc(ninjaId)
-      .collection("commissions").where("status", "==", "pending").get();
-    const batch = db.batch();
+    const comSnap = await getDocs(query(collection(db, "ninjas", ninjaId, "commissions"), where("status", "==", "pending")));
+    const batch = writeBatch(db);
     comSnap.docs.forEach(d => batch.update(d.ref, { status: "paid", paidAt: new Date().toISOString() }));
     await batch.commit();
 
     // Update paidEarnings on ninja doc
-    await db.collection("ninjas").doc(ninjaId).update({
-      paidEarnings: firebase.firestore.FieldValue.increment(pending),
-    });
+    await setDoc(doc(db, "ninjas", ninjaId), { paidEarnings: increment(pending) }, { merge: true });
 
     toast("₦" + pending.toLocaleString() + " marked as paid to " + ninja.name);
     await loadNinjas();
@@ -1424,8 +1421,7 @@ async function loadCommissions(ninjaId) {
   const el = document.getElementById("commissions-" + ninjaId);
   el.innerHTML = "<div style='font-size:13px;color:#999'>Loading…</div>";
   try {
-    const snap = await db.collection("ninjas").doc(ninjaId)
-      .collection("commissions").orderBy("createdAt", "desc").limit(50).get();
+    const snap = await getDocs(query(collection(db, "ninjas", ninjaId, "commissions"), orderBy("createdAt", "desc"), limit(50)));
 
     if (snap.empty) {
       el.innerHTML = "<div style='font-size:13px;color:#bbb;padding:12px 0'>No commissions yet.</div>";
