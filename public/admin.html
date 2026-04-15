@@ -1211,7 +1211,7 @@ function toast(msg, type="success") {
 window.toast = toast;
 
 // ── Tab switching ────────────────────────────────────────────────
-function switchAdminTab(tab) {
+window.switchAdminTab = function(tab) {
   document.getElementById("admin-tab-users").style.display   = tab === "users"  ? "block" : "none";
   document.getElementById("admin-tab-ninjas").style.display  = tab === "ninjas" ? "block" : "none";
   document.getElementById("tab-users").style.color           = tab === "users"  ? "#205361" : "#999";
@@ -1225,7 +1225,7 @@ function switchAdminTab(tab) {
 let allNinjas = [];
 window.ninjasLoaded = false;
 
-async function loadNinjas() {
+window.loadNinjas = async function() {
   const listEl = document.getElementById("ninja-list");
   listEl.innerHTML = "<div class='empty'><div class='empty-icon'>🥷</div>Loading Ninjas…</div>";
 
@@ -1249,7 +1249,7 @@ async function loadNinjas() {
   }
 }
 
-function filterNinjas() {
+window.filterNinjas = function() {
   const status = document.getElementById("ninja-filter-status").value;
   const search = document.getElementById("ninja-search").value.toLowerCase();
   let filtered = allNinjas;
@@ -1261,7 +1261,7 @@ function filterNinjas() {
   renderNinjas(filtered);
 }
 
-function renderNinjas(ninjas) {
+window.renderNinjas = function(ninjas) {
   const listEl = document.getElementById("ninja-list");
   if (!ninjas.length) {
     listEl.innerHTML = "<div class='empty'><div class='empty-icon'>🥷</div>No Ninjas found.</div>";
@@ -1376,12 +1376,12 @@ function renderNinjas(ninjas) {
   }).join("");
 }
 
-function toggleNinja(id) {
+window.toggleNinja = function(id) {
   const detail = document.getElementById("ninja-detail-" + id);
   detail.style.display = detail.style.display === "none" ? "block" : "none";
 }
 
-async function updateNinjaStatus(id, status) {
+window.updateNinjaStatus = async function(id, status) {
   try {
     await setDoc(doc(db, "ninjas", id), { status }, { merge: true });
     toast("Ninja status updated to " + status);
@@ -1391,7 +1391,7 @@ async function updateNinjaStatus(id, status) {
   }
 }
 
-async function markPayoutPaid(ninjaId) {
+window.markPayoutPaid = async function(ninjaId) {
   try {
     const ninjaDoc = await getDoc(doc(db, "ninjas", ninjaId));
     if (!ninjaDoc.exists) throw new Error("Ninja not found");
@@ -1417,7 +1417,7 @@ async function markPayoutPaid(ninjaId) {
   }
 }
 
-async function loadCommissions(ninjaId) {
+window.loadCommissions = async function(ninjaId) {
   const el = document.getElementById("commissions-" + ninjaId);
   el.innerHTML = "<div style='font-size:13px;color:#999'>Loading…</div>";
   try {
