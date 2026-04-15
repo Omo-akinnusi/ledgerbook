@@ -31,7 +31,7 @@ import {
   EmailAuthProvider,
   doc, getDoc, getDocs, setDoc, updateDoc,
   collection, addDoc, deleteDoc,
-  onSnapshot, query, orderBy, limit, serverTimestamp,
+  onSnapshot, query, orderBy, where, limit, serverTimestamp,
 } from "./firebase.js";
 
 // ── Inject global CSS for safe-area, viewport, scrollbar hiding ─
@@ -1834,6 +1834,13 @@ function AuthScreen() {
       const cred = await createUserWithEmailAndPassword(auth, form.email, form.password);
       await updateProfile(cred.user, { displayName: form.name });
       DB.set(`lb_bname_${cred.user.uid}`, form.businessName);
+
+      // Capture referral code from URL if present
+      const refCode = new URLSearchParams(window.location.search).get("ref");
+      if (refCode) {
+        DB.set(`lb_ref_${cred.user.uid}`, refCode);
+      }
+
       await sendEmailVerification(cred.user);
       await signOut(auth);
       trackSignup("email");
@@ -3449,6 +3456,13 @@ export default function CashCounter() {
 
           setNeeds(!profileData.onboarded);
 
+          const isNewUser = !profileData.createdAt;
+
+          // Check for referral code — from URL or localStorage
+          const refFromUrl   = new URLSearchParams(window.location.search).get("ref");
+          const refFromStore = DB.get(`lb_ref_${firebaseUser.uid}`);
+          const refCode      = profileData.referredBy || refFromUrl || refFromStore || null;
+
           await saveProfile(firebaseUser.uid, {
             name:         u.name,
             email:        u.email,
@@ -3456,7 +3470,27 @@ export default function CashCounter() {
             photoURL:     u.photoURL || "",
             lastSeen:     new Date().toISOString(),
             createdAt:    u.createdAt,
+            ...(refCode && !profileData.referredBy ? { referredBy: refCode } : {}),
           });
+
+          // Increment ninja totalUsers on first signup
+          if (isNewUser && refCode && !profileData.referredBy) {
+            try {
+              // Find ninja by referral code
+              const ninjaSnap = await getDocs(
+                query(collection(db, "ninjas"), where("referralCode", "==", refCode), limit(1))
+              );
+              if (!ninjaSnap.empty) {
+                await setDoc(ninjaSnap.docs[0].ref, {
+                  totalUsers: ninjaSnap.docs[0].data().totalUsers + 1
+                }, { merge: true });
+              }
+              // Clear stored ref
+              DB.remove(`lb_ref_${firebaseUser.uid}`);
+            } catch(e) {
+              console.warn("Referral tracking failed:", e.message);
+            }
+          }
         } catch(e) {
           console.warn("saveProfile failed:", e.code, e.message);
           Sentry.captureException(e, { tags: { operation: "save_profile" } });

@@ -24,18 +24,63 @@ const PLAN_DURATIONS = {
 };
 const BUFFER_MS = 2 * 24 * 60 * 60 * 1000;
 
-// Validate uid format before writing to Firestore
+// Commission rates — 20% of first payment in naira
+const COMMISSION_RATES = {
+  monthly:    1000,   // 20% of ₦5,000
+  biannually: 5400,   // 20% of ₦27,000
+  annually:   10000,  // 20% of ₦50,000
+};
+
 function isValidUid(uid) {
   return typeof uid === "string" && uid.length > 10 && uid.length < 200 && /^[a-zA-Z0-9_-]+$/.test(uid);
 }
 
-module.exports = async function handler(req, res) {
-  // Webhooks only — no CORS needed, Paystack calls this server-to-server
-  res.setHeader("X-Content-Type-Options", "nosniff");
+async function processCommission(db, uid, interval, userEmail, reference) {
+  try {
+    // Check if user was referred by a Ninja
+    const userDoc = await db.doc("users/" + uid).get();
+    if (!userDoc.exists) return;
 
+    const referredBy = userDoc.data().referredBy;
+    if (!referredBy) return; // not a referred user
+
+    // Check if commission already exists for this reference (idempotency)
+    const existingSnap = await db.collection("ninjas").doc(referredBy)
+      .collection("commissions")
+      .where("paymentRef", "==", reference).limit(1).get();
+    if (!existingSnap.empty) return; // already processed
+
+    const commissionAmount = COMMISSION_RATES[interval] || COMMISSION_RATES.monthly;
+
+    // Add commission record
+    await db.collection("ninjas").doc(referredBy)
+      .collection("commissions").add({
+        userId:       uid,
+        userEmail:    userEmail || "",
+        interval:     interval,
+        commission:   commissionAmount,
+        paymentRef:   reference,
+        status:       "pending",
+        createdAt:    admin.firestore.FieldValue.serverTimestamp(),
+      });
+
+    // Update ninja totals
+    await db.doc("ninjas/" + referredBy).set({
+      paidUsers:     admin.firestore.FieldValue.increment(1),
+      totalEarnings: admin.firestore.FieldValue.increment(commissionAmount),
+    }, { merge: true });
+
+    console.log("Commission logged for ninja:", referredBy, "amount:", commissionAmount);
+  } catch(e) {
+    console.error("Commission processing error:", e.message);
+  }
+}
+
+module.exports = async function handler(req, res) {
+  res.setHeader("X-Content-Type-Options", "nosniff");
   if (req.method !== "POST") return res.status(405).send("Method not allowed");
 
-  // ── Verify Paystack signature (critical security check) ──
+  // ── Verify Paystack signature ──
   const secret    = process.env.PAYSTACK_SECRET_KEY;
   const signature = req.headers["x-paystack-signature"];
   if (!signature) return res.status(401).send("Missing signature");
@@ -57,9 +102,13 @@ module.exports = async function handler(req, res) {
     if (event.event === "charge.success") {
       const data             = event.data;
       const uid              = data.metadata && data.metadata.uid;
-      const planCode         = data.plan;
-      const interval         = data.plan_object && data.plan_object.interval;
+      const metaInterval     = data.metadata && data.metadata.interval;
+      const planCode         = data.plan || null;
+      const interval         = metaInterval ||
+                               (data.plan_object && data.plan_object.interval) ||
+                               "monthly";
       const subscriptionCode = data.subscription_code || "";
+      const userEmail        = data.customer && data.customer.email;
 
       if (!isValidUid(uid)) {
         console.warn("Webhook charge.success: invalid or missing uid");
@@ -69,10 +118,15 @@ module.exports = async function handler(req, res) {
       const durationMs = PLAN_DURATIONS[interval] || PLAN_DURATIONS.monthly;
       const expiresAt  = new Date(Date.now() + durationMs + BUFFER_MS).toISOString();
 
-      await db.doc("users/" + uid + "/settings/plan").set({
+      // Check if this is the first payment (for commission — only on first payment)
+      const planRef     = db.doc("users/" + uid + "/settings/plan");
+      const existingPlan = await planRef.get();
+      const isFirstPayment = !existingPlan.exists || existingPlan.data().plan !== "pro";
+
+      await planRef.set({
         plan:             "pro",
         interval:         interval,
-        planCode:         planCode,
+        planCode:         planCode || "",
         subscriptionCode: subscriptionCode,
         expiresAt:        expiresAt,
         activatedAt:      new Date().toISOString(),
@@ -80,6 +134,17 @@ module.exports = async function handler(req, res) {
         lastPaymentAt:    data.paid_at || new Date().toISOString(),
         status:           "active",
       }, { merge: true });
+
+      // Process commission only on first payment
+      if (isFirstPayment) {
+        await processCommission(db, uid, interval, userEmail, data.reference);
+
+        // Increment ninja total signups if referred
+        const userDoc = await db.doc("users/" + uid).get();
+        if (userDoc.exists && userDoc.data().referredBy) {
+          // totalUsers already incremented at signup — paidUsers incremented in processCommission
+        }
+      }
     }
 
     if (event.event === "subscription.disable" || event.event === "subscription.not_renew") {
@@ -113,6 +178,6 @@ module.exports = async function handler(req, res) {
     return res.status(200).send("OK");
   } catch (err) {
     console.error("Webhook handler error:", err.message);
-    return res.status(200).send("OK"); // Always 200 to prevent Paystack retries
+    return res.status(200).send("OK");
   }
 };

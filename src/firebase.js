@@ -30,6 +30,7 @@ import {
   onSnapshot,
   query,
   orderBy,
+  where,
   limit,
   serverTimestamp,
 } from "firebase/firestore";
@@ -86,5 +87,5 @@ export {
   // Firestore
   doc, getDoc, getDocs, setDoc, updateDoc,
   collection, addDoc, deleteDoc,
-  onSnapshot, query, orderBy, limit, serverTimestamp,
+  onSnapshot, query, orderBy, where, limit, serverTimestamp,
 };
