@@ -602,8 +602,7 @@
 <script type="module">
 import { initializeApp }                   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut }
-                                            from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-import { getFirestore, doc, getDoc, setDoc, collection, getDocs, query, orderBy, limit, startAfter, where, writeBatch, increment }
+                                            from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";import { getFirestore, doc, getDoc, setDoc, collection, getDocs, query, orderBy, limit, startAfter, where, writeBatch, increment }
                                             from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 // ── Firebase config ──────────────────────────────────────────
@@ -622,7 +621,7 @@ const db       = getFirestore(app);
 const gprov    = new GoogleAuthProvider();
 
 // Ninja Firebase — separate project
-const ninjaApp = initializeApp({
+const ninjaApp  = initializeApp({
   apiKey:            "AIzaSyCBnE5j9Zmq9_Xhrf_92Ei55YK5EEfM6HE",
   authDomain:        "vbook-ninja.firebaseapp.com",
   projectId:         "vbook-ninja",
@@ -630,7 +629,8 @@ const ninjaApp = initializeApp({
   messagingSenderId: "459832998798",
   appId:             "1:459832998798:web:c922feaa5618c53bf2c2df"
 }, "ninja");
-const ninjaDb  = getFirestore(ninjaApp);
+const ninjaDb   = getFirestore(ninjaApp);
+const ninjaAuth = getAuth(ninjaApp);
 
 // ── Admin email whitelist ─────────────────────────────────────
 // Only these emails can access the admin panel
@@ -646,11 +646,21 @@ let allUsers     = [];
 window.signInAdmin = async () => {
   try {
     document.getElementById("auth-error").style.display = "none";
+    // Sign into Cash Counter Firebase
     const result = await signInWithPopup(auth, gprov);
     const email  = result.user.email;
     if (!ADMIN_EMAILS.includes(email)) {
       await signOut(auth);
       showError(`Access denied for ${email}. This admin panel is restricted.`);
+      return;
+    }
+    // Sign into Ninja Firebase with same Google credential
+    try {
+      const { GoogleAuthProvider: GAP, signInWithCredential } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js");
+      const credential = GAP.credentialFromResult(result);
+      await signInWithCredential(ninjaAuth, credential);
+    } catch(e) {
+      console.warn("Ninja Firebase sign-in failed:", e.message);
     }
   } catch(e) {
     if (e.code !== "auth/popup-closed-by-user") showError(e.message);
@@ -1222,6 +1232,28 @@ function toast(msg, type="success") {
 window.toast = toast;
 
 // ── Tab switching ────────────────────────────────────────────────
+// ── Ninja API helper ────────────────────────────────────────────
+const ADMIN_SECRET = "ADMIN_SECRET_PLACEHOLDER"; // Replace with your actual ADMIN_SECRET value
+
+async function ninjaApi(method, params) {
+  const isGet = method === "GET";
+  const url   = isGet
+    ? "/api/ninja-admin?" + new URLSearchParams(params).toString()
+    : "/api/ninja-admin";
+  const opts  = {
+    method,
+    headers: {
+      "Authorization": "Bearer " + ADMIN_SECRET,
+      "Content-Type":  "application/json",
+    },
+  };
+  if (!isGet) opts.body = JSON.stringify(params);
+  const res  = await fetch(url, opts);
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || "API error");
+  return data;
+}
+
 window.switchAdminTab = function(tab) {
   document.getElementById("admin-tab-users").style.display   = tab === "users"  ? "block" : "none";
   document.getElementById("admin-tab-ninjas").style.display  = tab === "ninjas" ? "block" : "none";
@@ -1241,8 +1273,8 @@ window.loadNinjas = async function() {
   listEl.innerHTML = "<div class='empty'><div class='empty-icon'>🥷</div>Loading Ninjas…</div>";
 
   try {
-    const snap = await getDocs(query(collection(ninjaDb, "ninjas"), orderBy("appliedAt", "desc")));
-    allNinjas = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    const data = await ninjaApi("GET", { action: "list" });
+    allNinjas = data.ninjas || [];
     window.ninjasLoaded = true;
 
     // Stats
@@ -1394,7 +1426,7 @@ window.toggleNinja = function(id) {
 
 window.updateNinjaStatus = async function(id, status) {
   try {
-    await setDoc(doc(ninjaDb, "ninjas", id), { status }, { merge: true });
+    await ninjaApi("POST", { action: "updateStatus", ninjaId: id, status });
     toast("Ninja status updated to " + status);
     await loadNinjas();
   } catch(e) {
@@ -1432,17 +1464,17 @@ window.loadCommissions = async function(ninjaId) {
   const el = document.getElementById("commissions-" + ninjaId);
   el.innerHTML = "<div style='font-size:13px;color:#999'>Loading…</div>";
   try {
-    const snap = await getDocs(query(collection(ninjaDb, "ninjas", ninjaId, "commissions"), orderBy("createdAt", "desc"), limit(50)));
+    const data = await ninjaApi("GET", { action: "commissions", ninjaId });
+    const commissions = data.commissions || [];
 
-    if (snap.empty) {
+    if (!commissions.length) {
       el.innerHTML = "<div style='font-size:13px;color:#bbb;padding:12px 0'>No commissions yet.</div>";
       return;
     }
 
     const statusColors = { pending:"#f59e0b", paid:"#1b5e20" };
-    const rows = snap.docs.map(d => {
-      const c = d.data();
-      const date = c.createdAt?.toDate ? c.createdAt.toDate().toLocaleDateString("en-NG") : "—";
+    const rows = commissions.map(c => {
+      const date = c.createdAt ? new Date(c.createdAt).toLocaleDateString("en-NG") : "—";
       const planLabel = { monthly:"Monthly", biannually:"6-Month", annually:"Annual" }[c.interval] || c.interval;
       return `<tr>
         <td>${c.userEmail || "—"}</td>
