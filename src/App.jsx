@@ -29,6 +29,7 @@ import {
   reauthenticateWithCredential,
   reauthenticateWithPopup,
   EmailAuthProvider,
+  applyActionCode,
   doc, getDoc, getDocs, setDoc, updateDoc,
   collection, addDoc, deleteDoc,
   onSnapshot, query, orderBy, where, limit, serverTimestamp,
@@ -1841,7 +1842,10 @@ function AuthScreen() {
         DB.set(`lb_ref_${cred.user.uid}`, refCode);
       }
 
-      await sendEmailVerification(cred.user);
+      await sendEmailVerification(cred.user, {
+        url: "https://cashcounter.vbookng.com",
+        handleCodeInApp: false,
+      });
       await signOut(auth);
       trackSignup("email");
       setSuccess(`Verification email sent to ${form.email}. Please check your inbox and click the link to activate your account.`);
@@ -3031,11 +3035,27 @@ const INDUSTRIES = [
 // EMAIL VERIFICATION SCREEN
 // shown when a user signs in but hasn't verified their email yet
 // ═══════════════════════════════════════════════════════════════
-function EmailVerificationScreen({ email, onVerified, onLogout }) {
+function EmailVerificationScreen({ email, onVerified, onLogout, autoVerified=false }) {
   const [checking,  setChecking]  = useState(false);
   const [resending, setResending] = useState(false);
   const [resent,    setResent]    = useState(false);
   const [err,       setErr]       = useState("");
+
+  // Auto-proceed if verification was just completed via link
+  useEffect(() => {
+    if (autoVerified) {
+      // Give Firebase a moment to propagate, then reload and proceed
+      setTimeout(async () => {
+        try {
+          await reload(auth.currentUser);
+          if (auth.currentUser?.emailVerified) {
+            trackEmailVerified();
+            onVerified();
+          }
+        } catch(e) {}
+      }, 1500);
+    }
+  }, [autoVerified]);
 
   const EV_CSS = `
     @keyframes ev-in{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
@@ -3084,22 +3104,28 @@ function EmailVerificationScreen({ email, onVerified, onLogout }) {
         <div style={{ background:"#fff", borderRadius:28, padding:"36px 28px",
           boxShadow:"0 24px 64px rgba(0,0,0,.3)", textAlign:"center" }}>
 
-          <div className="ev-icon" style={{ fontSize:64, marginBottom:16 }}>📧</div>
+          <div className="ev-icon" style={{ fontSize:64, marginBottom:16 }}>
+            {autoVerified ? "✅" : "📧"}
+          </div>
           <div style={{ fontWeight:900, fontSize:22, color:"#0a1612",
             letterSpacing:"-.4px", marginBottom:10 }}>
-            Verify your email
+            {autoVerified ? "Email verified!" : "Verify your email"}
           </div>
           <div style={{ fontSize:14, color:"#6b7280", lineHeight:1.7, marginBottom:6 }}>
-            We sent a verification link to
+            {autoVerified ? "Your email has been verified. Taking you in…" : "We sent a verification link to"}
           </div>
-          <div style={{ fontWeight:800, fontSize:15, color:"#075E54",
-            background:"#f0faf7", borderRadius:10, padding:"8px 16px",
-            display:"inline-block", marginBottom:20 }}>
-            {email}
-          </div>
-          <div style={{ fontSize:13, color:"#9ca3af", lineHeight:1.65, marginBottom:24 }}>
-            Click the link in that email to activate your account, then come back here and tap the button below.
-          </div>
+          {!autoVerified && (
+            <div style={{ fontWeight:800, fontSize:15, color:"#075E54",
+              background:"#f0faf7", borderRadius:10, padding:"8px 16px",
+              display:"inline-block", marginBottom:20 }}>
+              {email}
+            </div>
+          )}
+          {!autoVerified && (
+            <div style={{ fontSize:13, color:"#9ca3af", lineHeight:1.65, marginBottom:24 }}>
+              Click the link in that email to activate your account, then come back here and tap the button below.
+            </div>
+          )}
 
           {/* Error */}
           {err && (
@@ -3420,6 +3446,29 @@ export default function CashCounter() {
   const [authChecked,setChecked]     = useState(false);
   const [needsOnboarding,setNeeds]   = useState(false);
   const [needsVerification,setNeedsVerif] = useState(false);
+  const [verifSuccess, setVerifSuccess]   = useState(false);
+
+  // Handle Firebase email action links (verification, password reset)
+  useEffect(() => {
+    const params  = new URLSearchParams(window.location.search);
+    const mode    = params.get("mode");
+    const oobCode = params.get("oobCode");
+    if (mode === "verifyEmail" && oobCode) {
+      applyActionCode(auth, oobCode)
+        .then(() => {
+          // Clear URL params so it doesn't re-trigger on refresh
+          window.history.replaceState({}, document.title, window.location.pathname);
+          setVerifSuccess(true);
+          // Reload current user to pick up emailVerified: true
+          if (auth.currentUser) reload(auth.currentUser).catch(() => {});
+        })
+        .catch((e) => {
+          console.warn("Email verification failed:", e.code, e.message);
+          // Link may be expired or already used — still clear params
+          window.history.replaceState({}, document.title, window.location.pathname);
+        });
+    }
+  }, []);
 
   useEffect(()=>{
     const unsub = onAuthStateChanged(auth, async (firebaseUser) => {
@@ -3527,6 +3576,7 @@ export default function CashCounter() {
       email={user.email}
       onVerified={handleVerified}
       onLogout={handleLogout}
+      autoVerified={verifSuccess}
     /></>
   );
   if (needsOnboarding) return (

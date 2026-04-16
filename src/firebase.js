@@ -15,6 +15,7 @@ import {
   reauthenticateWithCredential,
   reauthenticateWithPopup,
   EmailAuthProvider,
+  applyActionCode,
 } from "firebase/auth";
 import {
   getFirestore,
@@ -84,6 +85,7 @@ export {
   reauthenticateWithCredential,
   reauthenticateWithPopup,
   EmailAuthProvider,
+  applyActionCode,
   // Firestore
   doc, getDoc, getDocs, setDoc, updateDoc,
   collection, addDoc, deleteDoc,
