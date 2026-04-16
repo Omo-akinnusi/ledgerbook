@@ -5,6 +5,7 @@
 
 const ALLOWED_ORIGIN = process.env.APP_URL || "https://cashcounter.vbookng.com";
 const ADMIN_SECRET   = process.env.ADMIN_SECRET;
+const { sendEmail, applicationApprovedHTML, applicationRejectedHTML } = require("./ninja-notify.js");
 
 let admin;
 function getNinjaDb() {
@@ -63,9 +64,46 @@ module.exports = async function handler(req, res) {
       const ninjas = snap.docs.map(d => ({
         id: d.id,
         ...d.data(),
-        appliedAt: d.data().appliedAt?.toDate?.()?.toISOString() || null,
+        appliedAt:     d.data().appliedAt?.toDate?.()?.toISOString() || null,
+        bankName:      d.data().bankName      || "",
+        accountNumber: d.data().accountNumber || "",
+        accountName:   d.data().accountName   || "",
       }));
       return res.status(200).json({ ninjas });
+    }
+
+    // ── GET CSV report ──
+    if (req.method === "GET" && action === "csv") {
+      const snap = await db.collection("ninjas").orderBy("appliedAt", "desc").get();
+      const rows = [
+        ["Name","Email","Phone","State","Status","Total Signups","Paid Users","Total Earned","Paid Out","Pending","Bank Name","Account Number","Account Name","Applied At"].join(","),
+        ...snap.docs.map(d => {
+          const n = d.data();
+          const pending = (n.totalEarnings||0) - (n.paidEarnings||0);
+          const appliedAt = n.appliedAt?.toDate?.()?.toLocaleDateString("en-NG") || "";
+          return [
+            `"${n.name||""}"`,
+            `"${n.email||""}"`,
+            `"${n.phone||""}"`,
+            `"${n.state||""}"`,
+            `"${n.status||""}"`,
+            n.totalUsers||0,
+            n.paidUsers||0,
+            n.totalEarnings||0,
+            n.paidEarnings||0,
+            pending,
+            `"${n.bankName||""}"`,
+            `"${n.accountNumber||""}"`,
+            `"${n.accountName||""}"`,
+            `"${appliedAt}"`,
+          ].join(",");
+        })
+      ].join("
+");
+
+      res.setHeader("Content-Type", "text/csv");
+      res.setHeader("Content-Disposition", "attachment; filename=ninja-report.csv");
+      return res.status(200).send(rows);
     }
 
     // ── GET commissions for a ninja ──
@@ -84,6 +122,30 @@ module.exports = async function handler(req, res) {
     // ── POST update ninja status ──
     if (req.method === "POST" && action === "updateStatus" && ninjaId && status) {
       await db.collection("ninjas").doc(ninjaId).update({ status });
+
+      // Send email notification
+      try {
+        const ninjaDoc = await db.collection("ninjas").doc(ninjaId).get();
+        if (ninjaDoc.exists) {
+          const ninja = ninjaDoc.data();
+          if (status === "active") {
+            await sendEmail(
+              ninja.email,
+              "You're approved! Welcome to the Cash Counter Ninja programme 🥷",
+              applicationApprovedHTML(ninja.name.split(" ")[0], ninja.referralCode)
+            );
+          } else if (status === "rejected") {
+            await sendEmail(
+              ninja.email,
+              "Your Cash Counter Ninja application — update",
+              applicationRejectedHTML(ninja.name.split(" ")[0])
+            );
+          }
+        }
+      } catch(e) {
+        console.error("Email send error:", e.message);
+      }
+
       return res.status(200).json({ success: true });
     }
 

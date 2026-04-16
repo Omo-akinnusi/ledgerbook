@@ -343,6 +343,10 @@
   <div id="admin-pill" style="display:none" class="admin-user-pill">
     <div class="admin-avatar">👤</div>
     <span id="admin-name" style="font-size:13px;font-weight:700"></span>
+    <button onclick="resetAdminSecret()" title="Reset API secret"
+      style="background:none;border:none;color:#999;font-size:11px;cursor:pointer;font-family:inherit;margin-left:8px;padding:0">
+      🔑
+    </button>
   </div>
 </div>
 
@@ -549,7 +553,13 @@
         <div class="section-title">Ninja Management</div>
         <div class="section-sub">Review applications, manage Ninjas, and track commissions</div>
       </div>
-      <button class="btn-primary" onclick="loadNinjas()" style="font-size:13px;padding:10px 18px">↻ Refresh</button>
+      <div style="display:flex;gap:10px">
+        <button onclick="downloadNinjaCSV()"
+          style="padding:10px 18px;background:rgba(37,211,102,.12);border:1px solid var(--border);color:var(--lime);border-radius:10px;font-size:13px;font-weight:800;cursor:pointer;font-family:var(--font)">
+          ⬇ Download Report
+        </button>
+        <button class="btn-primary" onclick="loadNinjas()" style="font-size:13px;padding:10px 18px">↻ Refresh</button>
+      </div>
     </div>
 
     <!-- Ninja Stats -->
@@ -1233,7 +1243,22 @@ window.toast = toast;
 
 // ── Tab switching ────────────────────────────────────────────────
 // ── Ninja API helper ────────────────────────────────────────────
-const ADMIN_SECRET = "vbook_admin_2026_secret"; // Replace with your actual ADMIN_SECRET value
+// Admin secret — stored in localStorage, never in code or git
+// On first use, you'll be prompted to enter it once
+function getAdminSecret() {
+  let secret = localStorage.getItem("vbook_admin_secret");
+  if (!secret) {
+    secret = prompt("Enter your Admin API secret to continue:");
+    if (secret) localStorage.setItem("vbook_admin_secret", secret);
+  }
+  return secret || "";
+}
+const ADMIN_SECRET = getAdminSecret();
+
+window.resetAdminSecret = function() {
+  localStorage.removeItem("vbook_admin_secret");
+  location.reload();
+};
 
 async function ninjaApi(method, params) {
   const isGet = method === "GET";
@@ -1457,6 +1482,25 @@ window.markPayoutPaid = async function(ninjaId) {
     await loadNinjas();
   } catch(e) {
     toast("Failed: " + e.message, "error");
+  }
+}
+
+window.downloadNinjaCSV = async function() {
+  try {
+    const res = await fetch("/api/ninja-admin?action=csv", {
+      headers: { "Authorization": "Bearer " + ADMIN_SECRET }
+    });
+    if (!res.ok) throw new Error("Failed to generate report");
+    const blob = await res.blob();
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement("a");
+    a.href     = url;
+    a.download = "ninja-report-" + new Date().toISOString().split("T")[0] + ".csv";
+    a.click();
+    URL.revokeObjectURL(url);
+    toast("Ninja report downloaded!");
+  } catch(e) {
+    toast("Failed to download: " + e.message, "error");
   }
 }
 
