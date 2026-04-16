@@ -235,8 +235,7 @@ module.exports = async function handler(req, res) {
             `"${appliedAt}"`,
           ].join(",");
         })
-      ].join("
-");
+      ].join("\n");
 
       res.setHeader("Content-Type", "text/csv");
       res.setHeader("Content-Disposition", "attachment; filename=ninja-report.csv");
