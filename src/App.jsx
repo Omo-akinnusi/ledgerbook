@@ -1803,8 +1803,17 @@ function AuthScreen() {
       const result = await signInWithPopup(auth, provider);
       const uid = result.user.uid;
       const isNew = result._tokenResponse?.isNewUser;
-      if (isNew) trackSignup("google");
-      else        trackLogin("google");
+      if (isNew) {
+        trackSignup("google");
+        // Capture referral code for new Google users
+        const refCode = new URLSearchParams(window.location.search).get("ref");
+        if (refCode) {
+          DB.set(`lb_ref_${uid}`, refCode);
+          setDoc(userDoc(uid), { referredBy: refCode }, { merge: true }).catch(() => {});
+        }
+      } else {
+        trackLogin("google");
+      }
       if (!DB.get(`lb_bname_${uid}`)) {
         DB.set(`lb_bname_${uid}`, result.user.displayName?.split(" ")[0] + "'s Business" || "My Business");
       }
@@ -1836,10 +1845,14 @@ function AuthScreen() {
       await updateProfile(cred.user, { displayName: form.name });
       DB.set(`lb_bname_${cred.user.uid}`, form.businessName);
 
-      // Capture referral code from URL if present
+      // Capture referral code from URL if present — store for after email verification
       const refCode = new URLSearchParams(window.location.search).get("ref");
       if (refCode) {
         DB.set(`lb_ref_${cred.user.uid}`, refCode);
+        // Save referredBy to Firestore immediately so it persists after verification
+        try {
+          await setDoc(userDoc(cred.user.uid), { referredBy: refCode }, { merge: true });
+        } catch(e) { console.warn("Failed to save referral:", e.message); }
       }
 
       await sendEmailVerification(cred.user, {
@@ -3505,10 +3518,10 @@ export default function CashCounter() {
 
           setNeeds(!profileData.onboarded);
 
-          // Check for referral code — from URL or localStorage
-          const refFromUrl   = new URLSearchParams(window.location.search).get("ref");
-          const refFromStore = DB.get(`lb_ref_${firebaseUser.uid}`);
-          const refCode      = profileData.referredBy || refFromUrl || refFromStore || null;
+          // Check for referral code — from Firestore (set at signup) or localStorage fallback
+          const refFromStore  = DB.get(`lb_ref_${firebaseUser.uid}`);
+          const refCode       = profileData.referredBy || refFromStore || null;
+          const isNewReferral = !!(refCode && !profileData.referredBy);
 
           await saveProfile(firebaseUser.uid, {
             name:         u.name,
@@ -3517,12 +3530,28 @@ export default function CashCounter() {
             photoURL:     u.photoURL || "",
             lastSeen:     new Date().toISOString(),
             createdAt:    u.createdAt,
-            ...(refCode && !profileData.referredBy ? { referredBy: refCode } : {}),
+            ...(isNewReferral ? { referredBy: refCode } : {}),
           });
 
-          // Clear stored ref once saved
-          if (refCode && !profileData.referredBy) {
+          // Track signup on Ninja project server-side — only once per user
+          if (isNewReferral) {
             DB.remove(`lb_ref_${firebaseUser.uid}`);
+            fetch("/api/ninja-track-signup", {
+              method:  "POST",
+              headers: { "Content-Type": "application/json" },
+              body:    JSON.stringify({ referralCode: refCode, uid: firebaseUser.uid }),
+            }).then(() => {
+              setDoc(userDoc(firebaseUser.uid), { ninjaSignupTracked: true }, { merge: true }).catch(() => {});
+            }).catch(e => console.warn("Ninja signup tracking failed:", e.message));
+          } else if (refCode && profileData.referredBy && !profileData.ninjaSignupTracked) {
+            // Referral was saved but API was never called — retry once
+            fetch("/api/ninja-track-signup", {
+              method:  "POST",
+              headers: { "Content-Type": "application/json" },
+              body:    JSON.stringify({ referralCode: refCode, uid: firebaseUser.uid }),
+            }).then(() => {
+              setDoc(userDoc(firebaseUser.uid), { ninjaSignupTracked: true }, { merge: true }).catch(() => {});
+            }).catch(e => console.warn("Ninja signup tracking retry failed:", e.message));
           }
         } catch(e) {
           console.warn("saveProfile failed:", e.code, e.message);
