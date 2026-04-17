@@ -1461,23 +1461,13 @@ window.updateNinjaStatus = async function(id, status) {
 
 window.markPayoutPaid = async function(ninjaId) {
   try {
-    const ninjaDoc = await getDoc(doc(ninjaDb, "ninjas", ninjaId));
-    if (!ninjaDoc.exists) throw new Error("Ninja not found");
-    const ninja = ninjaDoc.data();
+    const ninja = allNinjas.find(n => n.id === ninjaId);
+    if (!ninja) throw new Error("Ninja not found");
     const pending = (ninja.totalEarnings || 0) - (ninja.paidEarnings || 0);
     if (pending <= 0) { toast("No pending payout for this Ninja", "error"); return; }
-
     if (!confirm(`Mark ₦${pending.toLocaleString()} as paid to ${ninja.name}?`)) return;
 
-    // Mark all pending commissions as paid
-    const comSnap = await getDocs(query(collection(ninjaDb, "ninjas", ninjaId, "commissions"), where("status", "==", "pending")));
-    const batch = writeBatch(ninjaDb);
-    comSnap.docs.forEach(d => batch.update(d.ref, { status: "paid", paidAt: new Date().toISOString() }));
-    await batch.commit();
-
-    // Update paidEarnings on ninja doc
-    await setDoc(doc(ninjaDb, "ninjas", ninjaId), { paidEarnings: increment(pending) }, { merge: true });
-
+    await ninjaApi("POST", { action: "markPaid", ninjaId });
     toast("₦" + pending.toLocaleString() + " marked as paid to " + ninja.name);
     await loadNinjas();
   } catch(e) {
