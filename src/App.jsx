@@ -35,6 +35,61 @@ import {
   onSnapshot, query, orderBy, where, limit, serverTimestamp,
 } from "./firebase.js";
 
+// ── SVG Icon Component ────────────────────────────────────────────
+const ICON_PATHS = {
+  bell:      <><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></>,
+  plus:      <><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></>,
+  minus:     <line x1="5" y1="12" x2="19" y2="12"/>,
+  check:     <polyline points="20 6 9 17 4 12"/>,
+  close:     <><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></>,
+  trash:     <><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></>,
+  edit:      <><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></>,
+  lock:      <><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></>,
+  eye:       <><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></>,
+  eyeOff:    <><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></>,
+  mail:      <><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></>,
+  person:    <><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></>,
+  chart:     <><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/><line x1="2" y1="20" x2="22" y2="20"/></>,
+  wallet:    <><path d="M20 12V8H6a2 2 0 0 1 0-4h14v4"/><path d="M4 6v12a2 2 0 0 0 2 2h14v-4"/><circle cx="17" cy="16" r="1" fill="currentColor"/></>,
+  income:    <><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></>,
+  expense:   <><polyline points="23 18 13.5 8.5 8.5 13.5 1 6"/><polyline points="17 18 23 18 23 12"/></>,
+  download:  <><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></>,
+  upload:    <><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></>,
+  print:     <><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></>,
+  calendar:  <><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></>,
+  settings:  <><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></>,
+  home:      <><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></>,
+  list:      <><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></>,
+  receipt:   <><polyline points="6 2 3 6 3 20 5 22 7 20 9 22 11 20 13 22 15 20 17 22 19 20 19 6 16 2 6 2"/><line x1="9" y1="10" x2="15" y2="10"/><line x1="9" y1="14" x2="15" y2="14"/></>,
+  tag:       <><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></>,
+  target:    <><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></>,
+  note:      <><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></>,
+  time:      <><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></>,
+  signout:   <><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></>,
+  lightning: <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>,
+  trophy:    <><polyline points="8 3 8 8 12 11 16 8 16 3"/><line x1="12" y1="11" x2="12" y2="19"/><path d="M8 19h8"/><path d="M5 3h14"/></>,
+  shield:    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>,
+  key:       <><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></>,
+  star:      <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>,
+  trending:  <><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></>,
+  copy:      <><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></>,
+  empty:     <><circle cx="12" cy="12" r="10"/><line x1="8" y1="15" x2="16" y2="15"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></>,
+  infinity:   <><line x1="12" y1="12" x2="12" y2="12"/><path d="M20.2 8a4 4 0 0 0-5.6 0L12 10.6 9.4 8a4 4 0 0 0-5.6 5.6L12 22l8.2-8.4a4 4 0 0 0 0-5.6z"/></>,
+  active:    <circle cx="12" cy="12" r="10" fill="none"/>,
+};
+
+function Icon({ name, size=16, color="currentColor", style={} }) {
+  const paths = ICON_PATHS[name];
+  if (!paths) return null;
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2"
+      strokeLinecap="round" strokeLinejoin="round"
+      style={{ width:size, height:size, flexShrink:0, display:"inline-block", verticalAlign:"middle", ...style }}>
+      {paths}
+    </svg>
+  );
+}
+
 // ── Inject global CSS for safe-area, viewport, scrollbar hiding ─
 const GLOBAL_CSS = `
   @import url('https://fonts.googleapis.com/css2?family=Funnel+Display:wght@300;400;500;600;700;800&display=swap');
@@ -282,15 +337,15 @@ const getPresetRange = (preset) => {
 };
 
 const PRESETS = [
-  { id:"all",        label:"All Time",     icon:"cal" },
-  { id:"today",      label:"Today",        icon:"day" },
-  { id:"yesterday",  label:"Yesterday",    icon:"◀️" },
-  { id:"week",       label:"Last 7 Days",  icon:"cal" },
-  { id:"month",      label:"This Month",   icon:"month" },
-  { id:"last_month", label:"Last Month",   icon:"month" },
-  { id:"quarter",    label:"This Quarter", icon:"chart" },
-  { id:"year",       label:"This Year",    icon:"year" },
-  { id:"custom",     label:"Custom Range", icon:"edit" },
+  { id:"all",        label:"All Time",     icon:"list"     },
+  { id:"today",      label:"Today",        icon:"calendar" },
+  { id:"yesterday",  label:"Yesterday",    icon:"calendar" },
+  { id:"week",       label:"Last 7 Days",  icon:"calendar" },
+  { id:"month",      label:"This Month",   icon:"calendar" },
+  { id:"last_month", label:"Last Month",   icon:"calendar" },
+  { id:"quarter",    label:"This Quarter", icon:"chart"    },
+  { id:"year",       label:"This Year",    icon:"calendar" },
+  { id:"custom",     label:"Custom Range", icon:"edit"     },
 ];
 
 const applyDateRange = (entries, dateRange) => {
@@ -808,10 +863,10 @@ const buildWAReport = (entries, currency, branding, rangeLabel) => {
   const bal=inc-exp;
   return [
     `${branding.logoType==="emoji"?branding.logo:""} *${branding.businessName}* — Finance Report`,
-    rangeLabel&&rangeLabel!=="All Time"?`📅 Period: *${rangeLabel}*`:`📅 ${new Date().toLocaleDateString("en-NG",{dateStyle:"full"})}`,
+    rangeLabel&&rangeLabel!=="All Time"?`Period: *${rangeLabel}*`:`${new Date().toLocaleDateString("en-NG",{dateStyle:"full"})}`,
     ``,`━━━━━━━━━━━━━━━━━━━`,
-    `💰 *Income:* ${fmtAmt(inc,currency)}`,`📤 *Expenses:* ${fmtAmt(exp,currency)}`,`🏦 *Balance:* ${fmtAmt(bal,currency)}`,
-    `━━━━━━━━━━━━━━━━━━━`,``,`📋 *Transactions (${entries.length}):*`,
+    `*Income:* ${fmtAmt(inc,currency)}`,`*Expenses:* ${fmtAmt(exp,currency)}`,`🏦 *Balance:* ${fmtAmt(bal,currency)}`,
+    `━━━━━━━━━━━━━━━━━━━`,``,`*Transactions (${entries.length}):*`,
     ...entries.slice(0,5).map(e=>`${e.type==="income"?"plus":"-"} *${e.category}* — ${fmtAmt(e.amount,currency)}${e.note?`\n   _${e.note}_`:""}`),
     entries.length>5?`_...and ${entries.length-5} more_`:"",
     ``,`_${branding.tagline}_`,`_Powered by Cash Counter_`,
@@ -848,18 +903,18 @@ function UpgradeModal({ onClose, reason="default", monthCount=0, p="#075E54", us
 
   const reasons = {
     limit:   { icon:"×", title:"Monthly limit reached", sub:`You've used all ${FREE_LIMITS.ENTRIES_PER_MONTH} free entries for ${new Date().toLocaleString("default",{month:"long"})}. Upgrade for unlimited entries.` },
-    budget:  { icon:"●", title:"Budget feature is Pro",  sub:"Create and track budgets, set targets per category, and see detailed budget vs actual reports." },
+    budget:  { icon:"target", title:"Budget feature is Pro",  sub:"Create and track budgets, set targets per category, and see detailed budget vs actual reports." },
     cats:    { icon:"#", title:"Custom categories are Pro", sub:"Edit, add, and remove income and expense categories to match your exact business structure." },
     default: { icon:"lightning", title:"Upgrade to Cash Counter", sub:"Unlock the full power of Cash Counter and grow your business faster." },
   };
   const { icon, title, sub } = reasons[reason] || reasons.default;
 
   const FEATURES = [
-    ["∞", "Unlimited entries",          "Free plan: 20/month"],
-    ["●", "Budget creation & tracking", "Set targets, track actuals"],
-    ["#", "Custom categories",          "Add, edit, remove categories"],
-    ["×", "No ads, ever",               "Clean, distraction-free UI"],
-    ["chart", "All reports & exports",      "CSV, PDF income statements"],
+    ["infinity",  "Unlimited entries",          "Free plan: 20/month"],
+    ["target",    "Budget creation & tracking", "Set targets, track actuals"],
+    ["tag",       "Custom categories",          "Add, edit, remove categories"],
+    ["shield",    "No ads, ever",               "Clean, distraction-free UI"],
+    ["chart",     "All reports & exports",      "CSV, PDF income statements"],
   ];
 
   const [selectedPlan, setSelectedPlan] = useState("annually");
@@ -946,7 +1001,9 @@ function UpgradeModal({ onClose, reason="default", monthCount=0, p="#075E54", us
             background:"rgba(255,255,255,.18)", border:"none", borderRadius:"50%",
             width:30, height:30, color:"#fff", fontSize:15, cursor:"pointer",
             display:"flex", alignItems:"center", justifyContent:"center" }}>✕</button>
-          <div className="um-badge" style={{ fontSize:44, marginBottom:10 }}>{icon}</div>
+          <div className="um-badge" style={{ marginBottom:10, display:"flex", justifyContent:"center" }}>
+            <Icon name={icon} size={44} color={p}/>
+          </div>
           <div style={{ color:"#fff", fontWeight:900, fontSize:19, letterSpacing:"-.3px", marginBottom:5 }}>{title}</div>
           <div style={{ color:"rgba(255,255,255,.72)", fontSize:13, lineHeight:1.5 }}>{sub}</div>
           {reason==="limit"&&(
@@ -1018,7 +1075,7 @@ function UpgradeModal({ onClose, reason="default", monthCount=0, p="#075E54", us
                       border: payMethod===m.id ? "2px solid #075E54" : "2px solid #f0f0f0",
                       background: payMethod===m.id ? "#f0fdf4" : "#fafafa",
                       transition:"all .15s" }}>
-                    <div style={{ fontSize:20, marginBottom:4 }}>{m.icon}</div>
+                    <div style={{ marginBottom:4 }}><Icon name={m.icon} size={20} color="#205361"/></div>
                     <div style={{ fontWeight:800, fontSize:13, color:"#222", marginBottom:2 }}>{m.label}</div>
                     <div style={{ fontSize:11, color:"#aaa" }}>{m.sub}</div>
                     {payMethod===m.id && (
@@ -1046,7 +1103,7 @@ function UpgradeModal({ onClose, reason="default", monthCount=0, p="#075E54", us
               style={{ marginTop:14 }}>
               {loading
                 ? <><div className="um-spin"/><span>Opening checkout…</span></>
-                : <span>{payMethod==="transfer" ? "Pay via Bank Transfer 🏦" : "Pay with Card 💳"}</span>}
+                : <span>{payMethod==="transfer" ? "Pay via Bank Transfer" : "Pay with Card"}</span>}
             </button>
             <div style={{ textAlign:"center", fontSize:11, color:"#ccc", marginTop:10, marginBottom:4 }}>
               {payMethod==="transfer"
@@ -1058,9 +1115,11 @@ function UpgradeModal({ onClose, reason="default", monthCount=0, p="#075E54", us
           {screen==="features" && <>
             <div style={{ fontSize:11, fontWeight:800, color:"#aaa", textTransform:"uppercase",
               letterSpacing:.8, marginBottom:4 }}>Everything in Pro</div>
-            {FEATURES.map(([em, feat, detail])=>(
+            {FEATURES.map(([iconName, feat, detail])=>(
               <div key={feat} className="um-row">
-                <span style={{ fontSize:20, flexShrink:0, marginTop:1 }}>{em}</span>
+                <span style={{ width:24, flexShrink:0, display:"flex", alignItems:"center", justifyContent:"center", marginTop:1 }}>
+                  <Icon name={iconName} size={20} color="#205361"/>
+                </span>
                 <div>
                   <div style={{ fontWeight:700, fontSize:14, color:"#222" }}>{feat}</div>
                   <div style={{ fontSize:12, color:"#aaa", marginTop:1 }}>{detail}</div>
@@ -1130,7 +1189,7 @@ const HOUSE_ADS = [
   },
   {
     active:  false,
-    logo:    "📲",
+    logo:    "card",
     brand:   "Paystack",
     title:   "Paystack Payment Links",
     body:    "Get paid online instantly. No website needed — just share a link.",
@@ -1242,10 +1301,10 @@ const CAROUSEL_INTERVAL = 5000; // ms between slides
 
 function AdBanner({ onUpgrade, p="#075E54", slot="home" }) {
   const upgradeAd = {
-    active:true, logo:"✨", brand:"Cash Counter", isUpgrade:true,
+    active:true, logo:"star", brand:"Cash Counter", isUpgrade:true,
     title:"Upgrade to Cash Counter",
     body:"Remove ads, unlock budgets & unlimited entries.",
-    cta:"Upgrade ✨", color:"#075E54", url:"",
+    cta:"Upgrade", color:"#075E54", url:"",
   };
 
   const activeAds = HOUSE_ADS.filter(a => a.active);
@@ -1323,7 +1382,7 @@ function DateRangePicker({ preset, dateRange, onChange, onClose, primaryColor:p 
         paddingBottom:"env(safe-area-inset-bottom, 0px)" }}>
         <div style={{ width:40, height:4, background:"#ddd", borderRadius:2, margin:"14px auto 0" }}/>
         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", paddingLeft:S.px, paddingRight:S.px, paddingTop:14, paddingBottom:10 }}>
-          <div style={{ fontWeight:900, fontSize:17, color:"#222" }}>📅 Filter by Date</div>
+          <div style={{ fontWeight:900, fontSize:17, color:"#222" }}>Filter by Date</div>
           <button onClick={onClose} style={{ background:"#f0f0f0", border:"none", borderRadius:10, padding:"6px 14px", cursor:"pointer", color:"#555", fontWeight:700, fontSize:14 }}>✕</button>
         </div>
         <div style={{ flex:1, overflowY:"auto", paddingLeft:S.px, paddingRight:S.px, paddingBottom:10 }}>
@@ -1333,7 +1392,7 @@ function DateRangePicker({ preset, dateRange, onChange, onClose, primaryColor:p 
                 style={{ padding:"12px 14px", borderRadius:14, border:`2px solid ${lp===pr.id?p:"#eee"}`,
                   background:lp===pr.id?`${p}12`:"#fafafa", cursor:"pointer", textAlign:"left",
                   display:"flex", alignItems:"center", gap:8 }}>
-                <span style={{ fontSize:16 }}>{pr.icon}</span>
+                <span style={{ display:"flex", alignItems:"center" }}><Icon name={pr.icon} size={16} color={lp===pr.id?p:"#888"}/></span>
                 <span style={{ fontWeight:lp===pr.id?800:500, fontSize:13, color:lp===pr.id?p:"#444", flex:1 }}>{pr.label}</span>
                 {lp===pr.id&&<span style={{ color:p, fontWeight:900 }}>✓</span>}
               </button>
@@ -1355,13 +1414,13 @@ function DateRangePicker({ preset, dateRange, onChange, onClose, primaryColor:p 
                 </div>
               </div>
               {lr.from&&lr.to&&<div style={{ marginTop:12, background:`${p}12`, borderRadius:9, padding:"8px 12px", fontSize:13, color:p, fontWeight:600 }}>
-                📅 {fmtDate(lr.from+"T12:00:00")} → {fmtDate(lr.to+"T12:00:00")}
+                {fmtDate(lr.from+"T12:00:00")} → {fmtDate(lr.to+"T12:00:00")}
               </div>}
             </div>
           )}
           {lp!=="custom"&&lp!=="all"&&(lr.from||lr.to)&&(
             <div style={{ background:`${p}10`, borderRadius:11, padding:"10px 14px", marginBottom:12, fontSize:13, color:p, fontWeight:600 }}>
-              📅 {describeDateRange(lp,lr)}
+              {describeDateRange(lp,lr)}
             </div>
           )}
           {lp==="all"&&<div style={{ background:"#f0f0f0", borderRadius:11, padding:"10px 14px", marginBottom:12, fontSize:13, color:"#666" }}>
@@ -1384,7 +1443,7 @@ function FilterBadge({ preset, dateRange, onClick, primaryColor:p }) {
     <button onClick={onClick} style={{ display:"flex", alignItems:"center", gap:6, padding:"7px 12px", borderRadius:20,
       border:`1.5px solid ${isActive?p:"#ddd"}`, background:isActive?`${p}12`:"#f5f5f5",
       cursor:"pointer", fontSize:12, fontWeight:isActive?700:500, color:isActive?p:"#888", whiteSpace:"nowrap" }}>
-      <span>{isActive?"🗓️":"cal"}</span>
+      <span>{isActive ? <Icon name="calendar" size={14} color="currentColor"/> : <Icon name="calendar" size={14} color="#bbb"/>}</span>
       <span>{describeDateRange(preset,dateRange)}</span>
       {isActive&&<span style={{ color:p, fontSize:10 }}>▾</span>}
     </button>
@@ -1655,7 +1714,7 @@ function AuthField({ label, placeholder, type="text", value, onChange, icon }) {
     <div style={{ marginBottom:14 }}>
       <div style={{ fontSize:11, fontWeight:800, color:"#888", textTransform:"uppercase", letterSpacing:.6, marginBottom:6 }}>{label}</div>
       <div style={{ position:"relative" }}>
-        {icon && <span style={{ position:"absolute", left:13, top:"50%", transform:"translateY(-50%)", fontSize:15, pointerEvents:"none", opacity:.45 }}>{icon}</span>}
+        {icon && <span style={{ position:"absolute", left:13, top:"50%", transform:"translateY(-50%)", pointerEvents:"none", opacity:.45, display:"flex", alignItems:"center" }}><Icon name={icon} size={15} color="#888"/></span>}
         <input className="au-inp"
           type={isPass && !show ? "password" : isPass ? "text" : type}
           value={value} onChange={e=>onChange(e.target.value)} placeholder={placeholder}
@@ -1663,7 +1722,7 @@ function AuthField({ label, placeholder, type="text", value, onChange, icon }) {
         {isPass && (
           <button type="button" onClick={()=>setShow(s=>!s)}
             style={{ position:"absolute", right:13, top:"50%", transform:"translateY(-50%)", background:"none", border:"none", cursor:"pointer", color:"#c0c0c0", fontSize:16, padding:2, lineHeight:1 }}>
-            {show ? "🙈" : "eye"}
+            {show ? <Icon name="eyeOff" size={16} color="#999"/> : <Icon name="eye" size={16} color="#999"/>}
           </button>
         )}
       </div>
@@ -1982,7 +2041,7 @@ function AuthScreen() {
           {/* Forgot password header */}
           {mode === "forgot" && (
             <div style={{padding:"20px 22px 0",textAlign:"center"}}>
-              <div style={{fontSize:36,marginBottom:8}}>🔑</div>
+              <div style={{marginBottom:8}}><Icon name="key" size={36} color="#5CB1CB"/></div>
               <div style={{fontWeight:900,fontSize:18,color:"#0a1612",marginBottom:6}}>Reset your password</div>
               <div style={{fontSize:13,color:"#9ca3af",marginBottom:4}}>
                 Enter your email and we'll send you a reset link.
@@ -2079,7 +2138,7 @@ function AuthScreen() {
               <div style={{background:"#f0fdf4",border:"1.5px solid #bbf7d0",borderRadius:13,
                 padding:"11px 14px",color:"#15803d",fontSize:13,marginBottom:14,
                 lineHeight:1.55,display:"flex",gap:8,alignItems:"flex-start"}}>
-                <span style={{flexShrink:0}}>✅</span><span>{success}</span>
+                <span style={{flexShrink:0}}><Icon name="check" size={16} color="#16a34a"/></span><span>{success}</span>
               </div>
             )}
 
@@ -2088,7 +2147,7 @@ function AuthScreen() {
               <div style={{ background:"#fff3f0", border:"1.5px solid #ffcdd2", borderRadius:13,
                 padding:"11px 14px", color:"#c62828", fontSize:13, marginBottom:14,
                 display:"flex", alignItems:"center", gap:8 }}>
-                <span>🔒</span>
+                <Icon name="lock" size={16} color="#c62828"/>
                 <span>Too many attempts. Try again in <strong>{lockTimer}s</strong>.</span>
               </div>
             )}
@@ -2106,7 +2165,7 @@ function AuthScreen() {
                 letterSpacing:"-.2px",
                 boxShadow: busy || isLocked || (mode==="register" && !termsAccepted) ? "none" : "0 6px 22px rgba(7,94,84,.38)"}}>
               {busy ? "Please wait…"
-                : isLocked ? `🔒 Locked (${lockTimer}s)`
+                : isLocked ? `Locked (${lockTimer}s)`
                 : mode==="login"    ? "Sign In →"
                 : mode==="register" ? "Create Account →"
                 : "Send Reset Link →"}
@@ -2327,7 +2386,7 @@ function DeleteAccountModal({ user, onDeleted, onClose }) {
         {step === 3 ? (
           // Deleting state
           <div style={{ textAlign:"center", padding:"20px 0" }}>
-            <div style={{ fontSize:48, marginBottom:16 }}>🗑️</div>
+            <div style={{ marginBottom:16 }}><Icon name="trash" size={48} color="#c62828"/></div>
             <div style={{ fontWeight:900, fontSize:18, color:"#1a1a1a", marginBottom:8 }}>
               Deleting your account…
             </div>
@@ -2352,7 +2411,7 @@ function DeleteAccountModal({ user, onDeleted, onClose }) {
               {["All your financial entries", "All your budgets", "Your business profile and settings",
                 "Your subscription (no refund for unused period)", "All notifications"].map(item => (
                 <div key={item} style={{ fontSize:13, color:"#c62828", marginBottom:5, display:"flex", gap:8 }}>
-                  <span>✗</span><span>{item}</span>
+                  <Icon name="close" size={13} color="#c62828"/><span>{item}</span>
                 </div>
               ))}
             </div>
@@ -2377,7 +2436,7 @@ function DeleteAccountModal({ user, onDeleted, onClose }) {
           // Step 2 — Re-auth with password
           <>
             <div style={{ textAlign:"center", marginBottom:20 }}>
-              <div style={{ fontSize:40, marginBottom:10 }}>🔒</div>
+              <div style={{ marginBottom:10 }}><Icon name="lock" size={40} color="#c62828"/></div>
               <div style={{ fontWeight:900, fontSize:17, color:"#1a1a1a", marginBottom:6 }}>
                 Confirm your password
               </div>
@@ -2476,7 +2535,7 @@ function SettingsScreen({ branding, setBranding, currency, setCurrency, incCats,
       </div>
       {/* Tab Bar */}
       <div style={{ display:"flex", background:"#fff", borderBottom:"1px solid #eee", flexShrink:0 }}>
-        {[["brand","🎨 Brand"],["currency","💱 Currency"],["cats","📂 Categories"],["account","👤 Account"]].map(([id,label])=>(
+        {[["brand","Brand"],["currency","Currency"],["cats","Categories"],["account","Account"]].map(([id,label])=>(
           <button key={id} onClick={()=>setTab(id)}
             style={{ flex:1, padding:"12px 4px", border:"none", background:"none", fontSize:11, fontWeight:700,
               color:tab===id?p:"#bbb", borderBottom:`2.5px solid ${tab===id?p:"transparent"}`,
@@ -2606,7 +2665,7 @@ function SettingsScreen({ branding, setBranding, currency, setCurrency, incCats,
           {!isPro ? (
             /* ── Locked for free users ── */
             <div style={{ textAlign:"center", padding:"32px 16px" }}>
-              <div style={{ fontSize:48, marginBottom:14 }}>🏷️</div>
+              <div style={{ marginBottom:14 }}><Icon name="tag" size={48} color="#205361"/></div>
               <div style={{ fontWeight:900, fontSize:17, color:"#222", marginBottom:8 }}>Custom Categories</div>
               <div style={{ fontSize:13, color:"#888", lineHeight:1.65, marginBottom:24 }}>
                 Add and remove income & expense categories to perfectly match your business. Available on the Pro plan.
@@ -2628,7 +2687,7 @@ function SettingsScreen({ branding, setBranding, currency, setCurrency, incCats,
                   color:"#fff", border:"none", borderRadius:14,
                   fontWeight:900, fontSize:15, cursor:"pointer",
                   boxShadow:"0 4px 16px rgba(7,94,84,.3)" }}>
-                Upgrade to Pro ✨
+                Upgrade to Pro
               </button>
             </div>
           ) : (
@@ -2658,7 +2717,7 @@ function SettingsScreen({ branding, setBranding, currency, setCurrency, incCats,
 
         {tab==="account"&&<>
           <div style={{ background:bg, borderRadius:18, padding:"22px 20px", marginBottom:20, color:"#fff", textAlign:"center" }}>
-            <div style={{ width:68, height:68, borderRadius:"50%", background:"rgba(255,255,255,0.25)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:32, margin:"0 auto 14px" }}>👤</div>
+            <div style={{ width:68, height:68, borderRadius:"50%", background:"rgba(255,255,255,0.25)", display:"flex", alignItems:"center", justifyContent:"center", display:"flex", alignItems:"center", justifyContent:"center", margin:"0 auto 14px" }}><Icon name="person" size={32} color="#5CB1CB"/></div>
             <div style={{ fontWeight:900, fontSize:19 }}>{user.name}</div>
             <div style={{ opacity:.75, fontSize:13, marginTop:5 }}>{user.email}</div>
             <div style={{ opacity:.55, fontSize:12, marginTop:4 }}>Member since {fmtDate(user.createdAt)}</div>
@@ -2666,7 +2725,7 @@ function SettingsScreen({ branding, setBranding, currency, setCurrency, incCats,
             <div style={{ marginTop:14, display:"inline-flex", alignItems:"center", gap:6,
               background: isPro ? "rgba(255,215,0,.25)" : "rgba(255,255,255,.15)",
               borderRadius:20, padding:"6px 14px", fontSize:12, fontWeight:800 }}>
-              {isPro ? "✨ Pro Plan" : "🆓 Free Plan"}
+              {isPro ? "Pro Plan" : "Free Plan"}
             </div>
           </div>
 
@@ -2678,7 +2737,7 @@ function SettingsScreen({ branding, setBranding, currency, setCurrency, incCats,
                 letterSpacing:1, marginBottom:10 }}>Subscription Details</div>
               {[
                 ["Plan",     planInfo.interval ? { monthly:"Monthly", biannually:"6-Month", annually:"Annual" }[planInfo.interval] || planInfo.interval : "Pro"],
-                ["Status",   planInfo.status === "active" ? "✅ Active" : planInfo.status === "cancelled" ? "❌ Cancelled" : planInfo.status || "Active"],
+                ["Status",   planInfo.status === "active" ? "Active" : planInfo.status === "cancelled" ? "Cancelled" : planInfo.status || "Active"],
                 ["Renews",   planInfo.expiresAt ? fmtDate(planInfo.expiresAt) : "—"],
                 ["Activated",planInfo.activatedAt ? fmtDate(planInfo.activatedAt) : "—"],
               ].map(([k,v])=>(
@@ -2774,12 +2833,12 @@ function SettingsScreen({ branding, setBranding, currency, setCurrency, incCats,
                   style={{ width:"100%", padding:"13px 18px", background:"none", border:"none",
                     borderTop:"1px solid #f0f0f0", color:"#075E54", fontSize:13,
                     fontWeight:800, cursor:"pointer", textAlign:"center" }}>
-                  ✏️ Edit Profile
+                  Edit Profile
                 </button>
               </>
             )}
           </div>
-          <button onClick={onLogout} style={{ width:"100%", padding:"15px", background:"#fff", border:"2px solid #ffcdd2", borderRadius:14, color:"#c62828", fontWeight:900, cursor:"pointer", fontSize:15 }}>🚪 Sign Out</button>
+          <button onClick={onLogout} style={{ width:"100%", padding:"15px", background:"#fff", border:"2px solid #ffcdd2", borderRadius:14, color:"#c62828", fontWeight:900, cursor:"pointer", fontSize:15 }}><Icon name="signout" size={16} color="currentColor" style={{marginRight:6}}/> Sign Out</button>
 
           {/* Delete account */}
           <button onClick={() => setShowDeleteModal(true)}
@@ -2812,7 +2871,7 @@ function SettingsScreen({ branding, setBranding, currency, setCurrency, incCats,
                     padding:"15px 18px", borderBottom:"1px solid #f5f5f5", textDecoration:"none",
                     color:"#333", fontSize:14, fontWeight:600 }}>
                   <span style={{ display:"flex", alignItems:"center", gap:11 }}>
-                    <span style={{ fontSize:17 }}>{icon}</span>
+                    <span style={{ display:"flex", alignItems:"center" }}><Icon name={icon} size={17} color="#888"/></span>
                     {label}
                   </span>
                   <span style={{ color:"#ccc", fontSize:16 }}>›</span>
@@ -2845,8 +2904,8 @@ function TxRow({ entry, currency, onDelete, onEdit, isPro, p }) {
     <div style={{ background:"#fafafa", borderRadius:14, padding:"12px 14px", marginBottom:9, display:"flex", alignItems:"center", gap:12,
       borderLeft:`4px solid ${entry.type==="income"?"#25D366":"#FF9800"}` }}>
       <div style={{ width:38, height:38, borderRadius:"50%", background:entry.type==="income"?"#E8F5E9":"#FFF3E0",
-        display:"flex", alignItems:"center", justifyContent:"center", fontSize:18, flexShrink:0 }}>
-        {entry.type==="income"?"wallet":"upload"}
+        display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+        <Icon name={entry.type==="income"?"income":"expense"} size={18} color={entry.type==="income"?"#1B5E20":"#E65100"}/>
       </div>
       <div style={{ flex:1, minWidth:0 }}>
         <div style={{ fontWeight:700, fontSize:14, color:"#222", whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{entry.category}</div>
@@ -2861,7 +2920,7 @@ function TxRow({ entry, currency, onDelete, onEdit, isPro, p }) {
       {isPro && (
         <button onClick={()=>onEdit(entry)}
           style={{ background:"none", border:"none", color:"#bbb", cursor:"pointer", fontSize:14,
-            padding:"0 0 0 2px", flexShrink:0, lineHeight:1 }} title="Edit entry">✏️</button>
+            padding:"0 0 0 2px", flexShrink:0, lineHeight:1 }} title="Edit entry"><Icon name="edit" size={15} color="currentColor"/></button>
       )}
       <button onClick={()=>onDelete(entry.id)}
         style={{ background:"none", border:"none", color:"#ddd", cursor:"pointer", fontSize:16,
@@ -3155,7 +3214,7 @@ function EmailVerificationScreen({ email, onVerified, onLogout, autoVerified=fal
           {resent && (
             <div style={{ background:"#f0fdf4", border:"1px solid #bbf7d0", borderRadius:12,
               padding:"10px 14px", color:"#15803d", fontSize:13, marginBottom:16 }}>
-              ✅ Verification email resent — check your inbox.
+              Verification email resent — check your inbox.
             </div>
           )}
 
@@ -3624,12 +3683,12 @@ export default function CashCounter() {
 // NOTIFICATION PANEL
 // ═══════════════════════════════════════════════════════════════
 const NOTIF_ICONS = {
-  budget_warning:  "",
-  budget_exceeded: "×",
+  budget_warning:  "target",
+  budget_exceeded: "lightning",
   subscription:    "wallet",
-  welcome:         "👋",
+  welcome:         "star",
   summary:         "chart",
-  info:            "ℹ️",
+  info:            "info",
 };
 
 function NotificationPanel({ uid, notifs, onClose, onMarkAllRead }) {
@@ -3664,7 +3723,7 @@ function NotificationPanel({ uid, notifs, onClose, onMarkAllRead }) {
         <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between",
           padding:"18px 20px 14px", borderBottom:"1px solid #f0f0f0", flexShrink:0 }}>
           <div style={{ display:"flex", alignItems:"center", gap:10 }}>
-            <span style={{ fontSize:20 }}>🔔</span>
+            <Icon name="bell" size={20} color="currentColor"/>
             <span style={{ fontWeight:900, fontSize:17, color:"#1a1a1a" }}>Notifications</span>
             {unreadCount > 0 && (
               <span style={{ background:"#ef4444", color:"#fff", borderRadius:20,
@@ -3690,7 +3749,7 @@ function NotificationPanel({ uid, notifs, onClose, onMarkAllRead }) {
         <div style={{ overflowY:"auto", flex:1 }}>
           {notifs.length === 0 ? (
             <div style={{ textAlign:"center", padding:"48px 24px", color:"#bbb" }}>
-              <div style={{ fontSize:48, marginBottom:12 }}>🔔</div>
+              <div style={{ marginBottom:12 }}><Icon name="bell" size={48} color="#5CB1CB"/></div>
               <div style={{ fontWeight:700, fontSize:15, marginBottom:6 }}>No notifications yet</div>
               <div style={{ fontSize:13 }}>We'll notify you about budgets, subscriptions and more.</div>
             </div>
@@ -3701,8 +3760,8 @@ function NotificationPanel({ uid, notifs, onClose, onMarkAllRead }) {
                 borderBottom:"1px solid #f5f5f5", cursor: n.read ? "default" : "pointer",
                 background: n.read ? "#fff" : "#f0fdf4",
                 transition:"background .15s" }}>
-              <div style={{ fontSize:24, flexShrink:0, marginTop:2 }}>
-                {NOTIF_ICONS[n.type] || "bell"}
+              <div style={{ width:36, height:36, borderRadius:10, background:"#f0f7fa", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, marginTop:2 }}>
+                <Icon name={NOTIF_ICONS[n.type] || "bell"} size={18} color="#205361"/>
               </div>
               <div style={{ flex:1, minWidth:0 }}>
                 <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", gap:8 }}>
@@ -3786,7 +3845,7 @@ function AppCore({ user, onLogout, onUserUpdate }) {
           if (!pd.welcomeNotifSent) {
             await addNotif(uid, {
               type:  "welcome",
-              title: `Welcome to Cash Counter, ${user.name.split(" ")[0]}! 👋`,
+              title: `Welcome to Cash Counter, ${user.name.split(" ")[0]}!`,
               body:  "Start by adding your first income or expense entry. Upgrade to Pro to unlock budgets and unlimited entries.",
             });
             await setDoc(userDoc(uid), { welcomeNotifSent: true }, { merge: true });
@@ -3974,11 +4033,11 @@ function AppCore({ user, onLogout, onUserUpdate }) {
 
       trackEntryAdded(entry.type, entry.category);
       setForm({type:"income",amount:"",category:"",note:"",date:new Date().toISOString().split("T")[0]});
-      showToast(entry.type==="income"?"✅ Income recorded!":"Expense recorded!","#25D366");
+      showToast(entry.type==="income"?"Income recorded!":"Expense recorded!","#25D366");
       setView("home");
     } catch(e) {
       Sentry.captureException(e, { tags: { operation: "add_entry" } });
-      showToast("❌ Failed to save. Check connection.","#c62828");
+      showToast("Failed to save. Check connection.","#c62828");
     }
   };
 
@@ -3989,7 +4048,7 @@ function AppCore({ user, onLogout, onUserUpdate }) {
       showToast("Removed","#888");
     } catch(e) {
       Sentry.captureException(e, { tags: { operation: "delete_entry" } });
-      showToast("❌ Failed to delete.","#c62828");
+      showToast("Failed to delete.","#c62828");
     }
   };
 
@@ -3997,10 +4056,10 @@ function AppCore({ user, onLogout, onUserUpdate }) {
     try {
       await updateEntry(uid, id, data);
       trackEntryEdited(data.type);
-      showToast("✅ Entry updated!","#25D366");
+      showToast("Entry updated!","#25D366");
     } catch(e) {
       Sentry.captureException(e, { tags: { operation: "edit_entry" } });
-      showToast("❌ Failed to update.","#c62828");
+      showToast("Failed to update.","#c62828");
     }
   };
 
@@ -4014,7 +4073,7 @@ function AppCore({ user, onLogout, onUserUpdate }) {
     <div style={{ minHeight:"100vh", background:"#075E54", display:"flex", flexDirection:"column",
       alignItems:"center", justifyContent:"center", gap:16 }}>
       <div style={{ width:56, height:56, borderRadius:16, background:"rgba(255,255,255,0.15)",
-        display:"flex", alignItems:"center", justifyContent:"center", fontSize:30 }}>📒</div>
+        display:"flex", alignItems:"center", justifyContent:"center", fontSize:30 }}><Icon name="note" size={30} color="#5CB1CB"/></div>
       <div style={{ color:"#fff", fontSize:16, fontWeight:700 }}>Loading your data…</div>
       <div style={{ color:"rgba(255,255,255,0.6)", fontSize:13 }}>{user.name}</div>
     </div>
@@ -4025,11 +4084,11 @@ function AppCore({ user, onLogout, onUserUpdate }) {
 
   // ── Sidebar nav items ────────────────────────────────────────
   const NAV_ITEMS = [
-    { id:"home",    icon:"🏠", label:"Home"    },
-    { id:"add",     icon:"plus", label:"Add Entry"},
-    { id:"history", icon:"copy", label:"History" },
-    { id:"budget",  icon:"●", label:"Budget"  },
-    { id:"summary", icon:"chart", label:"Summary" },
+    { id:"home",    icon:"home",     label:"Home"     },
+    { id:"add",     icon:"plus",     label:"Add Entry"},
+    { id:"history", icon:"list",     label:"History"  },
+    { id:"budget",  icon:"target",   label:"Budget"   },
+    { id:"summary", icon:"chart",    label:"Summary"  },
   ];
 
   // ── Sidebar (desktop only) ───────────────────────────────────
@@ -4078,7 +4137,9 @@ function AppCore({ user, onLogout, onUserUpdate }) {
               fontWeight:view===id?800:500, transition:"all 0.15s",
               background:view===id?"rgba(255,255,255,0.22)":"transparent",
               color:view===id?"#fff":"rgba(255,255,255,0.65)" }}>
-            <span style={{ fontSize:17, width:22, textAlign:"center", flexShrink:0 }}>{icon}</span>
+            <span style={{ width:22, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+              <Icon name={icon} size={18} color={view===id?"#fff":"rgba(255,255,255,0.65)"}/>
+            </span>
             {label}
             {view===id&&<div style={{ marginLeft:"auto", width:6, height:6, borderRadius:"50%", background:"#fff" }}/>}
           </button>
@@ -4087,12 +4148,14 @@ function AppCore({ user, onLogout, onUserUpdate }) {
         {/* Divider */}
         <div style={{ height:1, background:"rgba(255,255,255,0.1)", margin:"14px 4px" }}/>
         <div style={{ fontSize:10, opacity:.45, textTransform:"uppercase", letterSpacing:1.5, padding:"0 10px", marginBottom:8 }}>Tools</div>
-        {[["settings","Settings",()=>setShowSt(true)]].map(([icon,label,fn])=>(
+        {[["settings","Settings",()=>setShowSt(true)]].map(([iconName,label,fn])=>(
           <button key={label} onClick={fn}
             style={{ width:"100%", display:"flex", alignItems:"center", gap:13, padding:"11px 14px", borderRadius:14,
               marginBottom:3, border:"none", cursor:"pointer", textAlign:"left", fontSize:13, fontWeight:500,
               background:"transparent", color:"rgba(255,255,255,0.6)", transition:"all 0.15s" }}>
-            <span style={{ fontSize:16, width:22, textAlign:"center", flexShrink:0 }}>{icon}</span>
+            <span style={{ width:22, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+              <Icon name={iconName} size={17} color="rgba(255,255,255,0.6)"/>
+            </span>
             {label}
           </button>
         ))}
@@ -4101,7 +4164,7 @@ function AppCore({ user, onLogout, onUserUpdate }) {
       {/* Footer — user + signout */}
       <div style={{ padding:"16px 14px 28px", borderTop:"1px solid rgba(255,255,255,0.1)" }}>
         <div style={{ display:"flex", alignItems:"center", gap:11, padding:"12px 14px", borderRadius:14, background:"rgba(0,0,0,0.15)", marginBottom:10 }}>
-          <div style={{ width:34, height:34, borderRadius:"50%", background:"rgba(255,255,255,0.2)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:16, flexShrink:0 }}>👤</div>
+          <div style={{ width:34, height:34, borderRadius:"50%", background:"rgba(255,255,255,0.2)", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, display:"flex", alignItems:"center" }}><Icon name="person" size={16} color="#888"/></div>
           <div style={{ minWidth:0, flex:1 }}>
             <div style={{ fontWeight:700, fontSize:13, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{user.name}</div>
             <div style={{ fontSize:10, opacity:.5, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", marginTop:1 }}>{user.email}</div>
@@ -4111,7 +4174,7 @@ function AppCore({ user, onLogout, onUserUpdate }) {
           style={{ width:"100%", display:"flex", alignItems:"center", justifyContent:"center", gap:8, padding:"11px 14px", borderRadius:12,
             border:"1px solid rgba(255,255,255,0.18)", cursor:"pointer", fontSize:13, fontWeight:600,
             background:"transparent", color:"rgba(255,255,255,0.5)", transition:"all 0.15s" }}>
-          🚪 Sign Out
+          Sign Out
         </button>
       </div>
     </div>
@@ -4159,28 +4222,28 @@ function AppCore({ user, onLogout, onUserUpdate }) {
             </div>
             <div style={{ display:"flex", gap:8, flexShrink:0 }}>
               {isDesktop ? [
-                ["chart","Export CSV",()=>{exportCSV(entries,currency,branding,"All Time");trackExportCSV();showToast("📊 CSV downloaded!","#1b5e20");}],
-                ["🖨️","PDF Report",()=>{exportPDF(dateFilt,currency,branding,rLabel,entries,budgets);trackExportPDF();showToast("🖨️ Opening PDF…","#1a237e");}],
-              ].map(([icon,label,fn])=>(
+                ["chart", "Export CSV",  ()=>{exportCSV(entries,currency,branding,"All Time");trackExportCSV();showToast("CSV downloaded!","#1b5e20");}],
+                ["print", "PDF Report",  ()=>{exportPDF(dateFilt,currency,branding,rLabel,entries,budgets);trackExportPDF();showToast("Opening PDF…","#1a237e");}],
+              ].map(([iconName,label,fn])=>(
                 <button key={label} onClick={fn}
                   style={{ background:"rgba(255,255,255,0.18)", border:"1px solid rgba(255,255,255,0.25)", borderRadius:11, color:"#fff",
                     padding:"9px 16px", cursor:"pointer", fontSize:13, fontWeight:700,
                     display:"flex", alignItems:"center", gap:7, backdropFilter:"blur(4px)" }}>
-                  {icon} {label}
+                  <Icon name={iconName} size={15} color="#fff"/> {label}
                 </button>
-              )) : [["settings",()=>setShowSt(true),"Settings"]].map(([icon,fn,title])=>(
+              )) : [["settings",()=>setShowSt(true),"Settings"]].map(([iconName,fn,title])=>(
                 <button key={title} onClick={fn} title={title}
                   style={{ background:"rgba(255,255,255,0.18)", border:"none", borderRadius:10, color:"#fff",
-                    width:36, height:36, cursor:"pointer", fontSize:15, display:"flex", alignItems:"center", justifyContent:"center" }}>
-                  {icon}
+                    width:36, height:36, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}>
+                  <Icon name={iconName} size={18} color="#fff"/>
                 </button>
               ))}
-              {/* Bell icon — shown on both mobile and desktop */}
+              {/* Bell icon */}
               <button onClick={()=>setShowNotifs(true)} title="Notifications"
                 style={{ background:"rgba(255,255,255,0.18)", border:"none", borderRadius:10, color:"#fff",
-                  width:36, height:36, cursor:"pointer", fontSize:15, display:"flex",
+                  width:36, height:36, cursor:"pointer", display:"flex",
                   alignItems:"center", justifyContent:"center", position:"relative" }}>
-                🔔
+                <Icon name="bell" size={18} color="#fff"/>
                 {notifs.filter(n=>!n.read).length > 0 && (
                   <span style={{ position:"absolute", top:4, right:4, width:8, height:8,
                     background:"#ef4444", borderRadius:"50%", border:"1.5px solid rgba(255,255,255,0.8)" }}/>
@@ -4205,7 +4268,7 @@ function AppCore({ user, onLogout, onUserUpdate }) {
                   display:"flex", alignItems:"center", gap:11 }}>
                   <div style={{ flex:1 }}>
                     <div style={{ fontWeight:800, fontSize:13, color: atLimit ? "#c62828" : p }}>
-                      {atLimit ? "🚫 Monthly limit reached" : `📊 Free plan — ${remaining} entries left this month`}
+                      {atLimit ? "Monthly limit reached" : `Free plan — ${remaining} entries left this month`}
                     </div>
                     <div style={{ fontSize:11, color:"#aaa", marginTop:2 }}>
                       {atLimit
@@ -4216,7 +4279,7 @@ function AppCore({ user, onLogout, onUserUpdate }) {
                   <div style={{ background: atLimit ? "#c62828" : p,
                     color:"#fff", borderRadius:10, padding:"6px 12px",
                     fontSize:11, fontWeight:800, flexShrink:0, whiteSpace:"nowrap" }}>
-                    {atLimit ? "Upgrade" : "Go Pro ✨"}
+                    {atLimit ? "Upgrade" : "Go Pro"}
                   </div>
                 </div>
               )}
@@ -4228,7 +4291,7 @@ function AppCore({ user, onLogout, onUserUpdate }) {
                 <div style={{ fontSize:isDesktop?44:34, fontWeight:900, letterSpacing:-1.5, marginBottom:isDesktop?20:16 }}>{fmtAmt(allInc-allExp,currency)}</div>
                 <div style={{ display:"flex", background:"rgba(0,0,0,0.15)", borderRadius:14, overflow:"hidden" }}>
                   <div style={{ flex:1, padding: isDesktop?"14px 20px":"11px 16px" }}>
-                    <div style={{ fontSize:10, opacity:.65, marginBottom:3, textTransform:"uppercase", letterSpacing:1 }}>📥 Income</div>
+                    <div style={{ fontSize:10, opacity:.65, marginBottom:3, textTransform:"uppercase", letterSpacing:1 }}>Income</div>
                     <div style={{ fontWeight:800, fontSize:isDesktop?16:14 }}>{fmtAmt(allInc,currency)}</div>
                   </div>
                   <div style={{ width:1, background:"rgba(255,255,255,0.15)" }}/>
@@ -4239,12 +4302,12 @@ function AppCore({ user, onLogout, onUserUpdate }) {
                   {isDesktop&&<>
                     <div style={{ width:1, background:"rgba(255,255,255,0.15)" }}/>
                     <div style={{ flex:1, padding:"14px 20px" }}>
-                      <div style={{ fontSize:10, opacity:.65, marginBottom:3, textTransform:"uppercase", letterSpacing:1 }}>📈 Margin</div>
+                      <div style={{ fontSize:10, opacity:.65, marginBottom:3, textTransform:"uppercase", letterSpacing:1 }}>Margin</div>
                       <div style={{ fontWeight:800, fontSize:16 }}>{allInc>0?((( allInc-allExp)/allInc)*100).toFixed(1):0}%</div>
                     </div>
                     <div style={{ width:1, background:"rgba(255,255,255,0.15)" }}/>
                     <div style={{ flex:1, padding:"14px 20px" }}>
-                      <div style={{ fontSize:10, opacity:.65, marginBottom:3, textTransform:"uppercase", letterSpacing:1 }}>🧾 Entries</div>
+                      <div style={{ fontSize:10, opacity:.65, marginBottom:3, textTransform:"uppercase", letterSpacing:1 }}>Entries</div>
                       <div style={{ fontWeight:800, fontSize:16 }}>{entries.length}</div>
                     </div>
                   </>}
@@ -4255,26 +4318,26 @@ function AppCore({ user, onLogout, onUserUpdate }) {
               <div className="lb-cards-grid" style={{ marginBottom:isDesktop?24:16 }}>
                 <button className="lb-card-action" onClick={()=>{setForm({type:"income",amount:"",category:"",note:""});setView("add");}}
                   style={{ background:"#F0FBF4", border:"2px solid #25D366", borderRadius:16, padding:"16px 14px", cursor:"pointer", textAlign:"left" }}>
-                  <div style={{ fontSize:isDesktop?28:24, marginBottom:isDesktop?10:6 }}>➕</div>
+                  <div style={{ marginBottom:isDesktop?10:6 }}><Icon name="income" size={isDesktop?28:24} color="#16a34a"/></div>
                   <div style={{ fontWeight:800, color:"#1B5E20", fontSize:isDesktop?15:14 }}>Add Income</div>
                   <div style={{ fontSize:11, color:"#4CAF50", marginTop:3 }}>Sales, service, payment</div>
                 </button>
                 <button className="lb-card-action" onClick={()=>{setForm({type:"expense",amount:"",category:"",note:""});setView("add");}}
                   style={{ background:"#FFF8F0", border:"2px solid #FF9800", borderRadius:16, padding:"16px 14px", cursor:"pointer", textAlign:"left" }}>
-                  <div style={{ fontSize:isDesktop?28:24, marginBottom:isDesktop?10:6 }}>➖</div>
+                  <div style={{ marginBottom:isDesktop?10:6 }}><Icon name="expense" size={isDesktop?28:24} color="#c62828"/></div>
                   <div style={{ fontWeight:800, color:"#E65100", fontSize:isDesktop?15:14 }}>Add Expense</div>
                   <div style={{ fontSize:11, color:"#FF9800", marginTop:3 }}>Cost, bill, purchase</div>
                 </button>
                 {isDesktop&&<>
-                  <button className="lb-card-action" onClick={()=>{exportCSV(entries,currency,branding,"All Time");trackExportCSV();showToast("📊 CSV downloaded!","#1b5e20");}}
+                  <button className="lb-card-action" onClick={()=>{exportCSV(entries,currency,branding,"All Time");trackExportCSV();showToast("CSV downloaded!","#1b5e20");}}
                     style={{ background:"#F0FBF0", border:"2px solid #C8E6C9", borderRadius:16, padding:"16px 14px", cursor:"pointer", textAlign:"left" }}>
-                    <div style={{ fontSize:28, marginBottom:10 }}>📊</div>
+                    <div style={{ marginBottom:10 }}><Icon name="download" size={28} color="#205361"/></div>
                     <div style={{ fontWeight:800, color:"#2E7D32", fontSize:15 }}>Export CSV</div>
                     <div style={{ fontSize:11, color:"#66BB6A", marginTop:3 }}>Download spreadsheet</div>
                   </button>
-                  <button className="lb-card-action" onClick={()=>{exportPDF(dateFilt,currency,branding,rLabel,entries,budgets);trackExportPDF();showToast("🖨️ Opening PDF…","#1a237e");}}
+                  <button className="lb-card-action" onClick={()=>{exportPDF(dateFilt,currency,branding,rLabel,entries,budgets);trackExportPDF();showToast("Opening PDF…","#1a237e");}}
                     style={{ background:"#F3F0FF", border:"2px solid #C5CAE9", borderRadius:16, padding:"16px 14px", cursor:"pointer", textAlign:"left" }}>
-                    <div style={{ fontSize:28, marginBottom:10 }}>🖨️</div>
+                    <div style={{ marginBottom:10 }}><Icon name="print" size={28} color="#1a237e"/></div>
                     <div style={{ fontWeight:800, color:"#283593", fontSize:15 }}>PDF Report</div>
                     <div style={{ fontSize:11, color:"#7986CB", marginTop:3 }}>Income statement</div>
                   </button>
@@ -4283,13 +4346,13 @@ function AppCore({ user, onLogout, onUserUpdate }) {
 
               {/* Export row — mobile/tablet only */}
               {!isDesktop&&<div style={{ display:"flex", gap:10, marginBottom:16 }}>
-                <button onClick={()=>{exportCSV(entries,currency,branding,"All Time");trackExportCSV();showToast("📊 CSV downloaded!","#1b5e20");}}
+                <button onClick={()=>{exportCSV(entries,currency,branding,"All Time");trackExportCSV();showToast("CSV downloaded!","#1b5e20");}}
                   style={{ flex:1, padding:"10px", background:"#F0FBF0", border:"1.5px solid #C8E6C9", borderRadius:12, fontSize:12, fontWeight:700, cursor:"pointer", color:"#2E7D32" }}>
-                  📊 Export CSV
+                  Export CSV
                 </button>
-                <button onClick={()=>{exportPDF(entries,currency,branding,"All Time",entries,budgets);trackExportPDF();showToast("🖨️ Opening PDF…","#1a237e");}}
+                <button onClick={()=>{exportPDF(entries,currency,branding,"All Time",entries,budgets);trackExportPDF();showToast("Opening PDF…","#1a237e");}}
                   style={{ flex:1, padding:"10px", background:"#F3F0FF", border:"1.5px solid #C5CAE9", borderRadius:12, fontSize:12, fontWeight:700, cursor:"pointer", color:"#283593" }}>
-                  🖨️ PDF Report
+                  PDF Report
                 </button>
               </div>}
 
@@ -4307,7 +4370,7 @@ function AppCore({ user, onLogout, onUserUpdate }) {
                   {entries.slice(0,isDesktop?8:6).map(e=><TxRow key={e.id} entry={e} currency={currency} onDelete={handleDel} onEdit={setEditingEntry} isPro={isPro} p={p}/>)}
                   {entries.length===0&&(
                     <div style={{ textAlign:"center", padding:"40px 0", color:"#ccc", fontSize:14, lineHeight:2 }}>
-                      <div style={{ fontSize:40, marginBottom:8 }}>📭</div>
+                      <div style={{ marginBottom:8 }}><Icon name="empty" size={40} color="#bbb"/></div>
                       No entries yet. Add your first transaction!
                     </div>
                   )}
@@ -4338,7 +4401,7 @@ function AppCore({ user, onLogout, onUserUpdate }) {
 
             {isDesktop && <div style={{ fontWeight:900, fontSize:22, color:"#1a1a1a",
               marginBottom:24, letterSpacing:-.5 }}>
-              {form.type==="income" ? "➕ Record Income" : "➖ Record Expense"}
+              {form.type==="income" ? "Record Income" : "Record Expense"}
             </div>}
 
             <div className="lb-page-grid">
@@ -4355,13 +4418,14 @@ function AppCore({ user, onLogout, onUserUpdate }) {
                     padding: isDesktop?"24px 24px 0":"16px 16px 0",
                     transition:"background .3s" }}>
                     <div style={{ display:"flex", background:"rgba(0,0,0,.2)", borderRadius:14, padding:4, gap:3, marginBottom:18 }}>
-                      {[["income","wallet","Income"],["expense","upload","Expense"]].map(([t,em,label])=>(
+                      {[["income","income","Income"],["expense","expense","Expense"]].map(([t,iconName,label])=>(
                         <button key={t} onClick={()=>setForm(f=>({...f,type:t,category:""}))}
                           style={{ flex:1, padding:"11px 8px", border:"none", borderRadius:11,
                             fontWeight:800, fontSize:14, cursor:"pointer", transition:"all .2s",
+                            display:"flex", alignItems:"center", justifyContent:"center", gap:6,
                             background: form.type===t ? "rgba(255,255,255,.22)" : "transparent",
                             color: form.type===t ? "#fff" : "rgba(255,255,255,.5)" }}>
-                          {em} {label}
+                          <Icon name={iconName} size={15} color={form.type===t?"#fff":"rgba(255,255,255,.5)"}/> {label}
                         </button>
                       ))}
                     </div>
@@ -4396,12 +4460,12 @@ function AppCore({ user, onLogout, onUserUpdate }) {
                         borderRadius:14, padding:"11px 14px" }}>
                         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:6 }}>
                           <span style={{ fontWeight:800, fontSize:13, color: atLimit?"#c62828":"#16a34a" }}>
-                            {atLimit ? "🚫 Limit reached" : `${remaining} entries left this month`}
+                            {atLimit ? "Limit reached" : `${remaining} entries left this month`}
                           </span>
                           <button onClick={()=>openUpgrade()}
                             style={{ background: atLimit?"#c62828":"#16a34a", color:"#fff", border:"none",
                               borderRadius:8, padding:"4px 10px", fontSize:11, fontWeight:800, cursor:"pointer" }}>
-                            {atLimit ? "Upgrade" : "Go Pro ✨"}
+                            {atLimit ? "Upgrade" : "Go Pro"}
                           </button>
                         </div>
                         <div style={{ height:5, background:"#e5e7eb", borderRadius:3, overflow:"hidden" }}>
@@ -4421,7 +4485,7 @@ function AppCore({ user, onLogout, onUserUpdate }) {
                     {/* Date */}
                     <div style={{ marginBottom:18 }}>
                       <div style={{ fontSize:11, fontWeight:800, color:"#9ca3af", textTransform:"uppercase",
-                        letterSpacing:1, marginBottom:8 }}>📅 Date</div>
+                        letterSpacing:1, marginBottom:8 }}> Date</div>
                       <input type="date" value={form.date || new Date().toISOString().split("T")[0]}
                         onChange={e=>setForm(f=>({...f,date:e.target.value}))}
                         style={{ width:"100%", padding:"13px 16px", border:"1.5px solid #e5e7eb",
@@ -4433,7 +4497,7 @@ function AppCore({ user, onLogout, onUserUpdate }) {
                     {/* Category */}
                     <div style={{ marginBottom:18 }}>
                       <div style={{ fontSize:11, fontWeight:800, color:"#9ca3af", textTransform:"uppercase",
-                        letterSpacing:1, marginBottom:10 }}>🏷️ Category</div>
+                        letterSpacing:1, marginBottom:10 }}>Category</div>
                       <div style={{ display:"flex", flexWrap:"wrap", gap:8 }}>
                         {cats.map(c=>{
                           const sel = form.category===c;
@@ -4458,7 +4522,7 @@ function AppCore({ user, onLogout, onUserUpdate }) {
                     {/* Note */}
                     <div style={{ marginBottom:24 }}>
                       <div style={{ fontSize:11, fontWeight:800, color:"#9ca3af", textTransform:"uppercase",
-                        letterSpacing:1, marginBottom:8 }}>📝 Note (optional)</div>
+                        letterSpacing:1, marginBottom:8 }}>Note (optional)</div>
                       <input type="text" placeholder="Customer name, description…"
                         value={form.note} onChange={e=>setForm(f=>({...f,note:e.target.value}))}
                         style={{ width:"100%", padding:"13px 16px", border:"1.5px solid #e5e7eb",
@@ -4483,7 +4547,7 @@ function AppCore({ user, onLogout, onUserUpdate }) {
                             boxShadow: !form.amount || !form.category ? "none"
                               : form.type==="income" ? "0 6px 20px #16a34a44" : "0 6px 20px #c2410c44",
                             transition:"all .2s" }}>
-                          {form.type==="income" ? "💰 Save Income" : "📤 Save Expense"}
+                          {form.type==="income" ? <><Icon name="income" size={16} color="#fff" style={{marginRight:6}}/> Save Income</> : <><Icon name="expense" size={16} color="#fff" style={{marginRight:6}}/> Save Expense</>}
                         </button>
                       </div>
                     )}
@@ -4508,7 +4572,7 @@ function AppCore({ user, onLogout, onUserUpdate }) {
                         boxShadow: !form.amount || !form.category ? "none"
                           : form.type==="income" ? "0 6px 20px #16a34a44" : "0 6px 20px #c2410c44",
                         transition:"all .2s" }}>
-                      {form.type==="income" ? "💰 Save Income" : "📤 Save Expense"}
+                      {form.type==="income" ? <><Icon name="income" size={16} color="#fff" style={{marginRight:6}}/> Save Income</> : <><Icon name="expense" size={16} color="#fff" style={{marginRight:6}}/> Save Expense</>}
                     </button>
                   </div>
                 )}
@@ -4518,7 +4582,7 @@ function AppCore({ user, onLogout, onUserUpdate }) {
               {isDesktop && <div>
                 {/* This month summary */}
                 <div className="lb-section" style={{ marginBottom:20 }}>
-                  <div style={{ fontWeight:800, fontSize:14, color:"#1a1a1a", marginBottom:16 }}>📊 This Month</div>
+                  <div style={{ fontWeight:800, fontSize:14, color:"#1a1a1a", marginBottom:16 }}> This Month</div>
                   {[
                     ["Income",  totalInc,  "#16a34a", "#f0fdf4"],
                     ["Expenses",totalExp,  "#c2410c", "#fff7ed"],
@@ -4540,12 +4604,12 @@ function AppCore({ user, onLogout, onUserUpdate }) {
                     border:`1.5px solid ${atLimit?"#ffcdd2":"#bbf7d0"}` }}>
                     <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:8 }}>
                       <span style={{ fontWeight:800, fontSize:13, color: atLimit?"#c62828":"#16a34a" }}>
-                        {atLimit ? "🚫 Limit reached" : `${remaining} entries left`}
+                        {atLimit ? "Limit reached" : `${remaining} entries left`}
                       </span>
                       <button onClick={()=>openUpgrade()}
                         style={{ background: atLimit?"#c62828":"#16a34a", color:"#fff", border:"none",
                           borderRadius:8, padding:"4px 10px", fontSize:11, fontWeight:800, cursor:"pointer" }}>
-                        Go Pro ✨
+                        Go Pro
                       </button>
                     </div>
                     <div style={{ height:6, background:"#e5e7eb", borderRadius:3, overflow:"hidden" }}>
@@ -4561,7 +4625,7 @@ function AppCore({ user, onLogout, onUserUpdate }) {
 
                 {/* Recent entries */}
                 <div className="lb-section">
-                  <div style={{ fontWeight:800, fontSize:14, color:"#1a1a1a", marginBottom:14 }}>🕐 Recent Entries</div>
+                  <div style={{ fontWeight:800, fontSize:14, color:"#1a1a1a", marginBottom:14 }}>Recent Entries</div>
                   {entries.slice(0,5).length === 0
                     ? <div style={{ color:"#ccc", fontSize:13, textAlign:"center", padding:"16px 0" }}>No entries yet</div>
                     : entries.slice(0,5).map(e=>(
@@ -4614,19 +4678,19 @@ function AppCore({ user, onLogout, onUserUpdate }) {
               {datePreset!=="all"&&(
                 <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center",
                   background:`${p}10`, borderRadius:11, padding:"9px 13px", marginTop:10 }}>
-                  <span style={{ fontSize:12, color:p, fontWeight:700 }}>📅 {rLabel} · {histFilt.length} transaction{histFilt.length!==1?"s":""}</span>
+                  <span style={{ fontSize:12, color:p, fontWeight:700 }}> {rLabel} · {histFilt.length} transaction{histFilt.length!==1?"s":""}</span>
                   <button onClick={()=>handleDateChange("all",{from:"",to:""})} style={{ background:"none", border:"none", color:p, cursor:"pointer", fontSize:12, fontWeight:800 }}>Clear ✕</button>
                 </div>
               )}
               {datePreset!=="all"&&histFilt.length>0&&(
                 <div style={{ display:"flex", gap:9, marginTop:10 }}>
-                  <button onClick={()=>{exportCSV(histFilt,currency,branding,rLabel);trackExportCSV();showToast("📊 Exported!","#1b5e20");}}
+                  <button onClick={()=>{exportCSV(histFilt,currency,branding,rLabel);trackExportCSV();showToast("Exported!","#1b5e20");}}
                     style={{ flex:1, padding:"9px", background:"#F0FBF0", border:"1.5px solid #C8E6C9", borderRadius:10, fontSize:12, fontWeight:700, cursor:"pointer", color:"#2E7D32" }}>
-                    📊 CSV
+                    CSV
                   </button>
-                  <button onClick={()=>{exportPDF(histFilt,currency,branding,rLabel,entries,budgets);trackExportPDF();showToast("🖨️ Opening…","#1a237e");}}
+                  <button onClick={()=>{exportPDF(histFilt,currency,branding,rLabel,entries,budgets);trackExportPDF();showToast("Opening…","#1a237e");}}
                     style={{ flex:1, padding:"9px", background:"#F3F0FF", border:"1.5px solid #C5CAE9", borderRadius:10, fontSize:12, fontWeight:700, cursor:"pointer", color:"#283593" }}>
-                    🖨️ PDF
+                    PDF
                   </button>
                 </div>
               )}
@@ -4653,7 +4717,7 @@ function AppCore({ user, onLogout, onUserUpdate }) {
                 ))}
                 {histFilt.length===0&&(
                   <div style={{ textAlign:"center", color:"#ccc", marginTop:48, fontSize:14, lineHeight:2 }}>
-                    <div style={{ fontSize:40, marginBottom:8 }}>📭</div>
+                    <div style={{ marginBottom:8 }}><Icon name="empty" size={40} color="#bbb"/></div>
                     <div>No transactions found</div>
                     {datePreset!=="all"&&<div style={{ fontSize:12, marginTop:6 }}>
                       <button onClick={()=>handleDateChange("all",{from:"",to:""})} style={{ background:"none", border:"none", color:p, cursor:"pointer", fontWeight:700, fontSize:13 }}>Clear date filter</button>
@@ -4687,7 +4751,7 @@ function AppCore({ user, onLogout, onUserUpdate }) {
               <div style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center",
                 padding:"40px 28px", textAlign:"center",
                 paddingBottom:`calc(${S.navH+24}px + env(safe-area-inset-bottom,0px))` }}>
-                <div style={{ fontSize:64, marginBottom:16 }}>🎯</div>
+                <div style={{ marginBottom:16 }}><Icon name="target" size={64} color="#5CB1CB"/></div>
                 <div style={{ fontWeight:900, fontSize:20, color:"#222", marginBottom:8, letterSpacing:"-.4px" }}>
                   Budget Tracking
                 </div>
@@ -4695,14 +4759,16 @@ function AppCore({ user, onLogout, onUserUpdate }) {
                   Create monthly or custom budgets, set income & expense targets per category, and get a full budget vs actual report — available on the Pro plan.
                 </div>
                 <div style={{ width:"100%", maxWidth:340 }}>
-                  {[["●","Budget creation","Set targets by category"],
-                    ["chart","Budget vs Actual","See variance at a glance"],
-                    ["📎","Unplanned items","Track what fell outside your plan"],
-                    ["∞","Multiple budgets","Different periods at once"],
-                  ].map(([em,feat,detail])=>(
+                  {[["target",  "Budget creation",  "Set targets by category"],
+                    ["chart",   "Budget vs Actual", "See variance at a glance"],
+                    ["list",    "Unplanned items",  "Track what fell outside your plan"],
+                    ["infinity","Multiple budgets",  "Different periods at once"],
+                  ].map(([iconName,feat,detail])=>(
                     <div key={feat} style={{ display:"flex", alignItems:"center", gap:12,
                       padding:"10px 0", borderBottom:"1px solid #f5f5f5", textAlign:"left" }}>
-                      <span style={{ fontSize:20 }}>{em}</span>
+                      <span style={{ width:24, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+                        <Icon name={iconName} size={20} color="#205361"/>
+                      </span>
                       <div>
                         <div style={{ fontWeight:700, fontSize:13, color:"#333" }}>{feat}</div>
                         <div style={{ fontSize:11, color:"#aaa" }}>{detail}</div>
@@ -4717,7 +4783,7 @@ function AppCore({ user, onLogout, onUserUpdate }) {
                     color:"#fff", border:"none", borderRadius:16,
                     fontWeight:900, fontSize:16, cursor:"pointer",
                     boxShadow:"0 6px 20px rgba(7,94,84,.35)" }}>
-                  Upgrade to Pro ✨
+                  Upgrade to Pro
                 </button>
                 <div style={{ marginTop:12, fontSize:12, color:"#ccc" }}>
                   Unlimited entries · Budgets · Custom categories · No ads
@@ -4726,7 +4792,7 @@ function AppCore({ user, onLogout, onUserUpdate }) {
             ) : (
               <>
                 {budgetView==="list"   && <BudgetList   budgets={budgets} entries={entries} currency={currency} p={p} isDesktop={isDesktop} uid={uid} onNew={()=>{ setActiveBudget(null); setBudgetView("create"); }} onView={(b)=>{ setActiveBudget(b); setBudgetView("detail"); }} onDelete={async(id)=>{ await delBudget(uid,id); showToast("Budget deleted","#888"); }} showToast={showToast}/>}
-                {budgetView==="create" && <BudgetCreate  budget={activeBudget} expCats={expCats} incCats={incCats} currency={currency} p={p} isDesktop={isDesktop} uid={uid} onSave={async(b)=>{ try { if(b.id){ await saveBudget(uid,b.id,b); showToast("✅ Budget updated!",p); } else { await addBudget(uid,b); trackBudgetCreated(); showToast("✅ Budget created!",p); } setBudgetView("list"); } catch(e){ Sentry.captureException(e); showToast("❌ Failed to save","#c62828"); }}} onBack={()=>setBudgetView("list")}/>}
+                {budgetView==="create" && <BudgetCreate  budget={activeBudget} expCats={expCats} incCats={incCats} currency={currency} p={p} isDesktop={isDesktop} uid={uid} onSave={async(b)=>{ try { if(b.id){ await saveBudget(uid,b.id,b); showToast("Budget updated!",p); } else { await addBudget(uid,b); trackBudgetCreated(); showToast("Budget created!",p); } setBudgetView("list"); } catch(e){ Sentry.captureException(e); showToast("Failed to save","#c62828"); }}} onBack={()=>setBudgetView("list")}/>}
                 {budgetView==="detail" && <BudgetDetail  budget={activeBudget} entries={entries} currency={currency} p={p} bg={bg} isDesktop={isDesktop} onBack={()=>setBudgetView("list")} onEdit={(b)=>{ setActiveBudget(b); setBudgetView("create"); }} onDelete={async(id)=>{ await delBudget(uid,id); setBudgetView("list"); showToast("Budget deleted","#888"); }}/>}
               </>
             )}
@@ -4748,7 +4814,7 @@ function AppCore({ user, onLogout, onUserUpdate }) {
               {datePreset!=="all"&&(
                 <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center",
                   background:`${p}10`, borderRadius:11, padding:"9px 13px" }}>
-                  <span style={{ fontSize:12, color:p, fontWeight:700 }}>📅 {rLabel} · {dateFilt.length} transactions</span>
+                  <span style={{ fontSize:12, color:p, fontWeight:700 }}> {rLabel} · {dateFilt.length} transactions</span>
                   <button onClick={()=>handleDateChange("all",{from:"",to:""})} style={{ background:"none", border:"none", color:p, cursor:"pointer", fontSize:12, fontWeight:800 }}>Clear ✕</button>
                 </div>
               )}
@@ -4766,7 +4832,7 @@ function AppCore({ user, onLogout, onUserUpdate }) {
                 if (!active.length) return null;
                 return (
                   <div style={{ marginBottom: isDesktop?24:16 }}>
-                    <div style={{ fontWeight:800, fontSize:14, color:isDesktop?"#1a1a1a":p, marginBottom:10 }}>🎯 Active Budgets</div>
+                    <div style={{ fontWeight:800, fontSize:14, color:isDesktop?"#1a1a1a":p, marginBottom:10 }}>Active Budgets</div>
                     {active.map(b => {
                       const bEntries = entries.filter(e => e.date.slice(0,10) >= b.startDate && e.date.slice(0,10) <= b.endDate);
                       const { actualBudgetedExp, actualBudgetedInc } = calcBudgetStats(b, entries);
@@ -4786,7 +4852,7 @@ function AppCore({ user, onLogout, onUserUpdate }) {
                             </div>
                             <div style={{ fontSize:11, fontWeight:800, padding:"4px 10px", borderRadius:20,
                               background: expOver?"#FFEBEE":"#E8F5E9", color: expOver?"#c62828":"#2E7D32" }}>
-                              {expOver ? " Over budget" : "✅ On track"}
+                              {expOver ? " Over budget" : "On track"}
                             </div>
                           </div>
                           {b.totalExpense > 0 && (
@@ -4849,13 +4915,13 @@ function AppCore({ user, onLogout, onUserUpdate }) {
 
               {/* Action buttons */}
               <div style={{ display:"flex", gap:12, marginTop: isDesktop?0:4, marginBottom:12, flexWrap:"wrap" }}>
-                <button onClick={()=>{exportCSV(dateFilt,currency,branding,rLabel);trackExportCSV();showToast("📊 CSV downloaded!","#1b5e20");}}
+                <button onClick={()=>{exportCSV(dateFilt,currency,branding,rLabel);trackExportCSV();showToast("CSV downloaded!","#1b5e20");}}
                   style={{ flex:1, minWidth:140, padding:"13px", background:"#F0FBF0", border:"1.5px solid #C8E6C9", borderRadius:14, fontWeight:700, cursor:"pointer", fontSize:13, color:"#2E7D32" }}>
-                  📊 Export CSV
+                  Export CSV
                 </button>
-                <button onClick={()=>{exportPDF(dateFilt,currency,branding,rLabel,entries,budgets);trackExportPDF();showToast("🖨️ Opening PDF…","#1a237e");}}
+                <button onClick={()=>{exportPDF(dateFilt,currency,branding,rLabel,entries,budgets);trackExportPDF();showToast("Opening PDF…","#1a237e");}}
                   style={{ flex:1, minWidth:140, padding:"13px", background:"#F3F0FF", border:"1.5px solid #C5CAE9", borderRadius:14, fontWeight:700, cursor:"pointer", fontSize:13, color:"#283593" }}>
-                  🖨️ PDF Report
+                  PDF Report
                 </button>
               </div>
             </div>
@@ -4869,16 +4935,16 @@ function AppCore({ user, onLogout, onUserUpdate }) {
           paddingBottom:"env(safe-area-inset-bottom, 0px)",
         }}>
           {[
-            {id:"home",   icon:"🏠", label:"Home"},
-            {id:"add",    icon:"plus", label:"Add"},
-            {id:"history",icon:"copy", label:"History"},
-            {id:"budget", icon:"●", label:"Budget", proOnly:true},
-            {id:"summary",icon:"chart", label:"Summary"},
+            {id:"home",   icon:"home",    label:"Home"},
+            {id:"add",    icon:"plus",    label:"Add"},
+            {id:"history",icon:"list",    label:"History"},
+            {id:"budget", icon:"target",  label:"Budget",  proOnly:true},
+            {id:"summary",icon:"chart",   label:"Summary"},
           ].map(tab=>(
             <button key={tab.id} onClick={()=>{ if(tab.id==="add")setForm({type:"income",amount:"",category:"",note:""}); setView(tab.id); trackPage(tab.label); }}
               style={{ flex:1, padding:"13px 4px 10px", border:"none", background:"none", cursor:"pointer",
                 display:"flex", flexDirection:"column", alignItems:"center", gap:3, position:"relative" }}>
-              <span style={{ fontSize:22 }}>{tab.icon}</span>
+              <Icon name={tab.icon} size={22} color={view===tab.id ? p : "#ccc"}/>
               <span style={{ fontSize:10, fontWeight:700, color:view===tab.id?p:"#ccc", lineHeight:1 }}>
                 {tab.label}
                 {(tab.id==="history"||tab.id==="summary")&&datePreset!=="all"
@@ -4889,7 +4955,9 @@ function AppCore({ user, onLogout, onUserUpdate }) {
                 <div style={{ position:"absolute", top:10, right:"calc(50% - 18px)",
                   background:"#FF9800", borderRadius:"50%", width:14, height:14,
                   display:"flex", alignItems:"center", justifyContent:"center",
-                  fontSize:8, color:"#fff", fontWeight:900, lineHeight:1 }}>🔒</div>
+                  fontSize:8, color:"#fff", fontWeight:900, lineHeight:1 }}>
+                  <Icon name="lock" size={8} color="#fff"/>
+                </div>
               )}
             </button>
           ))}
@@ -5018,10 +5086,10 @@ function BudgetList({ budgets, entries, currency, p, isDesktop, onNew, onView, o
             <span style={{ fontSize:11, fontWeight:800, padding:"3px 10px", borderRadius:20,
               background: expOver?"#FFEBEE": isActive?"#E8F5E9": isPast?"#F5F5F5":"#E3F2FD",
               color: expOver?"#c62828": isActive?"#2E7D32": isPast?"#888":"#1565C0" }}>
-              {expOver?" Over": isActive?"🟢 Active": isPast?"✅ Ended":"⏳ Upcoming"}
+              {expOver?" Over": isActive?"Active": isPast?"Ended":"⏳ Upcoming"}
             </span>
             <button onClick={e=>{e.stopPropagation(); if(window.confirm("Delete this budget?")) onDelete(b.id);}}
-              style={{ background:"none", border:"none", cursor:"pointer", fontSize:16, color:"#ccc", padding:4 }}>🗑️</button>
+              style={{ background:"none", border:"none", cursor:"pointer", fontSize:16, color:"#ccc", padding:4 }}><Icon name="trash" size={16} color="currentColor"/></button>
           </div>
         </div>
 
@@ -5063,7 +5131,7 @@ function BudgetList({ budgets, entries, currency, p, isDesktop, onNew, onView, o
   return (
     <div style={{ flex:1, overflowY:"auto", paddingLeft:isDesktop?0:S.px, paddingRight:isDesktop?0:S.px,
       paddingTop:isDesktop?0:20, paddingBottom:isDesktop?48:`calc(${S.navH}px + env(safe-area-inset-bottom,0px) + 16px)` }}>
-      {isDesktop&&<div style={{ fontWeight:900, fontSize:22, color:"#1a1a1a", marginBottom:24, letterSpacing:-.5 }}>🎯 Budgets</div>}
+      {isDesktop&&<div style={{ fontWeight:900, fontSize:22, color:"#1a1a1a", marginBottom:24, letterSpacing:-.5 }}> Budgets</div>}
 
       {/* Create button */}
       <button onClick={onNew} style={{ width:"100%", padding:"15px", background:p, color:"#fff", border:"none",
@@ -5074,7 +5142,7 @@ function BudgetList({ budgets, entries, currency, p, isDesktop, onNew, onView, o
 
       {budgets.length === 0 && (
         <div style={{ textAlign:"center", padding:"48px 24px", color:"#ccc" }}>
-          <div style={{ fontSize:52, marginBottom:16 }}>🎯</div>
+          <div style={{ fontSize:52, marginBottom:16 }}><Icon name="target" size={20} color="#5CB1CB"/></div>
           <div style={{ fontWeight:800, fontSize:16, color:"#999", marginBottom:8 }}>No budgets yet</div>
           <div style={{ fontSize:13, lineHeight:1.7 }}>Create your first budget to start tracking your spending against targets.</div>
         </div>
@@ -5105,8 +5173,8 @@ function CatInput({ cat, value, onChange, type, currency, p }) {
   return (
     <div style={{ display:"flex", alignItems:"center", gap:12, marginBottom:12,
       padding:"10px 14px", background:"#fafafa", borderRadius:13, border:"1.5px solid #eee" }}>
-      <div style={{ flex:1, fontWeight:700, fontSize:14, color:"#333" }}>
-        {type==="income"?"wallet":"upload"} {cat}
+      <div style={{ flex:1, fontWeight:700, fontSize:14, color:"#333", display:"flex", alignItems:"center", gap:8 }}>
+        <Icon name={type==="income"?"income":"expense"} size={15} color={type==="income"?"#1B5E20":"#E65100"}/> {cat}
       </div>
       <div style={{ position:"relative", width:150, flexShrink:0 }}>
         <span style={{ position:"absolute", left:11, top:"50%", transform:"translateY(-50%)",
@@ -5196,7 +5264,7 @@ function BudgetCreate({ budget, expCats, incCats, currency, p, isDesktop, onSave
         {/* Tabs */}
         <div style={{ display:"flex", background:"#f2f2f2", borderRadius:14, padding:4, marginBottom:20 }}>
           {[
-            ["overview", "📋 Overview"],
+            ["overview", "Overview"],
             ["income",   `Income${incCatsWithValues>0?` (${incCatsWithValues})`:""}` ],
             ["expense",  `Expenses${expCatsWithValues>0?` (${expCatsWithValues})`:""}` ],
           ].map(([id,lbl])=>(
@@ -5234,7 +5302,7 @@ function BudgetCreate({ budget, expCats, incCats, currency, p, isDesktop, onSave
             {startDate&&endDate&&endDate>=startDate&&(
               <div style={{ background:`${p}12`, borderRadius:10, padding:"9px 14px", fontSize:12,
                 color:p, fontWeight:700, marginTop:12, marginBottom:4 }}>
-                📅 {Math.ceil((new Date(endDate)-new Date(startDate))/864e5)+1} days · {fmtDate(startDate+"T12:00:00")} → {fmtDate(endDate+"T12:00:00")}
+                {Math.ceil((new Date(endDate)-new Date(startDate))/864e5)+1} days · {fmtDate(startDate+"T12:00:00")} → {fmtDate(endDate+"T12:00:00")}
               </div>
             )}
 
@@ -5246,7 +5314,7 @@ function BudgetCreate({ budget, expCats, incCats, currency, p, isDesktop, onSave
               <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
                 <div style={{ background:totalIncome>0?"#E8F5E9":"#fff", borderRadius:12, padding:"14px 16px",
                   border:`1.5px solid ${totalIncome>0?"#a5d6a7":"#eee"}` }}>
-                  <div style={{ fontSize:11, color:"#888", marginBottom:4 }}>💰 Projected Income</div>
+                  <div style={{ fontSize:11, color:"#888", marginBottom:4 }}> Projected Income</div>
                   <div style={{ fontWeight:900, fontSize:18, color:totalIncome>0?"#2E7D32":"#ccc" }}>
                     {totalIncome>0 ? fmtAmt(totalIncome,currency) : "—"}
                   </div>
@@ -5329,7 +5397,7 @@ function BudgetCreate({ budget, expCats, incCats, currency, p, isDesktop, onSave
         <button onClick={handleSave} disabled={saving}
           style={{ width:"100%", padding:"16px", background:p, color:"#fff", border:"none", borderRadius:16,
             fontSize:16, fontWeight:900, cursor:"pointer", marginTop:20, boxShadow:`0 4px 16px ${p}50` }}>
-          {saving ? "Saving…" : isEdit ? "✅ Update Budget" : "✅ Create Budget"}
+          {saving ? "Saving…" : isEdit ? "Update Budget" : "Create Budget"}
         </button>
       </div>
     </div>
@@ -5379,8 +5447,8 @@ function BudgetDetail({ budget, entries, currency, p, bg, isDesktop, onBack, onE
     return (
       <div style={{ marginBottom:14, paddingBottom:14, borderBottom:"1px solid #f5f5f5" }}>
         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:pct!==null?7:0 }}>
-          <div style={{ fontWeight:700, fontSize:14, color:"#222" }}>
-            {type==="income" ? "wallet" : "upload"} {cat}
+          <div style={{ fontWeight:700, fontSize:14, color:"#222", display:"flex", alignItems:"center", gap:7 }}>
+            <Icon name={type==="income"?"income":"expense"} size={14} color={type==="income"?"#1B5E20":"#E65100"}/> {cat}
           </div>
           <div style={{ textAlign:"right", flexShrink:0, marginLeft:12 }}>
             <div style={{ fontSize:13, fontWeight:800,
@@ -5419,10 +5487,10 @@ function BudgetDetail({ budget, entries, currency, p, bg, isDesktop, onBack, onE
         </div>
         <div style={{ display:"flex", gap:8 }}>
           <button onClick={()=>onEdit(budget)} style={{ background:`${p}15`, border:`1.5px solid ${p}`, color:p,
-            borderRadius:11, padding:"7px 14px", cursor:"pointer", fontWeight:800, fontSize:13 }}>✏️ Edit</button>
+            borderRadius:11, padding:"7px 14px", cursor:"pointer", fontWeight:800, fontSize:13 }}> Edit</button>
           <button onClick={()=>{if(window.confirm("Delete this budget?")) onDelete(budget.id);}}
             style={{ background:"#FFF3F3", border:"1.5px solid #ffcdd2", color:"#c62828",
-              borderRadius:11, padding:"7px 12px", cursor:"pointer", fontSize:14 }}>🗑️</button>
+              borderRadius:11, padding:"7px 12px", cursor:"pointer", fontSize:14 }}><Icon name="trash" size={16} color="currentColor"/></button>
         </div>
       </div>
 
@@ -5520,7 +5588,7 @@ function BudgetDetail({ budget, entries, currency, p, bg, isDesktop, onBack, onE
       {(unbudgetedIncCats.length > 0 || unbudgetedExpCats.length > 0) && (
         <div className="lb-section" style={{ marginBottom:14, padding:isDesktop?"22px 24px":"16px 18px",
           border:"1.5px dashed #e0e0e0", background:"#fafafa" }}>
-          <div style={{ fontWeight:900, fontSize:15, color:"#1a1a1a", marginBottom:4 }}>📎 Other Factors</div>
+          <div style={{ fontWeight:900, fontSize:15, color:"#1a1a1a", marginBottom:4 }}> Other Factors</div>
           <div style={{ fontSize:12, color:"#888", lineHeight:1.65, marginBottom:14 }}>
             The following transactions occurred during the budget period but were <strong>not included in your budget plan</strong>. They have influenced your overall financial position but fall outside the scope of this budget's targets.
           </div>
@@ -5528,11 +5596,11 @@ function BudgetDetail({ budget, entries, currency, p, bg, isDesktop, onBack, onE
           {unbudgetedIncCats.length > 0 && (
             <>
               <div style={{ fontSize:11, fontWeight:800, color:"#2E7D32", textTransform:"uppercase",
-                letterSpacing:1, marginBottom:8 }}>💰 Unplanned Income</div>
+                letterSpacing:1, marginBottom:8 }}> Unplanned Income</div>
               {unbudgetedIncCats.map(cat=>(
                 <div key={cat} style={{ display:"flex", justifyContent:"space-between",
                   padding:"9px 0", borderBottom:"1px solid #eee", alignItems:"center" }}>
-                  <span style={{ fontSize:13, color:"#444", fontWeight:600 }}>💰 {cat}</span>
+                  <span style={{ fontSize:13, color:"#444", fontWeight:600 }}> {cat}</span>
                   <span style={{ fontWeight:800, fontSize:13, color:"#2E7D32" }}>+{fmtAmt(catActualInc[cat]||0,currency)}</span>
                 </div>
               ))}
@@ -5547,11 +5615,11 @@ function BudgetDetail({ budget, entries, currency, p, bg, isDesktop, onBack, onE
           {unbudgetedExpCats.length > 0 && (
             <div style={{ marginTop: unbudgetedIncCats.length>0?14:0 }}>
               <div style={{ fontSize:11, fontWeight:800, color:"#E65100", textTransform:"uppercase",
-                letterSpacing:1, marginBottom:8 }}>📤 Unplanned Expenses</div>
+                letterSpacing:1, marginBottom:8 }}> Unplanned Expenses</div>
               {unbudgetedExpCats.map(cat=>(
                 <div key={cat} style={{ display:"flex", justifyContent:"space-between",
                   padding:"9px 0", borderBottom:"1px solid #eee", alignItems:"center" }}>
-                  <span style={{ fontSize:13, color:"#444", fontWeight:600 }}>📤 {cat}</span>
+                  <span style={{ fontSize:13, color:"#444", fontWeight:600 }}> {cat}</span>
                   <span style={{ fontWeight:800, fontSize:13, color:"#E65100" }}>-{fmtAmt(catActualExp[cat]||0,currency)}</span>
                 </div>
               ))}
@@ -5579,7 +5647,7 @@ function BudgetDetail({ budget, entries, currency, p, bg, isDesktop, onBack, onE
       {inRange.length > 0 && (
         <div className="lb-section" style={{ padding:isDesktop?"22px 24px":"16px 18px" }}>
           <div style={{ fontWeight:900, fontSize:15, color:"#1a1a1a", marginBottom:14 }}>
-            🧾 All Transactions in Period ({inRange.length})
+            All Transactions in Period ({inRange.length})
           </div>
           {inRange.slice(0,12).map(e=>(
             <div key={e.id} style={{ display:"flex", justifyContent:"space-between", alignItems:"center",
@@ -5587,8 +5655,8 @@ function BudgetDetail({ budget, entries, currency, p, bg, isDesktop, onBack, onE
               <div style={{ display:"flex", alignItems:"center", gap:10 }}>
                 <div style={{ width:30, height:30, borderRadius:"50%",
                   background:e.type==="income"?"#E8F5E9":"#FFF3E0",
-                  display:"flex", alignItems:"center", justifyContent:"center", fontSize:13, flexShrink:0 }}>
-                  {e.type==="income"?"wallet":"upload"}
+                  display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+                  <Icon name={e.type==="income"?"income":"expense"} size={14} color={e.type==="income"?"#1B5E20":"#E65100"}/>
                 </div>
                 <div>
                   <div style={{ fontWeight:700, fontSize:13 }}>{e.category}
