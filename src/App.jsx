@@ -199,7 +199,7 @@ const DB = {
 // ── Defaults ────────────────────────────────────────────────────
 const DEFAULT_BRANDING = {
   businessName: "My Business", tagline: "Track. Grow. Prosper.",
-  logoType: "emoji", logo: "", logoImage: null,
+  logoType: "emoji", logo: "🏪", logoImage: null,
   primaryColor: "#075E54", useGradient: false,
   gradientAngle: 135, gradientColor2: "#25D366",
 };
@@ -282,15 +282,15 @@ const getPresetRange = (preset) => {
 };
 
 const PRESETS = [
-  { id:"all",        label:"All Time",     icon:"<span style={{display:'inline-flex',alignItems:'center',width:16,height:16,flexShrink:0}}><svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><rect x='3' y='4' width='18' height='18' rx='2'/><line x1='16' y1='2' x2='16' y2='6'/><line x1='8' y1='2' x2='8' y2='6'/><line x1='3' y1='10' x2='21' y2='10'/></svg></span>" },
-  { id:"today",      label:"Today",        icon:"day" },
+  { id:"all",        label:"All Time",     icon:"📅" },
+  { id:"today",      label:"Today",        icon:"📆" },
   { id:"yesterday",  label:"Yesterday",    icon:"◀️" },
-  { id:"week",       label:"Last 7 Days",  icon:"<span style={{display:'inline-flex',alignItems:'center',width:16,height:16,flexShrink:0}}><svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><rect x='3' y='4' width='18' height='18' rx='2'/><line x1='16' y1='2' x2='16' y2='6'/><line x1='8' y1='2' x2='8' y2='6'/><line x1='3' y1='10' x2='21' y2='10'/></svg></span>" },
-  { id:"month",      label:"This Month",   icon:"month" },
-  { id:"last_month", label:"Last Month",   icon:"month" },
-  { id:"quarter",    label:"This Quarter", icon:"<span style={{display:'inline-flex',alignItems:'center',width:16,height:16,flexShrink:0}}><svg viewBox='0 0 24 24' fill='none' stroke='#205361' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><line x1='18' y1='20' x2='18' y2='10'/><line x1='12' y1='20' x2='12' y2='4'/><line x1='6' y1='20' x2='6' y2='14'/><line x1='2' y1='20' x2='22' y2='20'/></svg></span>" },
-  { id:"year",       label:"This Year",    icon:"year" },
-  { id:"custom",     label:"Custom Range", icon:"<span style={{display:'inline-flex',alignItems:'center',width:16,height:16,flexShrink:0}}><svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7'/><path d='M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z'/></svg></span>" },
+  { id:"week",       label:"Last 7 Days",  icon:"📅" },
+  { id:"month",      label:"This Month",   icon:"🗓️" },
+  { id:"last_month", label:"Last Month",   icon:"🗓️" },
+  { id:"quarter",    label:"This Quarter", icon:"📊" },
+  { id:"year",       label:"This Year",    icon:"🗂️" },
+  { id:"custom",     label:"Custom Range", icon:"✏️" },
 ];
 
 const applyDateRange = (entries, dateRange) => {
@@ -700,7 +700,7 @@ ${(() => {
       const pct  = bud > 0 ? ((act/bud)*100).toFixed(1) : "—";
       const met  = bud > 0 && act >= bud;
       return `<tr>
-        <td style="padding-left:24px;color:#555;font-size:12px">${cat}</td>
+        <td style="padding-left:24px;color:#555;font-size:12px">💰 ${cat}</td>
         <td style="font-size:12px">${f2(bud)}</td>
         <td style="font-size:12px;color:${met?"#2E7D32":"inherit"}">${f2(act)}</td>
         <td style="font-size:12px;font-weight:700;color:${met?"#2E7D32":"inherit"}">${pct!=="—"?pct+"%":"—"}${met?" ✓":""}</td>
@@ -714,10 +714,10 @@ ${(() => {
       const pct  = bud > 0 ? ((act/bud)*100).toFixed(1) : "—";
       const over = bud > 0 && act > bud;
       return `<tr>
-        <td style="padding-left:24px;color:#555;font-size:12px">${cat}</td>
+        <td style="padding-left:24px;color:#555;font-size:12px">📤 ${cat}</td>
         <td style="font-size:12px">${f2(bud)}</td>
         <td style="font-size:12px;color:${over?"#c62828":"inherit"}">${f2(act)}</td>
-        <td style="font-size:12px;font-weight:700;color:${over?"#c62828":parseFloat(pct)>=80?"#e65100":"inherit"}">${pct!=="—"?pct+"%":"—"}${over?" ":""}</td>
+        <td style="font-size:12px;font-weight:700;color:${over?"#c62828":parseFloat(pct)>=80?"#e65100":"inherit"}">${pct!=="—"?pct+"%":"—"}${over?" ⚠️":""}</td>
         <td style="font-size:12px;color:${over?"#c62828":"#2E7D32"}">${bud>0?(act>bud?`–${f2(act-bud)} over`:`+${f2(bud-act)} left`):"—"}</td>
       </tr>`;
     }).join("");
@@ -725,14 +725,14 @@ ${(() => {
     // Build unplanned rows
     const unplannedRows = [
       ...unplannedIncs.map(cat => `<tr style="background:#f9fff9">
-        <td style="padding-left:24px;color:#888;font-size:11px;font-style:italic">${cat} <span style="color:#aaa">(unplanned)</span></td>
+        <td style="padding-left:24px;color:#888;font-size:11px;font-style:italic">💰 ${cat} <span style="color:#aaa">(unplanned)</span></td>
         <td style="font-size:11px;color:#aaa">—</td>
         <td style="font-size:11px;color:#2E7D32">${f2(catActI[cat]||0)}</td>
         <td style="font-size:11px;color:#aaa">—</td>
         <td style="font-size:11px;color:#2E7D32">+${f2(catActI[cat]||0)}</td>
       </tr>`),
       ...unplannedExps.map(cat => `<tr style="background:#fff9f9">
-        <td style="padding-left:24px;color:#888;font-size:11px;font-style:italic">${cat} <span style="color:#aaa">(unplanned)</span></td>
+        <td style="padding-left:24px;color:#888;font-size:11px;font-style:italic">📤 ${cat} <span style="color:#aaa">(unplanned)</span></td>
         <td style="font-size:11px;color:#aaa">—</td>
         <td style="font-size:11px;color:#E65100">${f2(catActE[cat]||0)}</td>
         <td style="font-size:11px;color:#aaa">—</td>
@@ -807,12 +807,12 @@ const buildWAReport = (entries, currency, branding, rangeLabel) => {
   const exp=entries.filter(e=>e.type==="expense").reduce((s,e)=>s+e.amount,0);
   const bal=inc-exp;
   return [
-    `${branding.logoType==="emoji"?branding.logo:""} *${branding.businessName}* — Finance Report`,
+    `${branding.logoType==="emoji"?branding.logo:"🏪"} *${branding.businessName}* — Finance Report`,
     rangeLabel&&rangeLabel!=="All Time"?`📅 Period: *${rangeLabel}*`:`📅 ${new Date().toLocaleDateString("en-NG",{dateStyle:"full"})}`,
     ``,`━━━━━━━━━━━━━━━━━━━`,
     `💰 *Income:* ${fmtAmt(inc,currency)}`,`📤 *Expenses:* ${fmtAmt(exp,currency)}`,`🏦 *Balance:* ${fmtAmt(bal,currency)}`,
     `━━━━━━━━━━━━━━━━━━━`,``,`📋 *Transactions (${entries.length}):*`,
-    ...entries.slice(0,5).map(e=>`${e.type==="income"?"<span style={{display:'inline-flex',alignItems:'center',width:18,height:18,flexShrink:0}}><svg viewBox='0 0 24 24' fill='none' stroke='#fff' stroke-width='2.5' stroke-linecap='round'><line x1='12' y1='5' x2='12' y2='19'/><line x1='5' y1='12' x2='19' y2='12'/></svg></span>":"-"} *${e.category}* — ${fmtAmt(e.amount,currency)}${e.note?`\n   _${e.note}_`:""}`),
+    ...entries.slice(0,5).map(e=>`${e.type==="income"?"➕":"➖"} *${e.category}* — ${fmtAmt(e.amount,currency)}${e.note?`\n   _${e.note}_`:""}`),
     entries.length>5?`_...and ${entries.length-5} more_`:"",
     ``,`_${branding.tagline}_`,`_Powered by Cash Counter_`,
   ].filter(x=>x!==undefined).join("\n");
@@ -847,19 +847,19 @@ function UpgradeModal({ onClose, reason="default", monthCount=0, p="#075E54", us
   `;
 
   const reasons = {
-    limit:   { icon:"×", title:"Monthly limit reached", sub:`You've used all ${FREE_LIMITS.ENTRIES_PER_MONTH} free entries for ${new Date().toLocaleString("default",{month:"long"})}. Upgrade for unlimited entries.` },
-    budget:  { icon:"●", title:"Budget feature is Pro",  sub:"Create and track budgets, set targets per category, and see detailed budget vs actual reports." },
-    cats:    { icon:"#", title:"Custom categories are Pro", sub:"Edit, add, and remove income and expense categories to match your exact business structure." },
-    default: { icon:"<span style={{display:'inline-flex',alignItems:'center',width:16,height:16,flexShrink:0}}><svg viewBox='0 0 24 24' fill='none' stroke='#5CB1CB' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polygon points='13 2 3 14 12 14 11 22 21 10 12 10 13 2'/></svg></span>", title:"Upgrade to Cash Counter", sub:"Unlock the full power of Cash Counter and grow your business faster." },
+    limit:   { icon:"🚫", title:"Monthly limit reached", sub:`You've used all ${FREE_LIMITS.ENTRIES_PER_MONTH} free entries for ${new Date().toLocaleString("default",{month:"long"})}. Upgrade for unlimited entries.` },
+    budget:  { icon:"🎯", title:"Budget feature is Pro",  sub:"Create and track budgets, set targets per category, and see detailed budget vs actual reports." },
+    cats:    { icon:"🏷️", title:"Custom categories are Pro", sub:"Edit, add, and remove income and expense categories to match your exact business structure." },
+    default: { icon:"⚡", title:"Upgrade to Cash Counter", sub:"Unlock the full power of Cash Counter and grow your business faster." },
   };
   const { icon, title, sub } = reasons[reason] || reasons.default;
 
   const FEATURES = [
-    ["∞", "Unlimited entries",          "Free plan: 20/month"],
-    ["●", "Budget creation & tracking", "Set targets, track actuals"],
-    ["#", "Custom categories",          "Add, edit, remove categories"],
-    ["×", "No ads, ever",               "Clean, distraction-free UI"],
-    ["<span style={{display:'inline-flex',alignItems:'center',width:16,height:16,flexShrink:0}}><svg viewBox='0 0 24 24' fill='none' stroke='#205361' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><line x1='18' y1='20' x2='18' y2='10'/><line x1='12' y1='20' x2='12' y2='4'/><line x1='6' y1='20' x2='6' y2='14'/><line x1='2' y1='20' x2='22' y2='20'/></svg></span>", "All reports & exports",      "CSV, PDF income statements"],
+    ["♾️", "Unlimited entries",          "Free plan: 20/month"],
+    ["🎯", "Budget creation & tracking", "Set targets, track actuals"],
+    ["🏷️", "Custom categories",          "Add, edit, remove categories"],
+    ["🚫", "No ads, ever",               "Clean, distraction-free UI"],
+    ["📊", "All reports & exports",      "CSV, PDF income statements"],
   ];
 
   const [selectedPlan, setSelectedPlan] = useState("annually");
@@ -958,7 +958,7 @@ function UpgradeModal({ onClose, reason="default", monthCount=0, p="#075E54", us
           {/* Tab switcher */}
           <div style={{ display:"flex", background:"rgba(0,0,0,.2)", borderRadius:10, padding:3,
             marginTop:16, gap:2 }}>
-            {[["pricing","Pricing"],["features","Features"]].map(([id,label])=>(
+            {[["pricing","💳 Pricing"],["features","✅ Features"]].map(([id,label])=>(
               <button key={id} onClick={()=>setScreen(id)}
                 style={{ flex:1, padding:"8px", border:"none", borderRadius:8, fontSize:12,
                   fontWeight:700, cursor:"pointer", transition:"all .15s",
@@ -1010,8 +1010,8 @@ function UpgradeModal({ onClose, reason="default", monthCount=0, p="#075E54", us
                 letterSpacing:.8, marginBottom:10 }}>How would you like to pay?</div>
               <div style={{ display:"flex", gap:10 }}>
                 {[
-                  { id:"card",     icon:"<span style={{display:'inline-flex',alignItems:'center',width:16,height:16,flexShrink:0}}><svg viewBox='0 0 24 24' fill='none' stroke='#205361' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M20 12V8H6a2 2 0 0 1 0-4h14v4'/><path d='M4 6v12a2 2 0 0 0 2 2h14v-4'/><circle cx='17' cy='16' r='1' fill='#205361'/></svg></span>", label:"Card",          sub:"Auto-renews" },
-                  { id:"transfer", icon:"bank", label:"Bank Transfer",  sub:"One-time, manual renewal" },
+                  { id:"card",     icon:"💳", label:"Card",          sub:"Auto-renews" },
+                  { id:"transfer", icon:"🏦", label:"Bank Transfer",  sub:"One-time, manual renewal" },
                 ].map(m => (
                   <div key={m.id} onClick={()=>setPayMethod(m.id)}
                     style={{ flex:1, padding:"12px 14px", borderRadius:14, cursor:"pointer",
@@ -1030,7 +1030,7 @@ function UpgradeModal({ onClose, reason="default", monthCount=0, p="#075E54", us
               {payMethod==="transfer" && (
                 <div style={{ background:"#fffbeb", border:"1px solid #fde68a", borderRadius:10,
                   padding:"10px 12px", marginTop:10, fontSize:12, color:"#92400e", lineHeight:1.6 }}>
-                  Note: Bank transfer pays for one period only. You'll need to manually renew when your plan expires. We'll remind you in-app.
+                  💡 Bank transfer pays for one period only. You'll need to manually renew when your plan expires. We'll remind you in-app.
                 </div>
               )}
             </div>
@@ -1038,7 +1038,7 @@ function UpgradeModal({ onClose, reason="default", monthCount=0, p="#075E54", us
             {error&&(
               <div style={{ background:"#fff3f0", border:"1px solid #ffcdd2", borderRadius:10,
                 padding:"10px 14px", color:"#c62828", fontSize:12, marginTop:8 }}>
-                 {error}
+                ⚠️ {error}
               </div>
             )}
 
@@ -1100,7 +1100,7 @@ function UpgradeModal({ onClose, reason="default", monthCount=0, p="#075E54", us
 const HOUSE_ADS = [
   {
     active:  false, // ← set true when sponsor pays
-    logo:    "bank",
+    logo:    "🏦",
     brand:   "GTBank",
     title:   "GTBank Business Account",
     body:    "Zero COT for the first 6 months. Open your SME account today.",
@@ -1110,7 +1110,7 @@ const HOUSE_ADS = [
   },
   {
     active:  false,
-    logo:    "<span style={{display:'inline-flex',alignItems:'center',width:16,height:16,flexShrink:0}}><svg viewBox='0 0 24 24' fill='none' stroke='#205361' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M20 12V8H6a2 2 0 0 1 0-4h14v4'/><path d='M4 6v12a2 2 0 0 0 2 2h14v-4'/><circle cx='17' cy='16' r='1' fill='#205361'/></svg></span>",
+    logo:    "💳",
     brand:   "Moniepoint",
     title:   "Moniepoint for Business",
     body:    "Accept payments anywhere. POS and virtual accounts for SMEs.",
@@ -1140,7 +1140,7 @@ const HOUSE_ADS = [
   },
   {
     active:  false,
-    logo:    "<span style={{display:'inline-flex',alignItems:'center',width:16,height:16,flexShrink:0}}><svg viewBox='0 0 24 24' fill='none' stroke='#205361' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M20 12V8H6a2 2 0 0 1 0-4h14v4'/><path d='M4 6v12a2 2 0 0 0 2 2h14v-4'/><circle cx='17' cy='16' r='1' fill='#205361'/></svg></span>",
+    logo:    "💰",
     brand:   "Cowrywise",
     title:   "Grow your business savings",
     body:    "Earn up to 18% p.a. on your business cash reserves.",
@@ -1384,7 +1384,7 @@ function FilterBadge({ preset, dateRange, onClick, primaryColor:p }) {
     <button onClick={onClick} style={{ display:"flex", alignItems:"center", gap:6, padding:"7px 12px", borderRadius:20,
       border:`1.5px solid ${isActive?p:"#ddd"}`, background:isActive?`${p}12`:"#f5f5f5",
       cursor:"pointer", fontSize:12, fontWeight:isActive?700:500, color:isActive?p:"#888", whiteSpace:"nowrap" }}>
-      <span>{isActive?"🗓️":"<span style={{display:'inline-flex',alignItems:'center',width:16,height:16,flexShrink:0}}><svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><rect x='3' y='4' width='18' height='18' rx='2'/><line x1='16' y1='2' x2='16' y2='6'/><line x1='8' y1='2' x2='8' y2='6'/><line x1='3' y1='10' x2='21' y2='10'/></svg></span>"}</span>
+      <span>{isActive?"🗓️":"📅"}</span>
       <span>{describeDateRange(preset,dateRange)}</span>
       {isActive&&<span style={{ color:p, fontSize:10 }}>▾</span>}
     </button>
@@ -1414,13 +1414,8 @@ function SplashScreen() {
     .sp-moto{position:absolute;bottom:96px;animation:sp-moto 4s linear infinite}
   `;
   return (
-    <div style={{position:"fixed",inset:0,background:"#050d12",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",overflow:"hidden",userSelect:"none"}}>
+    <div style={{position:"fixed",inset:0,background:"linear-gradient(175deg,#032e28 0%,#054d44 28%,#075E54 55%,#0a7a6c 80%,#0d9688 100%)",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",overflow:"hidden",userSelect:"none"}}>
       <style>{css}</style>
-      {/* Techy grid background */}
-      <div style={{position:"absolute",inset:0,backgroundImage:"linear-gradient(rgba(92,177,203,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(92,177,203,.05) 1px,transparent 1px)",backgroundSize:"48px 48px",maskImage:"radial-gradient(ellipse 80% 70% at 50% 50%,black 40%,transparent 100%)",pointerEvents:"none"}}/>
-      {/* Glow orbs */}
-      <div style={{position:"absolute",width:500,height:500,borderRadius:"50%",background:"radial-gradient(circle,rgba(32,83,97,.5) 0%,transparent 70%)",top:-150,left:-150,pointerEvents:"none"}}/>
-      <div style={{position:"absolute",width:400,height:400,borderRadius:"50%",background:"radial-gradient(circle,rgba(92,177,203,.15) 0%,transparent 70%)",bottom:-100,right:-100,pointerEvents:"none"}}/>
 
       {/* ── Full-screen background SVG ── */}
       <svg style={{position:"absolute",top:0,left:0,width:"100%",height:"100%",overflow:"visible",pointerEvents:"none"}}
@@ -1470,8 +1465,8 @@ function SplashScreen() {
 
         {/* Sparkle stars */}
         <g style={{animation:"sp-star 2.2s .1s ease-in-out infinite",transformOrigin:"118px 302px"}}>
-          <path d="M118 296 L119.5 301 L118 306 L116.5 301 Z" fill="rgba(92,177,203,.7)"/>
-          <path d="M112 302 L117 300 L122 302 L117 304 Z" fill="rgba(92,177,203,.7)"/>
+          <path d="M118 296 L119.5 301 L118 306 L116.5 301 Z" fill="rgba(255,255,255,.55)"/>
+          <path d="M112 302 L117 300 L122 302 L117 304 Z" fill="rgba(255,255,255,.55)"/>
         </g>
         <g style={{animation:"sp-star 2.5s .9s ease-in-out infinite",transformOrigin:"272px 182px"}}>
           <path d="M272 176 L273.5 181 L272 186 L270.5 181 Z" fill="rgba(255,255,255,.45)"/>
@@ -1558,9 +1553,9 @@ function SplashScreen() {
           <ellipse cx="-20" cy="29" rx="6"  ry="2.5" fill="rgba(255,255,255,.06)"/>
           {/* Wheels */}
           <circle cx="16" cy="30" r="9"   stroke="rgba(255,255,255,.65)" strokeWidth="2.5"/>
-          <circle cx="16" cy="30" r="3.5" fill="rgba(92,177,203,.7)"/>
+          <circle cx="16" cy="30" r="3.5" fill="rgba(255,255,255,.55)"/>
           <circle cx="50" cy="30" r="9"   stroke="rgba(255,255,255,.65)" strokeWidth="2.5"/>
-          <circle cx="50" cy="30" r="3.5" fill="rgba(92,177,203,.7)"/>
+          <circle cx="50" cy="30" r="3.5" fill="rgba(255,255,255,.55)"/>
           {/* Bike frame */}
           <path d="M20 28 L32 12 L49 14 L53 28 Z" fill="rgba(255,255,255,.4)"/>
           <path d="M16 28 L20 28 L26 10 L20 10 Z"  fill="rgba(255,255,255,.3)"/>
@@ -1578,7 +1573,7 @@ function SplashScreen() {
 
       {/* ── Logo + title + dots ── */}
       <div style={{position:"relative",zIndex:10,display:"flex",flexDirection:"column",alignItems:"center",marginTop:-55}}>
-        <div className="sp-logo" style={{width:96,height:96,borderRadius:26,background:"linear-gradient(135deg,#205361,#5CB1CB)",display:"flex",alignItems:"center",justifyContent:"center",marginBottom:20,boxShadow:"0 0 40px rgba(92,177,203,.3),0 10px 36px rgba(0,0,0,.4),inset 0 1px 0 rgba(255,255,255,.15)"}}>
+        <div className="sp-logo" style={{width:96,height:96,borderRadius:26,background:"#075E54",display:"flex",alignItems:"center",justifyContent:"center",marginBottom:20,boxShadow:"0 10px 36px rgba(0,0,0,.32),inset 0 1px 0 rgba(255,255,255,.18)"}}>
           <svg width="64" height="64" viewBox="0 0 500 500" xmlns="http://www.w3.org/2000/svg">
             {/* Stack 1 — 2 coins */}
             <ellipse cx="155" cy="320" rx="48" ry="13" fill="#c8960c"/>
@@ -1663,7 +1658,7 @@ function AuthField({ label, placeholder, type="text", value, onChange, icon }) {
         {isPass && (
           <button type="button" onClick={()=>setShow(s=>!s)}
             style={{ position:"absolute", right:13, top:"50%", transform:"translateY(-50%)", background:"none", border:"none", cursor:"pointer", color:"#c0c0c0", fontSize:16, padding:2, lineHeight:1 }}>
-            {show ? "🙈" : "<span style={{display:'inline-flex',alignItems:'center',width:16,height:16,flexShrink:0}}><svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z'/><circle cx='12' cy='12' r='3'/></svg></span>"}
+            {show ? "🙈" : "👁️"}
           </button>
         )}
       </div>
@@ -1763,9 +1758,9 @@ function AuthScreen() {
     .au-coin1{animation:au-coin 2.6s ease-in-out infinite;transform-origin:50px 178px}
     .au-coin2{animation:au-coin 3.1s 1s ease-in-out infinite;transform-origin:342px 205px}
     .au-inp{transition:border-color .18s,box-shadow .18s,background .18s}
-    .au-inp:focus{border-color:#5CB1CB !important;box-shadow:0 0 0 3px rgba(92,177,203,.15) !important;outline:none;background:#fff !important}
+    .au-inp:focus{border-color:#075E54 !important;box-shadow:0 0 0 3px rgba(7,94,84,.12) !important;outline:none;background:#fff !important}
     .au-btn{transition:transform .13s,box-shadow .13s}
-    .au-btn:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 8px 28px rgba(92,177,203,.38) !important}
+    .au-btn:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 8px 28px rgba(7,94,84,.44) !important}
     .au-btn:active:not(:disabled){transform:translateY(0px)}
     .au-soc{transition:all .15s}
     .au-soc:hover:not(:disabled){background:#f7f7f7 !important;transform:translateY(-1px);box-shadow:0 4px 14px rgba(0,0,0,.12) !important}
@@ -1902,57 +1897,58 @@ function AuthScreen() {
 
   return (
     <div style={{minHeight:"100vh",position:"relative",overflow:"hidden",
-      background:"#050d12"}}>
+      background:"linear-gradient(175deg,#032e28 0%,#054d44 28%,#075E54 58%,#0a7a6c 82%,#128C7E 100%)"}}>
       <style>{AUTH_CSS}</style>
 
-      {/* Techy background */}
-      <div style={{position:"absolute",inset:0,pointerEvents:"none",overflow:"hidden"}}>
-        {/* Grid */}
-        <div style={{position:"absolute",inset:0,backgroundImage:"linear-gradient(rgba(92,177,203,.055) 1px,transparent 1px),linear-gradient(90deg,rgba(92,177,203,.055) 1px,transparent 1px)",backgroundSize:"48px 48px",maskImage:"radial-gradient(ellipse 90% 80% at 50% 40%,black 30%,transparent 100%)"}}/>
-        {/* Orbs */}
-        <div style={{position:"absolute",width:400,height:400,borderRadius:"50%",background:"radial-gradient(circle,rgba(32,83,97,.5) 0%,transparent 70%)",top:-150,left:-120}}/>
-        <div style={{position:"absolute",width:350,height:350,borderRadius:"50%",background:"radial-gradient(circle,rgba(92,177,203,.18) 0%,transparent 70%)",bottom:-80,right:-80}}/>
-        <div style={{position:"absolute",width:200,height:200,borderRadius:"50%",background:"radial-gradient(circle,rgba(92,177,203,.12) 0%,transparent 70%)",top:"35%",right:"5%"}}/>
-        {/* Floating ₦ coins */}
-        <svg style={{position:"absolute",inset:0,width:"100%",height:"100%"}} viewBox="0 0 390 844" preserveAspectRatio="xMidYMid slice">
-          <g className="au-coin1">
-            <circle cx="50" cy="180" r="18" fill="none" stroke="rgba(92,177,203,.3)" strokeWidth="1.5"/>
-            <circle cx="50" cy="180" r="12" fill="rgba(92,177,203,.08)"/>
-            <text x="50" y="185" textAnchor="middle" fontSize="12" fill="rgba(92,177,203,.6)" fontWeight="700">₦</text>
-          </g>
-          <g className="au-coin2">
-            <circle cx="342" cy="210" r="14" fill="none" stroke="rgba(92,177,203,.25)" strokeWidth="1.5"/>
-            <circle cx="342" cy="210" r="9" fill="rgba(92,177,203,.07)"/>
-            <text x="342" y="215" textAnchor="middle" fontSize="10" fill="rgba(92,177,203,.55)" fontWeight="700">₦</text>
-          </g>
-          <g className="au-c1">
-            <circle cx="340" cy="80" r="10" fill="none" stroke="rgba(92,177,203,.15)" strokeWidth="1"/>
-          </g>
-          <g className="au-c2">
-            <circle cx="55" cy="320" r="7" fill="none" stroke="rgba(92,177,203,.12)" strokeWidth="1"/>
-          </g>
-        </svg>
-      </div>
+      {/* Background scene */}
+      <svg style={{position:"absolute",top:0,left:0,width:"100%",height:"100%",overflow:"visible",pointerEvents:"none"}}
+        viewBox="0 0 390 844" preserveAspectRatio="xMidYMid slice">
+        <g className="au-c1">
+          <ellipse cx="62" cy="82" rx="46" ry="25" fill="rgba(255,255,255,.07)"/>
+          <ellipse cx="88" cy="71" rx="32" ry="19" fill="rgba(255,255,255,.07)"/>
+          <ellipse cx="42" cy="76" rx="22" ry="14" fill="rgba(255,255,255,.06)"/>
+        </g>
+        <g className="au-c2">
+          <ellipse cx="302" cy="112" rx="55" ry="28" fill="rgba(255,255,255,.06)"/>
+          <ellipse cx="330" cy="100" rx="38" ry="22" fill="rgba(255,255,255,.05)"/>
+          <ellipse cx="280" cy="107" rx="26" ry="16" fill="rgba(255,255,255,.05)"/>
+        </g>
+        <g className="au-c1" style={{animationDuration:"4.5s",animationDelay:"1s"}}>
+          <ellipse cx="178" cy="52" rx="30" ry="16" fill="rgba(255,255,255,.05)"/>
+          <ellipse cx="198" cy="44" rx="21" ry="13" fill="rgba(255,255,255,.04)"/>
+        </g>
+        <g className="au-coin1">
+          <circle cx="50" cy="178" r="13" fill="rgba(255,215,0,.18)" stroke="rgba(255,215,0,.35)" strokeWidth="1.5"/>
+          <text x="50" y="183" textAnchor="middle" fontSize="11" fill="rgba(255,215,0,.6)">₦</text>
+        </g>
+        <g className="au-coin2">
+          <circle cx="342" cy="205" r="10" fill="rgba(255,215,0,.14)" stroke="rgba(255,215,0,.3)" strokeWidth="1.5"/>
+          <text x="342" y="210" textAnchor="middle" fontSize="9" fill="rgba(255,215,0,.55)">$</text>
+        </g>
+        {/* subtle grid dots */}
+        {Array.from({length:30},(_,i)=>{
+          const row=Math.floor(i/5), col=i%5;
+          return <circle key={i} cx={60+col*70} cy={380+row*70} r="1.5" fill="rgba(255,255,255,.06)"/>;
+        })}
+        <path d="M-20 800Q100 762 230 776Q340 788 440 762L440 844L-20 844Z" fill="rgba(0,0,0,.18)"/>
+        <path d="M-20 828Q120 800 260 812Q360 820 440 800L440 844L-20 844Z" fill="rgba(0,0,0,.26)"/>
+      </svg>
 
       {/* Top logo */}
       <div style={{position:"relative",zIndex:2,textAlign:"center",
         paddingTop:"max(48px,env(safe-area-inset-top,48px))",paddingBottom:22}}>
-        <div style={{width:72,height:72,borderRadius:22,margin:"0 auto 14px",
-          background:"linear-gradient(135deg,#205361,#5CB1CB)",
-          border:"1px solid rgba(92,177,203,.3)",
+        <div style={{width:70,height:70,borderRadius:22,margin:"0 auto 12px",
+          background:"rgba(255,255,255,.14)",backdropFilter:"blur(12px)",
+          border:"2px solid rgba(255,255,255,.22)",
           display:"flex",alignItems:"center",justifyContent:"center",
-          boxShadow:"0 0 32px rgba(92,177,203,.25),0 8px 24px rgba(0,0,0,.4)"}}>
-          <svg viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{width:34,height:34}}>
-            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
-            <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
-          </svg>
+          fontSize:38,boxShadow:"0 8px 24px rgba(0,0,0,.24)"}}>
+          📒
         </div>
-        <div style={{color:"#fff",fontWeight:900,fontSize:22,letterSpacing:"-.5px",
-          }}>
+        <div style={{color:"#fff",fontWeight:900,fontSize:22,letterSpacing:"-.5px",textShadow:"0 2px 12px rgba(0,0,0,.22)"}}>
           Cash Counter
         </div>
-        <div style={{color:"rgba(255,255,255,.5)",fontSize:13,marginTop:5,letterSpacing:".2px"}}>
-          {mode==="login" ? "Welcome back" : "Let's get you started"}
+        <div style={{color:"rgba(255,255,255,.55)",fontSize:13,marginTop:4}}>
+          {mode==="login" ? "Welcome back 👋" : "Let's get you started 🚀"}
         </div>
       </div>
 
@@ -2026,13 +2022,13 @@ function AuthScreen() {
 
             {/* Form fields */}
             {mode==="register" && <>
-              <AuthField label="Full Name"     placeholder="e.g. Oluwasegun Akinnusi" value={form.name}         onChange={v=>f("name",v)}         icon="<span style={{display:'inline-flex',alignItems:'center',width:18,height:18,flexShrink:0}}><svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2'/><circle cx='12' cy='7' r='4'/></svg></span>"/>
-              <AuthField label="Business Name" placeholder="e.g. Ade Electronics"     value={form.businessName} onChange={v=>f("businessName",v)} icon=""/>
+              <AuthField label="Full Name"     placeholder="e.g. Oluwasegun Akinnusi" value={form.name}         onChange={v=>f("name",v)}         icon="👤"/>
+              <AuthField label="Business Name" placeholder="e.g. Ade Electronics"     value={form.businessName} onChange={v=>f("businessName",v)} icon="🏪"/>
             </>}
-            <AuthField label="Email Address"    placeholder="you@example.com"         type="email"    value={form.email}    onChange={v=>f("email",v)}    icon="<span style={{display:'inline-flex',alignItems:'center',width:16,height:16,flexShrink:0}}><svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z'/><polyline points='22,6 12,13 2,6'/></svg></span>"/>
+            <AuthField label="Email Address"    placeholder="you@example.com"         type="email"    value={form.email}    onChange={v=>f("email",v)}    icon="📧"/>
 
             {mode !== "forgot" && <>
-              <AuthField label="Password" placeholder="Min. 8 chars, uppercase, number" type="password" value={form.password} onChange={v=>f("password",v)} icon="<span style={{display:'inline-flex',alignItems:'center',width:16,height:16,flexShrink:0}}><svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><rect x='3' y='11' width='18' height='11' rx='2'/><path d='M7 11V7a5 5 0 0 1 10 0v4'/></svg></span>"/>
+              <AuthField label="Password" placeholder="Min. 8 chars, uppercase, number" type="password" value={form.password} onChange={v=>f("password",v)} icon="🔒"/>
 
               {/* Password strength bar — show on register */}
               {mode === "register" && form.password.length > 0 && (
@@ -2062,7 +2058,7 @@ function AuthScreen() {
                 </div>
               )}
 
-              {mode === "register" && <AuthField label="Confirm Password" placeholder="Re-enter password" type="password" value={form.confirm} onChange={v=>f("confirm",v)} icon="<span style={{display:'inline-flex',alignItems:'center',width:16,height:16,flexShrink:0}}><svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><rect x='3' y='11' width='18' height='11' rx='2'/><path d='M7 11V7a5 5 0 0 1 10 0v4'/></svg></span>"/>}
+              {mode === "register" && <AuthField label="Confirm Password" placeholder="Re-enter password" type="password" value={form.confirm} onChange={v=>f("confirm",v)} icon="🔒"/>}
             </>}
 
             {/* Error */}
@@ -2071,7 +2067,7 @@ function AuthScreen() {
                 style={{background:"#fff3f3",border:"1.5px solid #ffcdd2",borderRadius:13,
                   padding:"11px 14px",color:"#c62828",fontSize:13,marginBottom:14,
                   lineHeight:1.55,display:"flex",gap:8,alignItems:"flex-start"}}>
-                <span style={{flexShrink:0}}></span><span>{err}</span>
+                <span style={{flexShrink:0}}>⚠️</span><span>{err}</span>
               </div>
             )}
 
@@ -2217,7 +2213,7 @@ function KeyboardWidget({ currency, branding, incCats, expCats, onClose }) {
             <button key={t} onClick={()=>{setKwType(t);setKwCat("");}}
               style={{ flex:1, padding:"10px", border:"none", borderRadius:10, fontWeight:700, fontSize:13, cursor:"pointer",
                 background:kwType===t?(t==="income"?"#25D366":"#FF9800"):"transparent", color:kwType===t?"#fff":"#888" }}>
-              {t==="income"?"Income":"Expense"}
+              {t==="income"?"💰 Income":"📤 Expense"}
             </button>
           ))}
         </div>
@@ -2340,7 +2336,7 @@ function DeleteAccountModal({ user, onDeleted, onClose }) {
           // Step 1 — Confirm
           <>
             <div style={{ textAlign:"center", marginBottom:20 }}>
-              <div style={{ fontSize:48, marginBottom:12 }}></div>
+              <div style={{ fontSize:48, marginBottom:12 }}>⚠️</div>
               <div style={{ fontWeight:900, fontSize:18, color:"#c62828", marginBottom:8 }}>
                 Delete your account?
               </div>
@@ -2360,7 +2356,7 @@ function DeleteAccountModal({ user, onDeleted, onClose }) {
             <p style={{ fontSize:13, color:"#9ca3af", textAlign:"center", marginBottom:20 }}>
               This action is <strong>permanent</strong> and cannot be undone.
             </p>
-            {err && <div style={{ color:"#c62828", fontSize:13, marginBottom:12 }}> {err}</div>}
+            {err && <div style={{ color:"#c62828", fontSize:13, marginBottom:12 }}>⚠️ {err}</div>}
             <div style={{ display:"flex", gap:10 }}>
               <button onClick={onClose}
                 style={{ flex:1, padding:"13px", background:"#f5f5f5", border:"none",
@@ -2395,7 +2391,7 @@ function DeleteAccountModal({ user, onDeleted, onClose }) {
               style={{ width:"100%", padding:"13px 16px", border:"1.5px solid #e5e7eb",
                 borderRadius:13, fontSize:15, outline:"none", boxSizing:"border-box",
                 fontFamily:"inherit", marginBottom:err ? 8 : 16 }}/>
-            {err && <div style={{ color:"#c62828", fontSize:13, marginBottom:12 }}> {err}</div>}
+            {err && <div style={{ color:"#c62828", fontSize:13, marginBottom:12 }}>⚠️ {err}</div>}
             <div style={{ display:"flex", gap:10 }}>
               <button onClick={() => { setStep(1); setErr(""); }}
                 style={{ flex:1, padding:"13px", background:"#f5f5f5", border:"none",
@@ -2528,7 +2524,7 @@ function SettingsScreen({ branding, setBranding, currency, setCurrency, incCats,
           )}
           {branding.logoType==="emoji"&&(
             <div style={{ display:"flex", flexWrap:"wrap", gap:9, marginBottom:18 }}>
-              {["","🏬","🛍️","🍽️","💼","🔧","💊","🎓","🚗","💻","🏗️","🌿","🧴","📦","●","🏋️"].map(e=>(
+              {["🏪","🏬","🛍️","🍽️","💼","🔧","💊","🎓","🚗","💻","🏗️","🌿","🧴","📦","🎯","🏋️"].map(e=>(
                 <button key={e} onClick={()=>setBranding(b=>({...b,logo:e}))}
                   style={{ width:46, height:46, borderRadius:12, border:`2px solid ${branding.logo===e?p:"#ddd"}`, background:branding.logo===e?`${p}15`:"#fff", fontSize:25, cursor:"pointer" }}>{e}</button>
               ))}
@@ -2613,7 +2609,7 @@ function SettingsScreen({ branding, setBranding, currency, setCurrency, incCats,
                 Add and remove income & expense categories to perfectly match your business. Available on the Pro plan.
               </div>
               {/* Show read-only categories with lock overlay */}
-              {[["income","Income",incCats],["expense","Expense",expCats]].map(([type,title,cats])=>(
+              {[["income","💰 Income",incCats],["expense","📤 Expense",expCats]].map(([type,title,cats])=>(
                 <div key={type} style={{ marginBottom:18, textAlign:"left" }}>
                   <div style={{ fontWeight:700, fontSize:13, color:"#555", marginBottom:8 }}>{title}</div>
                   <div style={{ display:"flex", flexWrap:"wrap", gap:8, pointerEvents:"none", opacity:.55 }}>
@@ -2634,7 +2630,7 @@ function SettingsScreen({ branding, setBranding, currency, setCurrency, incCats,
             </div>
           ) : (
             /* ── Pro: full category editing ── */
-            [["income","Income Categories",incCats,setIncCats],["expense","Expense Categories",expCats,setExpCats]].map(([type,title,cats,setCats])=>(
+            [["income","💰 Income Categories",incCats,setIncCats],["expense","📤 Expense Categories",expCats,setExpCats]].map(([type,title,cats,setCats])=>(
               <div key={type} style={{ marginBottom:28 }}>
                 <div style={{ fontWeight:800, color:"#333", marginBottom:13, fontSize:15 }}>{title}</div>
                 <div style={{ display:"flex", flexWrap:"wrap", gap:9, marginBottom:13 }}>
@@ -2703,7 +2699,7 @@ function SettingsScreen({ branding, setBranding, currency, setCurrency, incCats,
                 color:"#fff", border:"none", borderRadius:14,
                 fontWeight:900, fontSize:15, cursor:"pointer",
                 boxShadow:"0 4px 16px rgba(7,94,84,.3)" }}>
-              Upgrade to Pro — Unlock everything
+              ✨ Upgrade to Pro — Unlock everything
             </button>
           )}
           <div style={{ background:"#fff", borderRadius:16, overflow:"hidden", marginBottom:18 }}>
@@ -2741,7 +2737,7 @@ function SettingsScreen({ branding, setBranding, currency, setCurrency, incCats,
                   </div>
                 </div>
                 {profileErr && (
-                  <div style={{ color:"#c62828", fontSize:12, marginBottom:10 }}> {profileErr}</div>
+                  <div style={{ color:"#c62828", fontSize:12, marginBottom:10 }}>⚠️ {profileErr}</div>
                 )}
                 <div style={{ display:"flex", gap:10 }}>
                   <button onClick={()=>{ setEditingProfile(false); setProfileErr(""); }}
@@ -2804,9 +2800,9 @@ function SettingsScreen({ branding, setBranding, currency, setCurrency, incCats,
             <div style={{ fontSize:11, fontWeight:800, color:"#bbb", textTransform:"uppercase", letterSpacing:1, marginBottom:12 }}>Legal</div>
             <div style={{ background:"#fff", borderRadius:16, overflow:"hidden", border:"1px solid #f0f0f0" }}>
               {[
-                ["<span style={{display:'inline-flex',alignItems:'center',width:16,height:16,flexShrink:0}}><svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><rect x='3' y='11' width='18' height='11' rx='2'/><path d='M7 11V7a5 5 0 0 1 10 0v4'/></svg></span>", "Privacy Policy",   "https://cashcounter.vbookng.com/privacy"],
-                ["<span style={{display:'inline-flex',alignItems:'center',width:16,height:16,flexShrink:0}}><svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><rect x='9' y='9' width='13' height='13' rx='2'/><path d='M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1'/></svg></span>", "Terms of Service", "https://cashcounter.vbookng.com/terms"],
-                ["<span style={{display:'inline-flex',alignItems:'center',width:16,height:16,flexShrink:0}}><svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z'/><polyline points='22,6 12,13 2,6'/></svg></span>", "Contact Support",  "mailto:v.bookenterprise@gmail.com"],
+                ["🔒", "Privacy Policy",   "https://cashcounter.vbookng.com/privacy"],
+                ["📋", "Terms of Service", "https://cashcounter.vbookng.com/terms"],
+                ["📧", "Contact Support",  "mailto:v.bookenterprise@gmail.com"],
               ].map(([icon, label, href]) => (
                 <a key={label} href={href} target="_blank" rel="noopener noreferrer"
                   style={{ display:"flex", alignItems:"center", justifyContent:"space-between",
@@ -2847,7 +2843,7 @@ function TxRow({ entry, currency, onDelete, onEdit, isPro, p }) {
       borderLeft:`4px solid ${entry.type==="income"?"#25D366":"#FF9800"}` }}>
       <div style={{ width:38, height:38, borderRadius:"50%", background:entry.type==="income"?"#E8F5E9":"#FFF3E0",
         display:"flex", alignItems:"center", justifyContent:"center", fontSize:18, flexShrink:0 }}>
-        {entry.type==="income"?"<span style={{display:'inline-flex',alignItems:'center',width:16,height:16,flexShrink:0}}><svg viewBox='0 0 24 24' fill='none' stroke='#205361' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M20 12V8H6a2 2 0 0 1 0-4h14v4'/><path d='M4 6v12a2 2 0 0 0 2 2h14v-4'/><circle cx='17' cy='16' r='1' fill='#205361'/></svg></span>":"<span style={{display:'inline-flex',alignItems:'center',width:16,height:16,flexShrink:0}}><svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4'/><polyline points='17 8 12 3 7 8'/><line x1='12' y1='3' x2='12' y2='15'/></svg></span>"}
+        {entry.type==="income"?"💰":"📤"}
       </div>
       <div style={{ flex:1, minWidth:0 }}>
         <div style={{ fontWeight:700, fontSize:14, color:"#222", whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{entry.category}</div>
@@ -3111,7 +3107,7 @@ function EmailVerificationScreen({ email, onVerified, onLogout, autoVerified=fal
 
   return (
     <div style={{ minHeight:"100vh",
-      background:"#050d12",
+      background:"linear-gradient(175deg,#032e28 0%,#054d44 28%,#075E54 58%,#0a7a6c 82%,#128C7E 100%)",
       display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center",
       padding:"24px 20px" }}>
       <style>{EV_CSS}</style>
@@ -3122,7 +3118,7 @@ function EmailVerificationScreen({ email, onVerified, onLogout, autoVerified=fal
           boxShadow:"0 24px 64px rgba(0,0,0,.3)", textAlign:"center" }}>
 
           <div className="ev-icon" style={{ fontSize:64, marginBottom:16 }}>
-            {autoVerified ? "<span style={{display:'inline-flex',alignItems:'center',width:16,height:16,flexShrink:0}}><svg viewBox='0 0 24 24' fill='none' stroke='#16a34a' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><polyline points='20 6 9 17 4 12'/></svg></span>" : "<span style={{display:'inline-flex',alignItems:'center',width:16,height:16,flexShrink:0}}><svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z'/><polyline points='22,6 12,13 2,6'/></svg></span>"}
+            {autoVerified ? "✅" : "📧"}
           </div>
           <div style={{ fontWeight:900, fontSize:22, color:"#0a1612",
             letterSpacing:"-.4px", marginBottom:10 }}>
@@ -3148,7 +3144,7 @@ function EmailVerificationScreen({ email, onVerified, onLogout, autoVerified=fal
           {err && (
             <div style={{ background:"#fff3f0", border:"1px solid #ffcdd2", borderRadius:12,
               padding:"10px 14px", color:"#c62828", fontSize:13, marginBottom:16, textAlign:"left" }}>
-               {err}
+              ⚠️ {err}
             </div>
           )}
 
@@ -3168,7 +3164,7 @@ function EmailVerificationScreen({ email, onVerified, onLogout, autoVerified=fal
               color: checking ? "#9ca3af" : "#fff",
               boxShadow: checking ? "none" : "0 6px 20px rgba(7,94,84,.3)",
               transition:"all .2s" }}>
-            {checking ? "Checking…" : "I've verified my email"}
+            {checking ? "Checking…" : "✅ I've verified my email"}
           </button>
 
           {/* Resend */}
@@ -3176,7 +3172,7 @@ function EmailVerificationScreen({ email, onVerified, onLogout, autoVerified=fal
             style={{ width:"100%", padding:"13px", border:"1.5px solid #e5e7eb",
               borderRadius:14, fontSize:14, fontWeight:700, cursor:resending?"not-allowed":"pointer",
               background:"#f9fafb", color:"#555", transition:"all .2s", marginBottom:16 }}>
-            {resending ? "Sending…" : "Resend verification email"}
+            {resending ? "Sending…" : "🔁 Resend verification email"}
           </button>
 
           {/* Sign out */}
@@ -3252,7 +3248,7 @@ function OnboardingScreen({ user, onComplete }) {
   };
 
   return (
-    <div style={{ minHeight:"100vh", background:"#050d12",
+    <div style={{ minHeight:"100vh", background:"linear-gradient(175deg,#032e28 0%,#054d44 28%,#075E54 58%,#0a7a6c 82%,#128C7E 100%)",
       display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center",
       padding:"24px 20px" }}>
       <style>{OB_CSS}</style>
@@ -3261,7 +3257,7 @@ function OnboardingScreen({ user, onComplete }) {
 
         {/* Logo + welcome */}
         <div style={{ textAlign:"center", marginBottom:28 }}>
-          <div style={{ fontSize:48, marginBottom:10 }}></div>
+          <div style={{ fontSize:48, marginBottom:10 }}>🏪</div>
           <div style={{ color:"#fff", fontWeight:900, fontSize:24, letterSpacing:"-.5px" }}>
             Welcome, {user.name.split(" ")[0]}!
           </div>
@@ -3360,7 +3356,7 @@ function OnboardingScreen({ user, onComplete }) {
           {err && (
             <div style={{ background:"#fff3f0", border:"1px solid #ffcdd2", borderRadius:10,
               padding:"9px 14px", color:"#c62828", fontSize:12, marginTop:8, marginBottom:4 }}>
-               {err}
+              ⚠️ {err}
             </div>
           )}
 
@@ -3382,7 +3378,7 @@ function OnboardingScreen({ user, onComplete }) {
                 color: saving ? "#9ca3af" : "#fff",
                 boxShadow: saving ? "none" : "0 4px 16px rgba(7,94,84,.3)",
                 transition:"all .2s" }}>
-              {saving ? "Saving…" : step < TOTAL_STEPS ? "Continue →" : "Finish Setup "}
+              {saving ? "Saving…" : step < TOTAL_STEPS ? "Continue →" : "Finish Setup 🎉"}
             </button>
           </div>
         </div>
@@ -3428,7 +3424,7 @@ class ErrorBoundary extends React.Component {
           justifyContent:"center", padding:"24px", textAlign:"center",
           fontFamily:"'Funnel Display', sans-serif" }}>
           <div style={{ fontSize:52, marginBottom:16 }}>
-            {this.state.isIndexedDB ? "<span style={{display:'inline-flex',alignItems:'center',width:16,height:16,flexShrink:0}}><svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polyline points='23 4 23 10 17 10'/><path d='M20.49 15a9 9 0 1 1-.18-5.4'/><polyline points='1 20 1 14 7 14'/></svg></span>" : ""}
+            {this.state.isIndexedDB ? "🔄" : "⚠️"}
           </div>
           <div style={{ fontWeight:900, fontSize:20, color:"#1a1a1a", marginBottom:10 }}>
             {this.state.isIndexedDB ? "Connection interrupted" : "Something went wrong"}
@@ -3625,11 +3621,11 @@ export default function CashCounter() {
 // NOTIFICATION PANEL
 // ═══════════════════════════════════════════════════════════════
 const NOTIF_ICONS = {
-  budget_warning:  "",
-  budget_exceeded: "×",
-  subscription:    "<span style={{display:'inline-flex',alignItems:'center',width:16,height:16,flexShrink:0}}><svg viewBox='0 0 24 24' fill='none' stroke='#205361' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M20 12V8H6a2 2 0 0 1 0-4h14v4'/><path d='M4 6v12a2 2 0 0 0 2 2h14v-4'/><circle cx='17' cy='16' r='1' fill='#205361'/></svg></span>",
+  budget_warning:  "⚠️",
+  budget_exceeded: "🚫",
+  subscription:    "💳",
   welcome:         "👋",
-  summary:         "<span style={{display:'inline-flex',alignItems:'center',width:16,height:16,flexShrink:0}}><svg viewBox='0 0 24 24' fill='none' stroke='#205361' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><line x1='18' y1='20' x2='18' y2='10'/><line x1='12' y1='20' x2='12' y2='4'/><line x1='6' y1='20' x2='6' y2='14'/><line x1='2' y1='20' x2='22' y2='20'/></svg></span>",
+  summary:         "📊",
   info:            "ℹ️",
 };
 
@@ -3703,7 +3699,7 @@ function NotificationPanel({ uid, notifs, onClose, onMarkAllRead }) {
                 background: n.read ? "#fff" : "#f0fdf4",
                 transition:"background .15s" }}>
               <div style={{ fontSize:24, flexShrink:0, marginTop:2 }}>
-                {NOTIF_ICONS[n.type] || "<span style={{display:'inline-flex',alignItems:'center',width:20,height:20,flexShrink:0}}><svg viewBox='0 0 24 24' fill='none' stroke='#fff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9'/><path d='M13.73 21a2 2 0 0 1-3.46 0'/></svg></span>"}
+                {NOTIF_ICONS[n.type] || "🔔"}
               </div>
               <div style={{ flex:1, minWidth:0 }}>
                 <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", gap:8 }}>
@@ -3942,7 +3938,7 @@ function AppCore({ user, onLogout, onUserUpdate }) {
 
   const handleAdd = async () => {
     if (atLimit) { trackLimitReached(); return openUpgrade("limit"); }
-    if (!form.amount||!form.category) return showToast(" Fill all required fields","#c62828");
+    if (!form.amount||!form.category) return showToast("⚠️ Fill all required fields","#c62828");
 
     const selectedDate = form.date || new Date().toISOString().split("T")[0];
     const entry = { ...form, amount: parseFloat(form.amount), date: new Date(selectedDate).toISOString() };
@@ -3975,7 +3971,7 @@ function AppCore({ user, onLogout, onUserUpdate }) {
 
       trackEntryAdded(entry.type, entry.category);
       setForm({type:"income",amount:"",category:"",note:"",date:new Date().toISOString().split("T")[0]});
-      showToast(entry.type==="income"?"✅ Income recorded!":"Expense recorded!","#25D366");
+      showToast(entry.type==="income"?"✅ Income recorded!":"📤 Expense recorded!","#25D366");
       setView("home");
     } catch(e) {
       Sentry.captureException(e, { tags: { operation: "add_entry" } });
@@ -4027,10 +4023,10 @@ function AppCore({ user, onLogout, onUserUpdate }) {
   // ── Sidebar nav items ────────────────────────────────────────
   const NAV_ITEMS = [
     { id:"home",    icon:"🏠", label:"Home"    },
-    { id:"add",     icon:"<span style={{display:'inline-flex',alignItems:'center',width:18,height:18,flexShrink:0}}><svg viewBox='0 0 24 24' fill='none' stroke='#fff' stroke-width='2.5' stroke-linecap='round'><line x1='12' y1='5' x2='12' y2='19'/><line x1='5' y1='12' x2='19' y2='12'/></svg></span>", label:"Add Entry"},
-    { id:"history", icon:"<span style={{display:'inline-flex',alignItems:'center',width:16,height:16,flexShrink:0}}><svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><rect x='9' y='9' width='13' height='13' rx='2'/><path d='M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1'/></svg></span>", label:"History" },
-    { id:"budget",  icon:"●", label:"Budget"  },
-    { id:"summary", icon:"<span style={{display:'inline-flex',alignItems:'center',width:16,height:16,flexShrink:0}}><svg viewBox='0 0 24 24' fill='none' stroke='#205361' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><line x1='18' y1='20' x2='18' y2='10'/><line x1='12' y1='20' x2='12' y2='4'/><line x1='6' y1='20' x2='6' y2='14'/><line x1='2' y1='20' x2='22' y2='20'/></svg></span>", label:"Summary" },
+    { id:"add",     icon:"➕", label:"Add Entry"},
+    { id:"history", icon:"📋", label:"History" },
+    { id:"budget",  icon:"🎯", label:"Budget"  },
+    { id:"summary", icon:"📊", label:"Summary" },
   ];
 
   // ── Sidebar (desktop only) ───────────────────────────────────
@@ -4088,7 +4084,7 @@ function AppCore({ user, onLogout, onUserUpdate }) {
         {/* Divider */}
         <div style={{ height:1, background:"rgba(255,255,255,0.1)", margin:"14px 4px" }}/>
         <div style={{ fontSize:10, opacity:.45, textTransform:"uppercase", letterSpacing:1.5, padding:"0 10px", marginBottom:8 }}>Tools</div>
-        {[["<span style={{display:'inline-flex',alignItems:'center',width:18,height:18,flexShrink:0}}><svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><circle cx='12' cy='12' r='3'/><path d='M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z'/></svg></span>","Settings",()=>setShowSt(true)]].map(([icon,label,fn])=>(
+        {[["⚙️","Settings",()=>setShowSt(true)]].map(([icon,label,fn])=>(
           <button key={label} onClick={fn}
             style={{ width:"100%", display:"flex", alignItems:"center", gap:13, padding:"11px 14px", borderRadius:14,
               marginBottom:3, border:"none", cursor:"pointer", textAlign:"left", fontSize:13, fontWeight:500,
@@ -4160,7 +4156,7 @@ function AppCore({ user, onLogout, onUserUpdate }) {
             </div>
             <div style={{ display:"flex", gap:8, flexShrink:0 }}>
               {isDesktop ? [
-                ["<span style={{display:'inline-flex',alignItems:'center',width:16,height:16,flexShrink:0}}><svg viewBox='0 0 24 24' fill='none' stroke='#205361' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><line x1='18' y1='20' x2='18' y2='10'/><line x1='12' y1='20' x2='12' y2='4'/><line x1='6' y1='20' x2='6' y2='14'/><line x1='2' y1='20' x2='22' y2='20'/></svg></span>","Export CSV",()=>{exportCSV(entries,currency,branding,"All Time");trackExportCSV();showToast("📊 CSV downloaded!","#1b5e20");}],
+                ["📊","Export CSV",()=>{exportCSV(entries,currency,branding,"All Time");trackExportCSV();showToast("📊 CSV downloaded!","#1b5e20");}],
                 ["🖨️","PDF Report",()=>{exportPDF(dateFilt,currency,branding,rLabel,entries,budgets);trackExportPDF();showToast("🖨️ Opening PDF…","#1a237e");}],
               ].map(([icon,label,fn])=>(
                 <button key={label} onClick={fn}
@@ -4169,7 +4165,7 @@ function AppCore({ user, onLogout, onUserUpdate }) {
                     display:"flex", alignItems:"center", gap:7, backdropFilter:"blur(4px)" }}>
                   {icon} {label}
                 </button>
-              )) : [["<span style={{display:'inline-flex',alignItems:'center',width:18,height:18,flexShrink:0}}><svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><circle cx='12' cy='12' r='3'/><path d='M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z'/></svg></span>",()=>setShowSt(true),"Settings"]].map(([icon,fn,title])=>(
+              )) : [["⚙️",()=>setShowSt(true),"Settings"]].map(([icon,fn,title])=>(
                 <button key={title} onClick={fn} title={title}
                   style={{ background:"rgba(255,255,255,0.18)", border:"none", borderRadius:10, color:"#fff",
                     width:36, height:36, cursor:"pointer", fontSize:15, display:"flex", alignItems:"center", justifyContent:"center" }}>
@@ -4234,7 +4230,7 @@ function AppCore({ user, onLogout, onUserUpdate }) {
                   </div>
                   <div style={{ width:1, background:"rgba(255,255,255,0.15)" }}/>
                   <div style={{ flex:1, padding: isDesktop?"14px 20px":"11px 16px" }}>
-                    <div style={{ fontSize:10, opacity:.65, marginBottom:3, textTransform:"uppercase", letterSpacing:1 }}>Expenses</div>
+                    <div style={{ fontSize:10, opacity:.65, marginBottom:3, textTransform:"uppercase", letterSpacing:1 }}>📤 Expenses</div>
                     <div style={{ fontWeight:800, fontSize:isDesktop?16:14 }}>{fmtAmt(allExp,currency)}</div>
                   </div>
                   {isDesktop&&<>
@@ -4317,11 +4313,11 @@ function AppCore({ user, onLogout, onUserUpdate }) {
                 {/* Right — charts (desktop only) */}
                 {isDesktop&&<div>
                   <div className="lb-section" style={{ marginBottom:16 }}>
-                    <div style={{ fontWeight:800, fontSize:14, color:"#1a1a1a", marginBottom:14 }}>Income by Category</div>
+                    <div style={{ fontWeight:800, fontSize:14, color:"#1a1a1a", marginBottom:14 }}>💰 Income by Category</div>
                     <CatChart entries={entries} currency={currency} type="income" color="#25D366"/>
                   </div>
                   <div className="lb-section">
-                    <div style={{ fontWeight:800, fontSize:14, color:"#1a1a1a", marginBottom:14 }}>Expenses by Category</div>
+                    <div style={{ fontWeight:800, fontSize:14, color:"#1a1a1a", marginBottom:14 }}>📤 Expenses by Category</div>
                     <CatChart entries={entries} currency={currency} type="expense" color="#FF9800"/>
                   </div>
                 </div>}
@@ -4356,7 +4352,7 @@ function AppCore({ user, onLogout, onUserUpdate }) {
                     padding: isDesktop?"24px 24px 0":"16px 16px 0",
                     transition:"background .3s" }}>
                     <div style={{ display:"flex", background:"rgba(0,0,0,.2)", borderRadius:14, padding:4, gap:3, marginBottom:18 }}>
-                      {[["income","<span style={{display:'inline-flex',alignItems:'center',width:16,height:16,flexShrink:0}}><svg viewBox='0 0 24 24' fill='none' stroke='#205361' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M20 12V8H6a2 2 0 0 1 0-4h14v4'/><path d='M4 6v12a2 2 0 0 0 2 2h14v-4'/><circle cx='17' cy='16' r='1' fill='#205361'/></svg></span>","Income"],["expense","<span style={{display:'inline-flex',alignItems:'center',width:16,height:16,flexShrink:0}}><svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4'/><polyline points='17 8 12 3 7 8'/><line x1='12' y1='3' x2='12' y2='15'/></svg></span>","Expense"]].map(([t,em,label])=>(
+                      {[["income","💰","Income"],["expense","📤","Expense"]].map(([t,em,label])=>(
                         <button key={t} onClick={()=>setForm(f=>({...f,type:t,category:""}))}
                           style={{ flex:1, padding:"11px 8px", border:"none", borderRadius:11,
                             fontWeight:800, fontSize:14, cursor:"pointer", transition:"all .2s",
@@ -4604,7 +4600,7 @@ function AppCore({ user, onLogout, onUserUpdate }) {
                 <FilterBadge preset={datePreset} dateRange={dateRange} onClick={()=>setShowDP(true)} primaryColor={p}/>
               </div>
               <div style={{ display:"flex", background: isDesktop?"#fff":"#f2f2f2", borderRadius:12, padding:3, boxShadow: isDesktop?"0 1px 3px rgba(0,0,0,0.07)":undefined }}>
-                {[["all","All"],["income","Income"],["expense","Expense"]].map(([f,l])=>(
+                {[["all","All"],["income","💰 Income"],["expense","📤 Expense"]].map(([f,l])=>(
                   <button key={f} onClick={()=>setTxFilter(f)}
                     style={{ flex:1, padding:"9px 4px", border:"none", borderRadius:10, fontSize:13, fontWeight:700, cursor:"pointer",
                       background:txFilter===f?p:"transparent", color:txFilter===f?"#fff":"#888" }}>
@@ -4696,10 +4692,10 @@ function AppCore({ user, onLogout, onUserUpdate }) {
                   Create monthly or custom budgets, set income & expense targets per category, and get a full budget vs actual report — available on the Pro plan.
                 </div>
                 <div style={{ width:"100%", maxWidth:340 }}>
-                  {[["●","Budget creation","Set targets by category"],
-                    ["<span style={{display:'inline-flex',alignItems:'center',width:16,height:16,flexShrink:0}}><svg viewBox='0 0 24 24' fill='none' stroke='#205361' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><line x1='18' y1='20' x2='18' y2='10'/><line x1='12' y1='20' x2='12' y2='4'/><line x1='6' y1='20' x2='6' y2='14'/><line x1='2' y1='20' x2='22' y2='20'/></svg></span>","Budget vs Actual","See variance at a glance"],
+                  {[["🎯","Budget creation","Set targets by category"],
+                    ["📊","Budget vs Actual","See variance at a glance"],
                     ["📎","Unplanned items","Track what fell outside your plan"],
-                    ["∞","Multiple budgets","Different periods at once"],
+                    ["♾️","Multiple budgets","Different periods at once"],
                   ].map(([em,feat,detail])=>(
                     <div key={feat} style={{ display:"flex", alignItems:"center", gap:12,
                       padding:"10px 0", borderBottom:"1px solid #f5f5f5", textAlign:"left" }}>
@@ -4787,13 +4783,13 @@ function AppCore({ user, onLogout, onUserUpdate }) {
                             </div>
                             <div style={{ fontSize:11, fontWeight:800, padding:"4px 10px", borderRadius:20,
                               background: expOver?"#FFEBEE":"#E8F5E9", color: expOver?"#c62828":"#2E7D32" }}>
-                              {expOver ? " Over budget" : "✅ On track"}
+                              {expOver ? "⚠️ Over budget" : "✅ On track"}
                             </div>
                           </div>
                           {b.totalExpense > 0 && (
                             <div style={{ marginBottom:10 }}>
                               <div style={{ display:"flex", justifyContent:"space-between", fontSize:12, color:"#555", marginBottom:5 }}>
-                                <span>Expenses</span>
+                                <span>📤 Expenses</span>
                                 <span style={{ fontWeight:700, color: expOver?"#c62828":"#333" }}>{Math.round(expPct)}% — {fmtAmt(actualBudgetedExp,currency)} of {fmtAmt(budgetExp,currency)}</span>
                               </div>
                               <div style={{ height:8, background:"#f0f0f0", borderRadius:99, overflow:"hidden" }}>
@@ -4805,7 +4801,7 @@ function AppCore({ user, onLogout, onUserUpdate }) {
                           {b.totalIncome > 0 && (
                             <div>
                               <div style={{ display:"flex", justifyContent:"space-between", fontSize:12, color:"#555", marginBottom:5 }}>
-                                <span>Income</span>
+                                <span>💰 Income</span>
                                 <span style={{ fontWeight:700, color: incMet?"#2E7D32":"#333" }}>{Math.round(incPct)}% — {fmtAmt(actualBudgetedInc,currency)} of {fmtAmt(budgetInc,currency)}</span>
                               </div>
                               <div style={{ height:8, background:"#f0f0f0", borderRadius:99, overflow:"hidden" }}>
@@ -4839,11 +4835,11 @@ function AppCore({ user, onLogout, onUserUpdate }) {
               {/* Charts grid */}
               <div className="lb-summary-grid" style={{ marginBottom: isDesktop?24:0 }}>
                 <div className="lb-section" style={{ marginBottom: isDesktop?0:14 }}>
-                  <div style={{ fontWeight:800, color: isDesktop?"#1a1a1a":"#333", marginBottom:14, fontSize:14 }}>Income Breakdown</div>
+                  <div style={{ fontWeight:800, color: isDesktop?"#1a1a1a":"#333", marginBottom:14, fontSize:14 }}>💰 Income Breakdown</div>
                   <CatChart entries={dateFilt} currency={currency} type="income" color="#25D366"/>
                 </div>
                 <div className="lb-section" style={{ marginBottom: isDesktop?0:14 }}>
-                  <div style={{ fontWeight:800, color: isDesktop?"#1a1a1a":"#333", marginBottom:14, fontSize:14 }}>Expense Breakdown</div>
+                  <div style={{ fontWeight:800, color: isDesktop?"#1a1a1a":"#333", marginBottom:14, fontSize:14 }}>📤 Expense Breakdown</div>
                   <CatChart entries={dateFilt} currency={currency} type="expense" color="#FF9800"/>
                 </div>
               </div>
@@ -4871,10 +4867,10 @@ function AppCore({ user, onLogout, onUserUpdate }) {
         }}>
           {[
             {id:"home",   icon:"🏠", label:"Home"},
-            {id:"add",    icon:"<span style={{display:'inline-flex',alignItems:'center',width:18,height:18,flexShrink:0}}><svg viewBox='0 0 24 24' fill='none' stroke='#fff' stroke-width='2.5' stroke-linecap='round'><line x1='12' y1='5' x2='12' y2='19'/><line x1='5' y1='12' x2='19' y2='12'/></svg></span>", label:"Add"},
-            {id:"history",icon:"<span style={{display:'inline-flex',alignItems:'center',width:16,height:16,flexShrink:0}}><svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><rect x='9' y='9' width='13' height='13' rx='2'/><path d='M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1'/></svg></span>", label:"History"},
-            {id:"budget", icon:"●", label:"Budget", proOnly:true},
-            {id:"summary",icon:"<span style={{display:'inline-flex',alignItems:'center',width:16,height:16,flexShrink:0}}><svg viewBox='0 0 24 24' fill='none' stroke='#205361' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><line x1='18' y1='20' x2='18' y2='10'/><line x1='12' y1='20' x2='12' y2='4'/><line x1='6' y1='20' x2='6' y2='14'/><line x1='2' y1='20' x2='22' y2='20'/></svg></span>", label:"Summary"},
+            {id:"add",    icon:"➕", label:"Add"},
+            {id:"history",icon:"📋", label:"History"},
+            {id:"budget", icon:"🎯", label:"Budget", proOnly:true},
+            {id:"summary",icon:"📊", label:"Summary"},
           ].map(tab=>(
             <button key={tab.id} onClick={()=>{ if(tab.id==="add")setForm({type:"income",amount:"",category:"",note:""}); setView(tab.id); trackPage(tab.label); }}
               style={{ flex:1, padding:"13px 4px 10px", border:"none", background:"none", cursor:"pointer",
@@ -5019,7 +5015,7 @@ function BudgetList({ budgets, entries, currency, p, isDesktop, onNew, onView, o
             <span style={{ fontSize:11, fontWeight:800, padding:"3px 10px", borderRadius:20,
               background: expOver?"#FFEBEE": isActive?"#E8F5E9": isPast?"#F5F5F5":"#E3F2FD",
               color: expOver?"#c62828": isActive?"#2E7D32": isPast?"#888":"#1565C0" }}>
-              {expOver?" Over": isActive?"🟢 Active": isPast?"✅ Ended":"⏳ Upcoming"}
+              {expOver?"⚠️ Over": isActive?"🟢 Active": isPast?"✅ Ended":"⏳ Upcoming"}
             </span>
             <button onClick={e=>{e.stopPropagation(); if(window.confirm("Delete this budget?")) onDelete(b.id);}}
               style={{ background:"none", border:"none", cursor:"pointer", fontSize:16, color:"#ccc", padding:4 }}>🗑️</button>
@@ -5030,7 +5026,7 @@ function BudgetList({ budgets, entries, currency, p, isDesktop, onNew, onView, o
         {expPct !== null && (
           <div style={{ marginBottom:8 }}>
             <div style={{ display:"flex", justifyContent:"space-between", fontSize:11, color:"#888", marginBottom:4 }}>
-              <span>Expenses</span>
+              <span>📤 Expenses</span>
               <span style={{ fontWeight:700, color: expOver?"#c62828":"#555" }}>{Math.round(expPct)}% of {fmtAmt(budgetExp,currency)}</span>
             </div>
             <div style={{ height:7, background:"#f0f0f0", borderRadius:99, overflow:"hidden" }}>
@@ -5041,7 +5037,7 @@ function BudgetList({ budgets, entries, currency, p, isDesktop, onNew, onView, o
         {incPct !== null && (
           <div style={{ marginBottom: isActive?8:0 }}>
             <div style={{ display:"flex", justifyContent:"space-between", fontSize:11, color:"#888", marginBottom:4 }}>
-              <span>Income</span>
+              <span>💰 Income</span>
               <span style={{ fontWeight:700, color: incPct>=100?"#2E7D32":"#555" }}>{Math.round(incPct)}% of {fmtAmt(budgetInc,currency)}</span>
             </div>
             <div style={{ height:7, background:"#f0f0f0", borderRadius:99, overflow:"hidden" }}>
@@ -5107,7 +5103,7 @@ function CatInput({ cat, value, onChange, type, currency, p }) {
     <div style={{ display:"flex", alignItems:"center", gap:12, marginBottom:12,
       padding:"10px 14px", background:"#fafafa", borderRadius:13, border:"1.5px solid #eee" }}>
       <div style={{ flex:1, fontWeight:700, fontSize:14, color:"#333" }}>
-        {type==="income"?"<span style={{display:'inline-flex',alignItems:'center',width:16,height:16,flexShrink:0}}><svg viewBox='0 0 24 24' fill='none' stroke='#205361' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M20 12V8H6a2 2 0 0 1 0-4h14v4'/><path d='M4 6v12a2 2 0 0 0 2 2h14v-4'/><circle cx='17' cy='16' r='1' fill='#205361'/></svg></span>":"<span style={{display:'inline-flex',alignItems:'center',width:16,height:16,flexShrink:0}}><svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4'/><polyline points='17 8 12 3 7 8'/><line x1='12' y1='3' x2='12' y2='15'/></svg></span>"} {cat}
+        {type==="income"?"💰":"📤"} {cat}
       </div>
       <div style={{ position:"relative", width:150, flexShrink:0 }}>
         <span style={{ position:"absolute", left:11, top:"50%", transform:"translateY(-50%)",
@@ -5198,8 +5194,8 @@ function BudgetCreate({ budget, expCats, incCats, currency, p, isDesktop, onSave
         <div style={{ display:"flex", background:"#f2f2f2", borderRadius:14, padding:4, marginBottom:20 }}>
           {[
             ["overview", "📋 Overview"],
-            ["income",   `Income${incCatsWithValues>0?` (${incCatsWithValues})`:""}` ],
-            ["expense",  `Expenses${expCatsWithValues>0?` (${expCatsWithValues})`:""}` ],
+            ["income",   `💰 Income${incCatsWithValues>0?` (${incCatsWithValues})`:""}` ],
+            ["expense",  `📤 Expenses${expCatsWithValues>0?` (${expCatsWithValues})`:""}` ],
           ].map(([id,lbl])=>(
             <button key={id} onClick={()=>setTab(id)}
               style={{ flex:1, padding:"10px 4px", border:"none", borderRadius:11, fontSize:12, fontWeight:700,
@@ -5257,7 +5253,7 @@ function BudgetCreate({ budget, expCats, incCats, currency, p, isDesktop, onSave
                 </div>
                 <div style={{ background:totalExpense>0?"#FFF3E0":"#fff", borderRadius:12, padding:"14px 16px",
                   border:`1.5px solid ${totalExpense>0?"#ffcc80":"#eee"}` }}>
-                  <div style={{ fontSize:11, color:"#888", marginBottom:4 }}>Expense Limit</div>
+                  <div style={{ fontSize:11, color:"#888", marginBottom:4 }}>📤 Expense Limit</div>
                   <div style={{ fontWeight:900, fontSize:18, color:totalExpense>0?"#E65100":"#ccc" }}>
                     {totalExpense>0 ? fmtAmt(totalExpense,currency) : "—"}
                   </div>
@@ -5381,7 +5377,7 @@ function BudgetDetail({ budget, entries, currency, p, bg, isDesktop, onBack, onE
       <div style={{ marginBottom:14, paddingBottom:14, borderBottom:"1px solid #f5f5f5" }}>
         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:pct!==null?7:0 }}>
           <div style={{ fontWeight:700, fontSize:14, color:"#222" }}>
-            {type==="income" ? "<span style={{display:'inline-flex',alignItems:'center',width:16,height:16,flexShrink:0}}><svg viewBox='0 0 24 24' fill='none' stroke='#205361' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M20 12V8H6a2 2 0 0 1 0-4h14v4'/><path d='M4 6v12a2 2 0 0 0 2 2h14v-4'/><circle cx='17' cy='16' r='1' fill='#205361'/></svg></span>" : "<span style={{display:'inline-flex',alignItems:'center',width:16,height:16,flexShrink:0}}><svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4'/><polyline points='17 8 12 3 7 8'/><line x1='12' y1='3' x2='12' y2='15'/></svg></span>"} {cat}
+            {type==="income" ? "💰" : "📤"} {cat}
           </div>
           <div style={{ textAlign:"right", flexShrink:0, marginLeft:12 }}>
             <div style={{ fontSize:13, fontWeight:800,
@@ -5398,9 +5394,9 @@ function BudgetDetail({ budget, entries, currency, p, bg, isDesktop, onBack, onE
             <div style={{ height:"100%", borderRadius:99, width:`${pct}%`, background:barColor, transition:"width 0.5s" }}/>
           </div>
         )}
-        {over&&<div style={{ fontSize:11, color:"#e53935", fontWeight:700, marginTop:4 }}> Over by {fmtAmt(actual-budgeted,currency)}</div>}
-        {near&&!over&&<div style={{ fontSize:11, color:"#f57c00", fontWeight:700, marginTop:4 }}> {fmtAmt(budgeted-actual,currency)} remaining</div>}
-        {type==="income"&&pct!==null&&pct>=100&&<div style={{ fontSize:11, color:"#2E7D32", fontWeight:700, marginTop:4 }}> Target met!</div>}
+        {over&&<div style={{ fontSize:11, color:"#e53935", fontWeight:700, marginTop:4 }}>⚠️ Over by {fmtAmt(actual-budgeted,currency)}</div>}
+        {near&&!over&&<div style={{ fontSize:11, color:"#f57c00", fontWeight:700, marginTop:4 }}>⚠️ {fmtAmt(budgeted-actual,currency)} remaining</div>}
+        {type==="income"&&pct!==null&&pct>=100&&<div style={{ fontSize:11, color:"#2E7D32", fontWeight:700, marginTop:4 }}>🎉 Target met!</div>}
       </div>
     );
   };
@@ -5464,7 +5460,7 @@ function BudgetDetail({ budget, entries, currency, p, bg, isDesktop, onBack, onE
       {/* ── INCOME SECTION ─────────────────────────────────── */}
       {budgetedIncCats.length > 0 && (
         <div className="lb-section" style={{ marginBottom:14, padding:isDesktop?"22px 24px":"16px 18px" }}>
-          <div style={{ fontWeight:900, fontSize:15, color:"#1a1a1a", marginBottom:4 }}>Income Performance</div>
+          <div style={{ fontWeight:900, fontSize:15, color:"#1a1a1a", marginBottom:4 }}>💰 Income Performance</div>
           {budgetInc > 0 && (
             <div style={{ marginBottom:16 }}>
               <div style={{ display:"flex", justifyContent:"space-between", fontSize:12, color:"#888", marginBottom:5 }}>
@@ -5478,7 +5474,7 @@ function BudgetDetail({ budget, entries, currency, p, bg, isDesktop, onBack, onE
                   background:incMet?"#25D366":"#128C7E", transition:"width 0.6s" }}/>
               </div>
               {incMet
-                ? <div style={{ fontSize:11, color:"#2E7D32", fontWeight:800, marginTop:5 }}> Overall income target met!</div>
+                ? <div style={{ fontSize:11, color:"#2E7D32", fontWeight:800, marginTop:5 }}>🎉 Overall income target met!</div>
                 : <div style={{ fontSize:11, color:"#888", marginTop:5 }}>{fmtAmt(budgetInc-actualBudgetedInc,currency)} still to reach target</div>}
             </div>
           )}
@@ -5492,7 +5488,7 @@ function BudgetDetail({ budget, entries, currency, p, bg, isDesktop, onBack, onE
       {/* ── EXPENSE SECTION ────────────────────────────────── */}
       {budgetedExpCats.length > 0 && (
         <div className="lb-section" style={{ marginBottom:14, padding:isDesktop?"22px 24px":"16px 18px" }}>
-          <div style={{ fontWeight:900, fontSize:15, color:"#1a1a1a", marginBottom:4 }}>Expense Performance</div>
+          <div style={{ fontWeight:900, fontSize:15, color:"#1a1a1a", marginBottom:4 }}>📤 Expense Performance</div>
           {budgetExp > 0 && (
             <div style={{ marginBottom:16 }}>
               <div style={{ display:"flex", justifyContent:"space-between", fontSize:12, color:"#888", marginBottom:5 }}>
@@ -5506,7 +5502,7 @@ function BudgetDetail({ budget, entries, currency, p, bg, isDesktop, onBack, onE
                   background:expOver?"#ef5350":"#FF9800", transition:"width 0.6s" }}/>
               </div>
               {expOver
-                ? <div style={{ fontSize:11, color:"#c62828", fontWeight:800, marginTop:5 }}> Over budget by {fmtAmt(actualBudgetedExp-budgetExp,currency)}</div>
+                ? <div style={{ fontSize:11, color:"#c62828", fontWeight:800, marginTop:5 }}>⚠️ Over budget by {fmtAmt(actualBudgetedExp-budgetExp,currency)}</div>
                 : <div style={{ fontSize:11, color:"#888", marginTop:5 }}>{fmtAmt(budgetExp-actualBudgetedExp,currency)} remaining</div>}
             </div>
           )}
@@ -5589,7 +5585,7 @@ function BudgetDetail({ budget, entries, currency, p, bg, isDesktop, onBack, onE
                 <div style={{ width:30, height:30, borderRadius:"50%",
                   background:e.type==="income"?"#E8F5E9":"#FFF3E0",
                   display:"flex", alignItems:"center", justifyContent:"center", fontSize:13, flexShrink:0 }}>
-                  {e.type==="income"?"<span style={{display:'inline-flex',alignItems:'center',width:16,height:16,flexShrink:0}}><svg viewBox='0 0 24 24' fill='none' stroke='#205361' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M20 12V8H6a2 2 0 0 1 0-4h14v4'/><path d='M4 6v12a2 2 0 0 0 2 2h14v-4'/><circle cx='17' cy='16' r='1' fill='#205361'/></svg></span>":"<span style={{display:'inline-flex',alignItems:'center',width:16,height:16,flexShrink:0}}><svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4'/><polyline points='17 8 12 3 7 8'/><line x1='12' y1='3' x2='12' y2='15'/></svg></span>"}
+                  {e.type==="income"?"💰":"📤"}
                 </div>
                 <div>
                   <div style={{ fontWeight:700, fontSize:13 }}>{e.category}
