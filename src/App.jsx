@@ -381,7 +381,7 @@ const exportCSV = (entries, currency, branding, rangeLabel) => {
   setTimeout(()=>URL.revokeObjectURL(url),1000);
 };
 
-const exportPDF = (entries, currency, branding, rangeLabel, allEntries, budgets = []) => {
+const exportPDF = (entries, currency, branding, rangeLabel, allEntries, budgets = [], datePreset = "all") => {
   // ── Core figures ─────────────────────────────────────────────
   const inc = entries.filter(e=>e.type==="income").reduce((s,e)=>s+e.amount,0);
   const exp = entries.filter(e=>e.type==="expense").reduce((s,e)=>s+e.amount,0);
@@ -413,15 +413,81 @@ const exportPDF = (entries, currency, branding, rangeLabel, allEntries, budgets 
   // ── Top 10 transactions (Note 4) ─────────────────────────────
   const top10 = [...entries].sort((a,b)=>b.amount-a.amount).slice(0,10);
 
-  // ── Period comparison (Note 5) ───────────────────────────────
-  // Compare current filtered period vs same-length prior period
-  const sortedDates = entries.map(e=>e.date).sort();
-  const periodStart = sortedDates[0] ? new Date(sortedDates[0]) : new Date(now.getFullYear(), now.getMonth(), 1);
-  const periodEnd   = now;
-  const periodDays  = Math.max(1, Math.round((periodEnd - periodStart) / 864e5));
-  const priorEnd    = new Date(periodStart); priorEnd.setDate(priorEnd.getDate()-1);
-  const priorStart  = new Date(priorEnd);    priorStart.setDate(priorStart.getDate() - periodDays);
-  const priorISO    = { from: priorStart.toISOString().slice(0,10), to: priorEnd.toISOString().slice(0,10) };
+  // ── Period comparison (Note 5) — semantic prior period ───────
+  // Compute prior period based on the named preset, not just entry dates
+  const getPriorRange = (preset) => {
+    const y = now.getFullYear(), m = now.getMonth(), d = now.getDate();
+    switch(preset) {
+      case "today":
+        // Prior: yesterday
+        return {
+          from: new Date(y, m, d-1).toISOString().slice(0,10),
+          to:   new Date(y, m, d-1).toISOString().slice(0,10),
+          label: "Yesterday"
+        };
+      case "yesterday": {
+        const yd = new Date(y, m, d-2);
+        return {
+          from: yd.toISOString().slice(0,10),
+          to:   yd.toISOString().slice(0,10),
+          label: "2 days ago"
+        };
+      }
+      case "week":
+        // Prior: previous 7 days
+        return {
+          from: new Date(y, m, d-14).toISOString().slice(0,10),
+          to:   new Date(y, m, d-8).toISOString().slice(0,10),
+          label: "Previous 7 Days"
+        };
+      case "month":
+        // Prior: last calendar month
+        return {
+          from: new Date(y, m-1, 1).toISOString().slice(0,10),
+          to:   new Date(y, m, 0).toISOString().slice(0,10),
+          label: new Date(y, m-1, 1).toLocaleDateString("en-NG",{month:"long", year:"numeric"})
+        };
+      case "last_month":
+        // Prior: 2 months ago
+        return {
+          from: new Date(y, m-2, 1).toISOString().slice(0,10),
+          to:   new Date(y, m-1, 0).toISOString().slice(0,10),
+          label: new Date(y, m-2, 1).toLocaleDateString("en-NG",{month:"long", year:"numeric"})
+        };
+      case "quarter": {
+        // Current quarter: Q1=Jan-Mar, Q2=Apr-Jun, Q3=Jul-Sep, Q4=Oct-Dec
+        const qStart = Math.floor(m/3)*3;
+        return {
+          from: new Date(y, qStart-3, 1).toISOString().slice(0,10),
+          to:   new Date(y, qStart, 0).toISOString().slice(0,10),
+          label: `Q${Math.floor(m/3)} ${qStart < 3 ? y-1 : y}`
+        };
+      }
+      case "year":
+        // Prior: last calendar year
+        return {
+          from: new Date(y-1, 0, 1).toISOString().slice(0,10),
+          to:   new Date(y-1, 11, 31).toISOString().slice(0,10),
+          label: String(y-1)
+        };
+      default: {
+        // Custom / All Time: use rolling same-length period before earliest entry
+        const sortedDates = entries.map(e=>e.date).sort();
+        const periodStart = sortedDates[0] ? new Date(sortedDates[0]) : new Date(y, m, 1);
+        const periodDays  = Math.max(1, Math.round((now - periodStart) / 864e5));
+        const priorEnd    = new Date(periodStart); priorEnd.setDate(priorEnd.getDate()-1);
+        const priorStart  = new Date(priorEnd);    priorStart.setDate(priorStart.getDate()-periodDays);
+        return {
+          from:  priorStart.toISOString().slice(0,10),
+          to:    priorEnd.toISOString().slice(0,10),
+          label: "Prior Period"
+        };
+      }
+    }
+  };
+
+  const priorISO    = getPriorRange(datePreset);
+  const priorLabel  = priorISO.label;
   const priorEntries = (allEntries||entries).filter(e=>{
     const d = e.date.slice(0,10);
     return d >= priorISO.from && d <= priorISO.to;
@@ -443,8 +509,8 @@ const exportPDF = (entries, currency, branding, rangeLabel, allEntries, budgets 
     : `Total operating costs amounted to ${fmtAmt(exp,currency)}. ${topExpCat ? `The highest cost category was <strong>${topExpCat[0]}</strong> at ${fmtAmt(topExpCat[1],currency)} (${((topExpCat[1]/exp)*100).toFixed(0)}% of total expenses).` : ""} ${cogsExp > 0 ? `Cost of sales accounted for ${fmtAmt(cogsExp,currency)}, yielding a gross profit of ${fmtAmt(grossP,currency)}.` : ""}`;
 
   const compNote = priorInc === 0 && priorExp === 0
-    ? "No prior period data is available for comparison."
-    : `Compared to the prior period, revenue ${incChg !== null ? (Number(incChg)>=0 ? `<span class="up">increased by ${incChg}%</span>` : `<span class="dn">decreased by ${Math.abs(incChg)}%</span>`) : "changed"} and expenses ${expChg !== null ? (Number(expChg)>=0 ? `<span class="dn">increased by ${expChg}%</span>` : `<span class="up">decreased by ${Math.abs(expChg)}%</span>`) : "changed"}. Net profit ${balChg !== null ? (Number(balChg)>=0 ? `<span class="up">improved by ${balChg}%</span>` : `<span class="dn">declined by ${Math.abs(balChg)}%</span>`) : "changed"}.`;
+    ? `No data found for the comparison period (${priorLabel}). Figures cannot be compared.`
+    : `Compared to ${priorLabel}, revenue ${incChg !== null ? (Number(incChg)>=0 ? `<span class="up">increased by ${incChg}%</span>` : `<span class="dn">decreased by ${Math.abs(incChg)}%</span>`) : "changed"} and expenses ${expChg !== null ? (Number(expChg)>=0 ? `<span class="dn">increased by ${expChg}%</span>` : `<span class="up">decreased by ${Math.abs(expChg)}%</span>`) : "changed"}. Net profit ${balChg !== null ? (Number(balChg)>=0 ? `<span class="up">improved by ${balChg}%</span>` : `<span class="dn">declined by ${Math.abs(balChg)}%</span>`) : "changed"}.`;
 
   // ── HTML helpers ──────────────────────────────────────────────
   const f  = (n) => fmtAmt(n, currency);
@@ -700,7 +766,7 @@ const exportPDF = (entries, currency, branding, rangeLabel, allEntries, budgets 
       <thead><tr>
         <th>Line Item</th>
         <th>Current Period</th>
-        <th>Prior Period</th>
+        <th>Prior Period (${priorLabel})</th>
         <th>Change</th>
       </tr></thead>
       <tbody>
@@ -4223,7 +4289,7 @@ function AppCore({ user, onLogout, onUserUpdate }) {
             <div style={{ display:"flex", gap:8, flexShrink:0 }}>
               {isDesktop ? [
                 ["chart", "Export CSV",  ()=>{exportCSV(entries,currency,branding,"All Time");trackExportCSV();showToast("CSV downloaded!","#1b5e20");}],
-                ["print", "PDF Report",  ()=>{exportPDF(dateFilt,currency,branding,rLabel,entries,budgets);trackExportPDF();showToast("Opening PDF…","#1a237e");}],
+                ["print", "PDF Report",  ()=>{exportPDF(dateFilt,currency,branding,rLabel,entries,budgets,datePreset);trackExportPDF();showToast("Opening PDF…","#1a237e");}],
               ].map(([iconName,label,fn])=>(
                 <button key={label} onClick={fn}
                   style={{ background:"rgba(255,255,255,0.18)", border:"1px solid rgba(255,255,255,0.25)", borderRadius:11, color:"#fff",
@@ -4335,7 +4401,7 @@ function AppCore({ user, onLogout, onUserUpdate }) {
                     <div style={{ fontWeight:800, color:"#2E7D32", fontSize:15 }}>Export CSV</div>
                     <div style={{ fontSize:11, color:"#66BB6A", marginTop:3 }}>Download spreadsheet</div>
                   </button>
-                  <button className="lb-card-action" onClick={()=>{exportPDF(dateFilt,currency,branding,rLabel,entries,budgets);trackExportPDF();showToast("Opening PDF…","#1a237e");}}
+                  <button className="lb-card-action" onClick={()=>{exportPDF(dateFilt,currency,branding,rLabel,entries,budgets,datePreset);trackExportPDF();showToast("Opening PDF…","#1a237e");}}
                     style={{ background:"#F3F0FF", border:"2px solid #C5CAE9", borderRadius:16, padding:"16px 14px", cursor:"pointer", textAlign:"left" }}>
                     <div style={{ marginBottom:10 }}><Icon name="print" size={28} color="#1a237e"/></div>
                     <div style={{ fontWeight:800, color:"#283593", fontSize:15 }}>PDF Report</div>
@@ -4350,7 +4416,7 @@ function AppCore({ user, onLogout, onUserUpdate }) {
                   style={{ flex:1, padding:"10px", background:"#F0FBF0", border:"1.5px solid #C8E6C9", borderRadius:12, fontSize:12, fontWeight:700, cursor:"pointer", color:"#2E7D32" }}>
                   Export CSV
                 </button>
-                <button onClick={()=>{exportPDF(entries,currency,branding,"All Time",entries,budgets);trackExportPDF();showToast("Opening PDF…","#1a237e");}}
+                <button onClick={()=>{exportPDF(entries,currency,branding,"All Time",entries,budgets,"all");trackExportPDF();showToast("Opening PDF…","#1a237e");}}
                   style={{ flex:1, padding:"10px", background:"#F3F0FF", border:"1.5px solid #C5CAE9", borderRadius:12, fontSize:12, fontWeight:700, cursor:"pointer", color:"#283593" }}>
                   PDF Report
                 </button>
@@ -4688,7 +4754,7 @@ function AppCore({ user, onLogout, onUserUpdate }) {
                     style={{ flex:1, padding:"9px", background:"#F0FBF0", border:"1.5px solid #C8E6C9", borderRadius:10, fontSize:12, fontWeight:700, cursor:"pointer", color:"#2E7D32" }}>
                     CSV
                   </button>
-                  <button onClick={()=>{exportPDF(histFilt,currency,branding,rLabel,entries,budgets);trackExportPDF();showToast("Opening…","#1a237e");}}
+                  <button onClick={()=>{exportPDF(histFilt,currency,branding,rLabel,entries,budgets,datePreset);trackExportPDF();showToast("Opening…","#1a237e");}}
                     style={{ flex:1, padding:"9px", background:"#F3F0FF", border:"1.5px solid #C5CAE9", borderRadius:10, fontSize:12, fontWeight:700, cursor:"pointer", color:"#283593" }}>
                     PDF
                   </button>
@@ -4919,7 +4985,7 @@ function AppCore({ user, onLogout, onUserUpdate }) {
                   style={{ flex:1, minWidth:140, padding:"13px", background:"#F0FBF0", border:"1.5px solid #C8E6C9", borderRadius:14, fontWeight:700, cursor:"pointer", fontSize:13, color:"#2E7D32" }}>
                   Export CSV
                 </button>
-                <button onClick={()=>{exportPDF(dateFilt,currency,branding,rLabel,entries,budgets);trackExportPDF();showToast("Opening PDF…","#1a237e");}}
+                <button onClick={()=>{exportPDF(dateFilt,currency,branding,rLabel,entries,budgets,datePreset);trackExportPDF();showToast("Opening PDF…","#1a237e");}}
                   style={{ flex:1, minWidth:140, padding:"13px", background:"#F3F0FF", border:"1.5px solid #C5CAE9", borderRadius:14, fontWeight:700, cursor:"pointer", fontSize:13, color:"#283593" }}>
                   PDF Report
                 </button>
