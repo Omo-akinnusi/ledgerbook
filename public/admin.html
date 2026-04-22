@@ -1404,6 +1404,29 @@ window.renderNinjas = function(ninjas) {
           </div>
         </div>
 
+        <!-- Bank details -->
+        <div class="detail-section" style="margin-bottom:20px">
+          <div class="detail-section-title">Payment Details</div>
+          ${n.bankName ? `
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-top:10px">
+            <div class="detail-row" style="flex-direction:column;align-items:flex-start">
+              <span class="detail-label">Bank</span>
+              <span class="detail-value" style="font-weight:800">${n.bankName}</span>
+            </div>
+            <div class="detail-row" style="flex-direction:column;align-items:flex-start">
+              <span class="detail-label">Account Number</span>
+              <span class="detail-value" style="font-weight:800;font-family:monospace">${n.accountNumber}</span>
+            </div>
+            <div class="detail-row" style="flex-direction:column;align-items:flex-start">
+              <span class="detail-label">Account Name</span>
+              <span class="detail-value" style="font-weight:800">${n.accountName}</span>
+            </div>
+          </div>` : `
+          <div style="font-size:12px;color:#f59e0b;margin-top:8px;padding:10px 14px;background:#fff8e1;border-radius:8px">
+            ⚠️ No bank details added yet — Ninja needs to add them via their dashboard profile.
+          </div>`}
+        </div>
+
         <!-- Referral link -->
         ${n.status === "active" ? `
         <div class="detail-section" style="margin-bottom:20px">
@@ -1419,15 +1442,15 @@ window.renderNinjas = function(ninjas) {
         <!-- Actions -->
         <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px">
           ${n.status === "pending" ? `
-            <button onclick="updateNinjaStatus('${n.id}','active')" class="btn-primary" style="font-size:13px;padding:10px 18px">✅ Approve</button>
-            <button onclick="updateNinjaStatus('${n.id}','rejected')" class="btn-danger" style="font-size:13px;padding:10px 18px">❌ Reject</button>
+            <button onclick="updateNinjaStatus('${n.id}','active')" class="btn-primary" style="font-size:13px;padding:10px 18px"> Approve</button>
+            <button onclick="updateNinjaStatus('${n.id}','rejected')" class="btn-danger" style="font-size:13px;padding:10px 18px"> Reject</button>
           ` : ""}
           ${n.status === "active" ? `
-            <button onclick="updateNinjaStatus('${n.id}','suspended')" class="btn-danger" style="font-size:13px;padding:10px 18px">⛔ Suspend</button>
-            <button onclick="markPayoutPaid('${n.id}')" class="btn-primary" style="font-size:13px;padding:10px 18px;background:#f59e0b">💰 Mark Payout Paid</button>
+            <button onclick="updateNinjaStatus('${n.id}','suspended')" class="btn-danger" style="font-size:13px;padding:10px 18px"> Suspend</button>
+            <button onclick="markPayoutPaid('${n.id}')" class="btn-primary" style="font-size:13px;padding:10px 18px;background:#f59e0b"> Mark Payout Paid</button>
           ` : ""}
           ${n.status === "rejected" || n.status === "suspended" ? `
-            <button onclick="updateNinjaStatus('${n.id}','active')" class="btn-primary" style="font-size:13px;padding:10px 18px">↩ Reactivate</button>
+            <button onclick="updateNinjaStatus('${n.id}','active')" class="btn-primary" style="font-size:13px;padding:10px 18px"> Reactivate</button>
           ` : ""}
         </div>
 
