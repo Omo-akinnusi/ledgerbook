@@ -103,11 +103,20 @@ function applicationApprovedHTML(name, referralCode) {
             <li>₦10,000 per Annual subscription</li>
             <li>₦30,000 bonus for 40+ paid users in a month</li>
           </ul>
-          <p style="font-size:14px;color:#666;line-height:1.65;margin:0 0 24px">
+          <p style="font-size:14px;color:#666;line-height:1.65;margin:0 0 20px">
             Please sign in to add your bank details so we can process your weekly payments.
           </p>
+          <div style="background:#f0f7fa;border:2px solid #5CB1CB;border-radius:12px;padding:20px 24px;margin:0 0 24px;text-align:center">
+            <div style="font-size:11px;font-weight:800;color:#5CB1CB;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Join the Ninja Community</div>
+            <p style="font-size:14px;color:#444;margin:0 0 14px;line-height:1.6">
+              Join our Telegram channel for updates, tips, and resources to help you succeed as a Ninja.
+            </p>
+            <a href="https://t.me/+MS7YnNGEDJAxYzdk" style="display:inline-block;background:#229ED9;color:#fff;text-decoration:none;font-size:14px;font-weight:900;padding:11px 28px;border-radius:10px">
+              Join Telegram Channel →
+            </a>
+          </div>
           <table width="100%" cellpadding="0" cellspacing="0">
-            <tr><td align="center">
+            <tr><td align="center" style="padding-bottom:12px">
               <a href="${NINJA_URL}" style="display:inline-block;background:#205361;color:#fff;text-decoration:none;font-size:15px;font-weight:900;padding:14px 32px;border-radius:12px">
                 Go to Your Dashboard →
               </a>
