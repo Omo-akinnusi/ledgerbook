@@ -3330,7 +3330,23 @@ function OnboardingScreen({ user, onComplete }) {
   const [saving,       setSaving]      = useState(false);
   const [err,          setErr]         = useState("");
 
+  // PWA install state for onboarding
+  const [installPrompt, setInstallPrompt] = useState(null);
+  const [isIOS,         setIsIOS]         = useState(false);
+
   useEffect(() => { trackOnboardingStart(); }, []);
+
+  // Capture install prompt early so it's ready on step 4
+  useEffect(() => {
+    const ios = /iphone|ipad|ipod/i.test(navigator.userAgent) && !window.MSStream;
+    setIsIOS(ios);
+    const isStandalone = window.matchMedia("(display-mode:standalone)").matches
+      || window.navigator.standalone;
+    if (isStandalone) return; // already installed — skip step 4
+    const handler = (e) => { e.preventDefault(); setInstallPrompt(e); };
+    window.addEventListener("beforeinstallprompt", handler);
+    return () => window.removeEventListener("beforeinstallprompt", handler);
+  }, []);
 
   const OB_CSS = `
     @keyframes ob-in{from{opacity:0;transform:translateY(28px)}to{opacity:1;transform:translateY(0)}}
@@ -3339,7 +3355,11 @@ function OnboardingScreen({ user, onComplete }) {
     .ob-step{animation:ob-step .3s cubic-bezier(.22,.68,0,1.1) both}
   `;
 
-  const TOTAL_STEPS = 3;
+  // Check if we should show the install step
+  const isStandalone = window.matchMedia("(display-mode:standalone)").matches
+    || window.navigator.standalone;
+  const showInstallStep = !isStandalone; // show to everyone not yet installed
+  const TOTAL_STEPS = showInstallStep ? 4 : 3;
   const progress = (step / TOTAL_STEPS) * 100;
 
   const nextStep = () => {
@@ -3368,11 +3388,30 @@ function OnboardingScreen({ user, onComplete }) {
         onboardedAt: new Date().toISOString(),
       }, { merge: true });
       trackOnboardingComplete(industry);
-      onComplete({ businessName: businessName.trim(), industry, phone: phone.trim() });
+      if (showInstallStep) {
+        setSaving(false);
+        setStep(4); // show install nudge before completing
+      } else {
+        onComplete({ businessName: businessName.trim(), industry, phone: phone.trim() });
+      }
     } catch(e) {
       setErr("Failed to save. Please try again.");
       setSaving(false);
     }
+  };
+
+  const handleInstallAndComplete = async () => {
+    if (installPrompt) {
+      installPrompt.prompt();
+      await installPrompt.userChoice;
+    }
+    localStorage.setItem("cc_install_dismissed", "1");
+    onComplete({ businessName: businessName.trim(), industry, phone: phone.trim() });
+  };
+
+  const skipInstall = () => {
+    localStorage.setItem("cc_install_dismissed", "1");
+    onComplete({ businessName: businessName.trim(), industry, phone: phone.trim() });
   };
 
   return (
@@ -3390,7 +3429,7 @@ function OnboardingScreen({ user, onComplete }) {
             Welcome, {user.name.split(" ")[0]}!
           </div>
           <div style={{ color:"rgba(255,255,255,.6)", fontSize:14, marginTop:6 }}>
-            Let's set up your business profile
+            {step < 4 ? "Let's set up your business profile" : "One last thing"}
           </div>
         </div>
 
@@ -3402,7 +3441,7 @@ function OnboardingScreen({ user, onComplete }) {
 
         {/* Step indicator */}
         <div style={{ display:"flex", justifyContent:"center", gap:8, marginBottom:24 }}>
-          {[1,2,3].map(s=>(
+          {Array.from({length:TOTAL_STEPS},(_,i)=>i+1).map(s=>(
             <div key={s} style={{ width:s===step?24:8, height:8, borderRadius:4,
               background: s<=step ? "#25D366" : "rgba(255,255,255,.2)",
               transition:"all .3s" }}/>
@@ -3480,6 +3519,83 @@ function OnboardingScreen({ user, onComplete }) {
             </div>
           )}
 
+          {/* ── Step 4: Add to Home Screen ── */}
+          {step === 4 && (
+            <div key="s4" className="ob-step">
+              {/* Icon */}
+              <div style={{ display:"flex", justifyContent:"center", marginBottom:18 }}>
+                <div style={{ width:64, height:64, borderRadius:18,
+                  background:"linear-gradient(135deg,#205361,#5CB1CB)",
+                  display:"flex", alignItems:"center", justifyContent:"center",
+                  boxShadow:"0 8px 24px rgba(32,83,97,.3)" }}>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2"
+                    strokeLinecap="round" strokeLinejoin="round" style={{ width:30, height:30 }}>
+                    <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+                    <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+                  </svg>
+                </div>
+              </div>
+
+              <div style={{ fontWeight:900, fontSize:18, color:"#0a1612",
+                marginBottom:6, textAlign:"center" }}>
+                Add Cash Counter to your home screen
+              </div>
+
+              <div style={{ fontSize:13, color:"#6b7280", marginBottom:20,
+                textAlign:"center", lineHeight:1.6 }}>
+                Get instant access every time — no browser, no searching. One tap from your home screen.
+              </div>
+
+              {isIOS ? (
+                // iOS manual instructions
+                <div style={{ background:"#f0f7fa", border:"1.5px solid rgba(32,83,97,.15)",
+                  borderRadius:14, padding:"16px 18px" }}>
+                  <div style={{ fontWeight:800, fontSize:13, color:"#205361", marginBottom:10 }}>
+                    How to add on iPhone / iPad
+                  </div>
+                  {[
+                    ["1", "Tap the", "Share button", "at the bottom of your Safari browser"],
+                    ["2", "Scroll down and tap", "Add to Home Screen", ""],
+                    ["3", "Tap", "Add", "in the top right corner"],
+                  ].map(([n, pre, bold, post])=>(
+                    <div key={n} style={{ display:"flex", alignItems:"flex-start", gap:10, marginBottom:10 }}>
+                      <div style={{ width:22, height:22, borderRadius:"50%", flexShrink:0,
+                        background:"#205361", display:"flex", alignItems:"center",
+                        justifyContent:"center", fontSize:11, fontWeight:700, color:"#fff" }}>
+                        {n}
+                      </div>
+                      <div style={{ fontSize:12, color:"#444", lineHeight:1.55, paddingTop:2 }}>
+                        {pre} <strong style={{ color:"#205361" }}>{bold}</strong> {post}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : installPrompt ? (
+                // Android — one tap install
+                <button onClick={handleInstallAndComplete}
+                  style={{ width:"100%", padding:"16px", border:"none", borderRadius:14,
+                    fontSize:15, fontWeight:900, cursor:"pointer",
+                    background:"linear-gradient(135deg,#205361,#5CB1CB)",
+                    color:"#fff", boxShadow:"0 4px 20px rgba(32,83,97,.3)",
+                    display:"flex", alignItems:"center", justifyContent:"center", gap:10 }}>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5"
+                    strokeLinecap="round" strokeLinejoin="round" style={{ width:20, height:20 }}>
+                    <path d="M12 5v14M5 12l7 7 7-7"/>
+                  </svg>
+                  Add to Home Screen
+                </button>
+              ) : (
+                // Fallback — manual instructions for other browsers
+                <div style={{ background:"#f0f7fa", border:"1.5px solid rgba(32,83,97,.15)",
+                  borderRadius:14, padding:"14px 16px", fontSize:12, color:"#555", lineHeight:1.65 }}>
+                  Open your browser menu (⋮) and tap <strong style={{ color:"#205361" }}>
+                  "Add to Home Screen"</strong> or <strong style={{ color:"#205361" }}>
+                  "Install App"</strong> to add Cash Counter to your home screen.
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Error */}
           {err && (
             <div style={{ background:"#fff3f0", border:"1px solid #ffcdd2", borderRadius:10,
@@ -3489,34 +3605,60 @@ function OnboardingScreen({ user, onComplete }) {
           )}
 
           {/* Actions */}
-          <div style={{ marginTop:20, display:"flex", gap:10 }}>
-            {step > 1 && (
-              <button onClick={()=>{ setErr(""); setStep(s=>s-1); }}
-                style={{ padding:"14px 20px", background:"#f5f5f5", border:"none",
-                  borderRadius:14, fontSize:14, fontWeight:700, color:"#555", cursor:"pointer" }}>
-                ← Back
+          {step < 4 && (
+            <div style={{ marginTop:20, display:"flex", gap:10 }}>
+              {step > 1 && (
+                <button onClick={()=>{ setErr(""); setStep(s=>s-1); }}
+                  style={{ padding:"14px 20px", background:"#f5f5f5", border:"none",
+                    borderRadius:14, fontSize:14, fontWeight:700, color:"#555", cursor:"pointer" }}>
+                  ← Back
+                </button>
+              )}
+              <button
+                onClick={step < 3 ? nextStep : handleFinish}
+                disabled={saving}
+                style={{ flex:1, padding:"14px", border:"none", borderRadius:14,
+                  fontSize:15, fontWeight:900, cursor:saving?"not-allowed":"pointer",
+                  background: saving ? "#e5e7eb" : "linear-gradient(135deg,#054d44,#128C7E)",
+                  color: saving ? "#9ca3af" : "#fff",
+                  boxShadow: saving ? "none" : "0 4px 16px rgba(7,94,84,.3)",
+                  transition:"all .2s" }}>
+                {saving ? "Saving…" : step < 3 ? "Continue →" : "Finish Setup"}
               </button>
-            )}
-            <button
-              onClick={step < TOTAL_STEPS ? nextStep : handleFinish}
-              disabled={saving}
-              style={{ flex:1, padding:"14px", border:"none", borderRadius:14,
-                fontSize:15, fontWeight:900, cursor:saving?"not-allowed":"pointer",
-                background: saving ? "#e5e7eb" : "linear-gradient(135deg,#054d44,#128C7E)",
-                color: saving ? "#9ca3af" : "#fff",
-                boxShadow: saving ? "none" : "0 4px 16px rgba(7,94,84,.3)",
-                transition:"all .2s" }}>
-              {saving ? "Saving…" : step < TOTAL_STEPS ? "Continue →" : "Finish Setup "}
-            </button>
-          </div>
+            </div>
+          )}
+
+          {/* Step 4 actions */}
+          {step === 4 && (
+            <div style={{ marginTop:20, display:"flex", flexDirection:"column", gap:10 }}>
+              {isIOS && (
+                <button onClick={skipInstall}
+                  style={{ width:"100%", padding:"14px", border:"none", borderRadius:14,
+                    fontSize:15, fontWeight:900, cursor:"pointer",
+                    background:"linear-gradient(135deg,#054d44,#128C7E)",
+                    color:"#fff", boxShadow:"0 4px 16px rgba(7,94,84,.3)" }}>
+                  Got it — Open Cash Counter
+                </button>
+              )}
+              <button onClick={skipInstall}
+                style={{ width:"100%", padding:"12px", background:"none",
+                  border:"1.5px solid #e5e7eb", borderRadius:14,
+                  fontSize:13, fontWeight:600, color:"#9ca3af", cursor:"pointer" }}>
+                {isIOS ? "I'll do this later" : "Skip for now"}
+              </button>
+            </div>
+          )}
+
         </div>
 
-        {/* Skip */}
-        <button onClick={()=>{ trackOnboardingSkip(); onComplete({}); }}
-          style={{ display:"block", margin:"16px auto 0", background:"none", border:"none",
-            color:"rgba(255,255,255,.45)", fontSize:12, cursor:"pointer", fontWeight:600 }}>
-          Skip for now
-        </button>
+        {/* Skip entire onboarding */}
+        {step < 4 && (
+          <button onClick={()=>{ trackOnboardingSkip(); onComplete({}); }}
+            style={{ display:"block", margin:"16px auto 0", background:"none", border:"none",
+              color:"rgba(255,255,255,.45)", fontSize:12, cursor:"pointer", fontWeight:600 }}>
+            Skip for now
+          </button>
+        )}
 
       </div>
     </div>
@@ -3852,6 +3994,51 @@ function NotificationPanel({ uid, notifs, onClose, onMarkAllRead }) {
 }
 
 function AppCore({ user, onLogout, onUserUpdate }) {
+
+  // ── PWA Install prompt ─────────────────────────────────────────
+  const [installPrompt, setInstallPrompt]   = useState(null);
+  const [showInstall,   setShowInstall]     = useState(false);
+  const [isIOS,         setIsIOS]           = useState(false);
+
+  useEffect(() => {
+    // Detect iOS Safari (doesn't support beforeinstallprompt)
+    const ios = /iphone|ipad|ipod/i.test(navigator.userAgent) && !window.MSStream;
+    setIsIOS(ios);
+
+    // Don't show if already installed or user dismissed
+    const dismissed = localStorage.getItem("cc_install_dismissed");
+    const isStandalone = window.matchMedia("(display-mode: standalone)").matches
+      || window.navigator.standalone;
+    if (isStandalone || dismissed) return;
+
+    if (ios) {
+      // Show iOS instructions after a short delay
+      setTimeout(() => setShowInstall(true), 3000);
+    } else {
+      // Capture Android/Chrome install prompt
+      const handler = (e) => {
+        e.preventDefault();
+        setInstallPrompt(e);
+        setTimeout(() => setShowInstall(true), 3000);
+      };
+      window.addEventListener("beforeinstallprompt", handler);
+      return () => window.removeEventListener("beforeinstallprompt", handler);
+    }
+  }, []);
+
+  const handleInstall = async () => {
+    if (installPrompt) {
+      installPrompt.prompt();
+      const { outcome } = await installPrompt.userChoice;
+      if (outcome === "accepted") setShowInstall(false);
+      setInstallPrompt(null);
+    }
+  };
+
+  const dismissInstall = () => {
+    setShowInstall(false);
+    localStorage.setItem("cc_install_dismissed", "1");
+  };
   const uid = user.id;
 
   // ── Data state — all start empty, loaded from Firestore ──────
@@ -4347,6 +4534,50 @@ function AppCore({ user, onLogout, onUserUpdate }) {
                     fontSize:11, fontWeight:800, flexShrink:0, whiteSpace:"nowrap" }}>
                     {atLimit ? "Upgrade" : "Go Pro"}
                   </div>
+                </div>
+              )}
+
+              {/* ── PWA Install banner ── */}
+              {showInstall && !isDesktop && (
+                <div style={{ background:"#fff", border:`1.5px solid ${p}33`,
+                  borderRadius:14, padding:"12px 14px", marginBottom:14,
+                  display:"flex", alignItems:"flex-start", gap:12,
+                  boxShadow:`0 2px 12px ${p}15` }}>
+                  <div style={{ width:38, height:38, borderRadius:11,
+                    background:`linear-gradient(135deg,#205361,#5CB1CB)`,
+                    display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2"
+                      strokeLinecap="round" strokeLinejoin="round" style={{ width:18, height:18 }}>
+                      <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+                      <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+                    </svg>
+                  </div>
+                  <div style={{ flex:1, minWidth:0 }}>
+                    <div style={{ fontWeight:800, fontSize:13, color:"#1a1a1a", marginBottom:3 }}>
+                      Add Cash Counter to your home screen
+                    </div>
+                    {isIOS ? (
+                      <div style={{ fontSize:11, color:"#666", lineHeight:1.55 }}>
+                        Tap the <strong>Share</strong> button at the bottom of your browser,
+                        then tap <strong>"Add to Home Screen"</strong> for instant access.
+                      </div>
+                    ) : (
+                      <div style={{ fontSize:11, color:"#666", lineHeight:1.55 }}>
+                        Get instant access from your home screen — no app store needed.
+                      </div>
+                    )}
+                    {!isIOS && (
+                      <button onClick={handleInstall}
+                        style={{ marginTop:8, background:`linear-gradient(135deg,#205361,#5CB1CB)`,
+                          color:"#fff", border:"none", borderRadius:8,
+                          padding:"7px 16px", fontSize:12, fontWeight:800, cursor:"pointer" }}>
+                        Add to Home Screen
+                      </button>
+                    )}
+                  </div>
+                  <button onClick={dismissInstall}
+                    style={{ background:"none", border:"none", color:"#ccc",
+                      cursor:"pointer", padding:0, fontSize:18, lineHeight:1, flexShrink:0 }}>✕</button>
                 </div>
               )}
 
