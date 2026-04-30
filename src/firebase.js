@@ -34,6 +34,7 @@ import {
   where,
   limit,
   serverTimestamp,
+  runTransaction,
 } from "firebase/firestore";
 
 const firebaseConfig = {
@@ -89,5 +90,5 @@ export {
   // Firestore
   doc, getDoc, getDocs, setDoc, updateDoc,
   collection, addDoc, deleteDoc,
-  onSnapshot, query, orderBy, where, limit, serverTimestamp,
+  onSnapshot, query, orderBy, where, limit, serverTimestamp, runTransaction,
 };

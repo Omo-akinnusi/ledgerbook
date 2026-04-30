@@ -33,6 +33,7 @@ import {
   doc, getDoc, getDocs, setDoc, updateDoc,
   collection, addDoc, deleteDoc,
   onSnapshot, query, orderBy, where, limit, serverTimestamp,
+  runTransaction,
 } from "./firebase.js";
 
 // ── SVG Icon Component ────────────────────────────────────────────
@@ -4272,27 +4273,38 @@ function AppCore({ user, onLogout, onUserUpdate }) {
     const entry = { ...form, amount: parseFloat(form.amount), date: new Date(selectedDate).toISOString() };
 
     try {
-      // Server-side free tier cap — re-verify count before writing
-      // This catches users who bypass the UI check via devtools or API calls
       if (!isPro) {
         const now       = new Date();
         const yearMonth = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}`;
-        const profileSnap = await getDoc(userDoc(uid));
-        const pd          = profileSnap.exists() ? profileSnap.data() : {};
-        const savedMonth  = pd.entryMonth || "";
-        const savedCount  = savedMonth === yearMonth ? (pd.entryCount || 0) : 0;
 
-        if (savedCount >= FREE_LIMITS.ENTRIES_PER_MONTH) {
-          trackLimitReached();
-          return openUpgrade("limit");
-        }
+        // Atomic transaction — read count, check limit, write entry and
+        // increment counter in a single all-or-nothing operation.
+        // Eliminates the race condition where two tabs could both read
+        // count = 19, both succeed, and both increment to 20 instead of
+        // one succeeding and one being blocked.
+        await runTransaction(db, async (t) => {
+          const profileRef  = userDoc(uid);
+          const profileSnap = await t.get(profileRef);
+          const pd          = profileSnap.exists() ? profileSnap.data() : {};
+          const savedMonth  = pd.entryMonth || "";
+          const savedCount  = savedMonth === yearMonth ? (pd.entryCount || 0) : 0;
 
-        // Write entry and update counter atomically
-        await addEntry(uid, entry);
-        await setDoc(userDoc(uid), {
-          entryCount: savedCount + 1,
-          entryMonth: yearMonth,
-        }, { merge: true });
+          if (savedCount >= FREE_LIMITS.ENTRIES_PER_MONTH) {
+            // Throw to abort the transaction without a Firestore write
+            throw { code: "limit_reached" };
+          }
+
+          // Write the new entry document inside the transaction
+          const entryRef = doc(entriesCol(uid));
+          t.set(entryRef, { ...entry, createdAt: serverTimestamp() });
+
+          // Atomically increment the counter on the same transaction
+          t.set(profileRef, {
+            entryCount: savedCount + 1,
+            entryMonth: yearMonth,
+          }, { merge: true });
+        });
+
       } else {
         await addEntry(uid, entry);
       }
@@ -4302,6 +4314,11 @@ function AppCore({ user, onLogout, onUserUpdate }) {
       showToast(entry.type==="income"?"Income recorded!":"Expense recorded!","#25D366");
       setView("home");
     } catch(e) {
+      // Transaction aborted because free tier limit was reached
+      if (e && e.code === "limit_reached") {
+        trackLimitReached();
+        return openUpgrade("limit");
+      }
       Sentry.captureException(e, { tags: { operation: "add_entry" } });
       showToast("Failed to save. Check connection.","#c62828");
     }
