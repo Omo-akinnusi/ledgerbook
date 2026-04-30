@@ -4081,6 +4081,7 @@ function AppCore({ user, onLogout, onUserUpdate }) {
     let unsubEntries;
     let unsubBudgets;
     let unsubNotifs;
+    let unsubPlan;
     const loadData = async () => {
       try {
         // Load profile fields (industry, phone) that may have been set during onboarding
@@ -4113,16 +4114,15 @@ function AppCore({ user, onLogout, onUserUpdate }) {
           if (d.incCats)   setIncCats(d.incCats);
           if (d.expCats)   setExpCats(d.expCats);
         }
-        // Load plan (free/pro) — also auto-downgrade if subscription has expired
-        const planSnap = await getDoc(planDoc(uid));
-        if (planSnap.exists() && planSnap.data().plan) {
+        // Real-time listener for plan — picks up admin upgrades and expiry downgrades instantly
+        unsubPlan = onSnapshot(planDoc(uid), async (planSnap) => {
+          if (!planSnap.exists() || !planSnap.data().plan) return;
           const planData  = planSnap.data();
           const expiresAt = planData.expiresAt;
           // Auto-downgrade if Pro subscription has expired
           if (planData.plan === "pro" && expiresAt && new Date(expiresAt) < new Date()) {
             setPlan("free");
-            // Cannot write plan doc from client — Firestore rules restrict this to Admin SDK.
-            // Call the server-side API endpoint instead, passing the ID token for auth.
+            // Call server-side endpoint — client cannot write plan doc directly
             try {
               const idToken = await auth.currentUser.getIdToken();
               await fetch("/api/downgrade-expired", {
@@ -4131,7 +4131,6 @@ function AppCore({ user, onLogout, onUserUpdate }) {
                 body: JSON.stringify({ uid, idToken }),
               });
             } catch (e) {
-              // Non-fatal — UI already shows free. Sentry will catch persistent failures.
               Sentry.captureException(e, { tags: { operation: "downgrade_expired" } });
             }
           } else {
@@ -4157,7 +4156,9 @@ function AppCore({ user, onLogout, onUserUpdate }) {
             }
           }
           setPlanInfo(planData);
-        }
+        }, (err) => {
+          Sentry.captureException(err, { tags: { operation: "plan_snapshot" } });
+        });
         // Real-time listener for entries
         const q = query(entriesCol(uid), orderBy("date", "desc"), limit(ENTRIES_LIMIT));
         unsubEntries = onSnapshot(q, (snapshot) => {
@@ -4191,6 +4192,7 @@ function AppCore({ user, onLogout, onUserUpdate }) {
       if (unsubEntries) unsubEntries();
       if (unsubBudgets) unsubBudgets();
       if (unsubNotifs)  unsubNotifs();
+      if (unsubPlan)    unsubPlan();
     };
   }, [uid]);
 

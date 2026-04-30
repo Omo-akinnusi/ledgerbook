@@ -1147,7 +1147,7 @@ window.applyManualSub = async () => {
   if (!endVal)   { toast("⚠️ Set an expiry date", "error"); return; }
   if (endVal <= startVal) { toast("⚠️ Expiry must be after activation date", "error"); return; }
 
-  btn.disabled   = true;
+  btn.disabled    = true;
   btn.textContent = "Applying…";
 
   try {
@@ -1160,20 +1160,23 @@ window.applyManualSub = async () => {
     const activatedAt   = new Date(startVal).toISOString();
     const expiresAt     = new Date(endVal + "T23:59:59").toISOString();
 
-    await setDoc(doc(db, "users", uid, "settings", "plan"), {
-      plan:           "pro",
-      interval:       interval,
-      status:         "active",
-      activatedAt:    activatedAt,
-      expiresAt:      expiresAt,
-      lastPaymentAt:  activatedAt,
-      lastPaymentRef: "manual-admin-" + Date.now(),
-      manuallySet:    true,
-      manualSetBy:    "admin",
-      manualSetAt:    new Date().toISOString(),
-    }, { merge: true });
+    // Get admin ID token to authenticate the API call
+    const idToken = await auth.currentUser.getIdToken();
 
-    // Update local allUsers array
+    // Route through Admin SDK API — direct Firestore writes to plan doc
+    // are restricted to Admin SDK only, so client writes would be silently rejected
+    const resp = await fetch("/api/admin-set-plan", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ uid, idToken, plan:"pro", interval, activatedAt, expiresAt }),
+    });
+
+    if (!resp.ok) {
+      const err = await resp.json().catch(() => ({}));
+      throw new Error(err.error || `Server error ${resp.status}`);
+    }
+
+    // Update local allUsers array for immediate UI reflection
     const existing = allUsers.find(u => u.uid === uid);
     if (existing) {
       existing.plan = "pro";
@@ -1185,12 +1188,12 @@ window.applyManualSub = async () => {
     resultEl.className = "result-card show";
     resultEl.innerHTML = `
       <div class="result-row"><span class="result-key">User</span><span class="result-val" style="color:var(--text)">${esc(displayName)}</span></div>
-      <div class="result-row"><span class="result-key">Plan</span><span class="result-val" style="color:var(--pro)">✨ Pro — ${intervalLabel}</span></div>
+      <div class="result-row"><span class="result-key">Plan</span><span class="result-val" style="color:var(--pro)">Pro — ${intervalLabel}</span></div>
       <div class="result-row"><span class="result-key">Activated</span><span class="result-val" style="color:var(--lime)">${startVal}</span></div>
       <div class="result-row"><span class="result-key">Expires</span><span class="result-val" style="color:var(--lime)">${endVal}</span></div>
       <div class="result-row"><span class="result-key">Set by</span><span class="result-val" style="color:var(--muted)">Admin (manual)</span></div>
     `;
-    toast(`✅ Pro subscription applied for ${displayName}`, "success");
+    toast(`Pro subscription applied for ${displayName}`, "success");
   } catch(e) {
     toast("❌ " + e.message, "error");
     resultEl.className = "result-card show";
