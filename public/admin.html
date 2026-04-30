@@ -1151,7 +1151,6 @@ window.applyManualSub = async () => {
   btn.textContent = "Applying…";
 
   try {
-    // Fetch user profile for display name
     const profileSnap = await getDoc(doc(db, "users", uid));
     const profile      = profileSnap.exists() ? profileSnap.data() : {};
     const displayName  = profile.name || profile.businessName || uid.slice(0,12) + "…";
@@ -1160,23 +1159,21 @@ window.applyManualSub = async () => {
     const activatedAt   = new Date(startVal).toISOString();
     const expiresAt     = new Date(endVal + "T23:59:59").toISOString();
 
-    // Get admin ID token to authenticate the API call
-    const idToken = await auth.currentUser.getIdToken();
+    // Direct Firestore write — works because isAdmin() in Firestore rules
+    // permits writes from v.bookenterprise@gmail.com to the plan document
+    await setDoc(doc(db, "users", uid, "settings", "plan"), {
+      plan:           "pro",
+      interval:       interval,
+      status:         "active",
+      activatedAt:    activatedAt,
+      expiresAt:      expiresAt,
+      lastPaymentAt:  activatedAt,
+      lastPaymentRef: "manual-admin-" + Date.now(),
+      manuallySet:    true,
+      manualSetBy:    "admin",
+      manualSetAt:    new Date().toISOString(),
+    }, { merge: true });
 
-    // Route through Admin SDK API — direct Firestore writes to plan doc
-    // are restricted to Admin SDK only, so client writes would be silently rejected
-    const resp = await fetch("/api/admin-set-plan", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ uid, idToken, plan:"pro", interval, activatedAt, expiresAt }),
-    });
-
-    if (!resp.ok) {
-      const err = await resp.json().catch(() => ({}));
-      throw new Error(err.error || `Server error ${resp.status}`);
-    }
-
-    // Update local allUsers array for immediate UI reflection
     const existing = allUsers.find(u => u.uid === uid);
     if (existing) {
       existing.plan = "pro";
