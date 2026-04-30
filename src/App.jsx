@@ -4121,8 +4121,19 @@ function AppCore({ user, onLogout, onUserUpdate }) {
           // Auto-downgrade if Pro subscription has expired
           if (planData.plan === "pro" && expiresAt && new Date(expiresAt) < new Date()) {
             setPlan("free");
-            setDoc(planDoc(uid), { plan: "free", status: "expired", expiredAt: new Date().toISOString() }, { merge: true })
-              .catch(()=>{});
+            // Cannot write plan doc from client — Firestore rules restrict this to Admin SDK.
+            // Call the server-side API endpoint instead, passing the ID token for auth.
+            try {
+              const idToken = await auth.currentUser.getIdToken();
+              await fetch("/api/downgrade-expired", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ uid, idToken }),
+              });
+            } catch (e) {
+              // Non-fatal — UI already shows free. Sentry will catch persistent failures.
+              Sentry.captureException(e, { tags: { operation: "downgrade_expired" } });
+            }
           } else {
             setPlan(planData.plan);
             // Subscription expiry alerts
