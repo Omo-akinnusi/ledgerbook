@@ -1785,7 +1785,7 @@ function AuthField({ label, placeholder, type="text", value, onChange, icon }) {
         <input className="au-inp"
           type={isPass && !show ? "password" : isPass ? "text" : type}
           value={value} onChange={e=>onChange(e.target.value)} placeholder={placeholder}
-          style={{ width:"100%", padding:`13px ${isPass?46:15}px 13px ${icon?42:15}px`, border:"2px solid #ebebeb", borderRadius:13, fontSize:15, boxSizing:"border-box", background:"#fafafa", fontFamily:"inherit", WebkitAppearance:"none" }}/>
+          style={{ width:"100%", padding:`13px ${isPass?46:15}px 13px ${icon?42:15}px`, border:"2px solid #ebebeb", borderRadius:13, fontSize:16, boxSizing:"border-box", background:"#fafafa", fontFamily:"inherit", WebkitAppearance:"none" }}/>
         {isPass && (
           <button type="button" onClick={()=>setShow(s=>!s)}
             style={{ position:"absolute", right:13, top:"50%", transform:"translateY(-50%)", background:"none", border:"none", cursor:"pointer", color:"#c0c0c0", fontSize:16, padding:2, lineHeight:1 }}>
@@ -3079,7 +3079,7 @@ function EditEntryModal({ entry, onClose, onSave, incCats, expCats, currency }) 
             <div style={{ fontSize:11, fontWeight:800, color:"#9ca3af", textTransform:"uppercase", letterSpacing:1, marginBottom:8 }}>Date</div>
             <input type="date" value={form.date} onChange={e=>setForm(f=>({...f,date:e.target.value}))}
               style={{ width:"100%", padding:"13px 16px", border:"1.5px solid #e5e7eb",
-                borderRadius:13, fontSize:15, outline:"none", boxSizing:"border-box",
+                borderRadius:13, fontSize:16, outline:"none", boxSizing:"border-box",
                 background:"#f9fafb", color:"#111", fontFamily:"inherit" }}/>
           </div>
           <div style={{ marginBottom:18 }}>
@@ -3106,7 +3106,7 @@ function EditEntryModal({ entry, onClose, onSave, incCats, expCats, currency }) 
             <input type="text" placeholder="Customer name, description" value={form.note}
               onChange={e=>setForm(f=>({...f,note:e.target.value}))}
               style={{ width:"100%", padding:"13px 16px", border:"1.5px solid #e5e7eb",
-                borderRadius:13, fontSize:15, outline:"none", boxSizing:"border-box",
+                borderRadius:13, fontSize:16, outline:"none", boxSizing:"border-box",
                 background:"#f9fafb", fontFamily:"inherit", color:"#111" }}/>
           </div>
         </div>
@@ -3471,7 +3471,7 @@ function OnboardingScreen({ user, onComplete }) {
                 onChange={e=>setBusinessName(e.target.value)}
                 autoFocus
                 style={{ width:"100%", padding:"14px 16px", border:"1.5px solid #e5e7eb",
-                  borderRadius:14, fontSize:15, outline:"none", boxSizing:"border-box",
+                  borderRadius:14, fontSize:16, outline:"none", boxSizing:"border-box",
                   fontFamily:"inherit", color:"#111", marginBottom:err?8:0 }}/>
             </div>
           )}
@@ -3517,7 +3517,7 @@ function OnboardingScreen({ user, onComplete }) {
                 onChange={e=>setPhone(e.target.value)}
                 autoFocus
                 style={{ width:"100%", padding:"14px 16px", border:"1.5px solid #e5e7eb",
-                  borderRadius:14, fontSize:15, outline:"none", boxSizing:"border-box",
+                  borderRadius:14, fontSize:16, outline:"none", boxSizing:"border-box",
                   fontFamily:"inherit", color:"#111", marginBottom:err?8:0 }}/>
             </div>
           )}
@@ -4826,7 +4826,7 @@ function AppCore({ user, onLogout, onUserUpdate }) {
                       <input type="date" value={form.date || new Date().toISOString().split("T")[0]}
                         onChange={e=>setForm(f=>({...f,date:e.target.value}))}
                         style={{ width:"100%", padding:"13px 16px", border:"1.5px solid #e5e7eb",
-                          borderRadius:13, fontSize:15, outline:"none", boxSizing:"border-box",
+                          borderRadius:13, fontSize:16, outline:"none", boxSizing:"border-box",
                           background:"#f9fafb", color:"#111", fontFamily:"inherit",
                           WebkitAppearance:"none", appearance:"none", display:"block" }}/>
                     </div>
@@ -4863,7 +4863,7 @@ function AppCore({ user, onLogout, onUserUpdate }) {
                       <input type="text" placeholder="Customer name, description…"
                         value={form.note} onChange={e=>setForm(f=>({...f,note:e.target.value}))}
                         style={{ width:"100%", padding:"13px 16px", border:"1.5px solid #e5e7eb",
-                          borderRadius:13, fontSize:15, outline:"none",
+                          borderRadius:13, fontSize:16, outline:"none",
                           boxSizing:"border-box", background:"#f9fafb", fontFamily:"inherit",
                           color:"#111" }}/>
                     </div>
