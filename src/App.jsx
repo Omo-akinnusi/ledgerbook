@@ -3014,13 +3014,15 @@ function EditEntryModal({ entry, onClose, onSave, incCats, expCats, currency }) 
 
   const handleSave = async () => {
     if (!form.amount || !form.category) return;
+    const amt = parseFloat(form.amount);
+    if (!amt || isNaN(amt) || amt <= 0 || !isFinite(amt) || amt > 999999999) return;
     setSaving(true);
     await onSave(entry.id, {
       type:     form.type,
-      amount:   parseFloat(form.amount),
+      amount:   amt,
       category: form.category,
       note:     form.note,
-      date:     new Date(form.date).toISOString(),
+      date:     form.date, // plain YYYY-MM-DD string — no UTC conversion
     });
     setSaving(false);
     onClose();
@@ -4267,10 +4269,18 @@ function AppCore({ user, onLogout, onUserUpdate }) {
 
   const handleAdd = async () => {
     if (atLimit) { trackLimitReached(); return openUpgrade("limit"); }
-    if (!form.amount||!form.category) return showToast(" Fill all required fields","#c62828");
+    if (!form.amount || !form.category) return showToast(" Fill all required fields","#c62828");
+
+    const amt = parseFloat(form.amount);
+    if (!amt || isNaN(amt) || amt <= 0 || !isFinite(amt) || amt > 999999999)
+      return showToast("Enter a valid amount greater than zero","#c62828");
 
     const selectedDate = form.date || new Date().toISOString().split("T")[0];
-    const entry = { ...form, amount: parseFloat(form.amount), date: new Date(selectedDate).toISOString() };
+    // Store date as plain ISO date string (YYYY-MM-DD) — not a UTC timestamp.
+    // Converting via new Date(selectedDate).toISOString() shifts Nigerian users
+    // (UTC+1) back by 1 hour, storing May 1 entries as April 30 in UTC.
+    // All date filtering already uses e.date.slice(0,10) so plain strings work correctly.
+    const entry = { ...form, amount: amt, date: selectedDate };
 
     try {
       if (!isPro) {
