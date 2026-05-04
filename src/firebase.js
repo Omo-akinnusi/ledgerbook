@@ -38,12 +38,12 @@ import {
 } from "firebase/firestore";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyBIGOe8cbA7Njar4ehENbIxUFS30Sy2TjE",
-  authDomain: "ledgerbook-1db5d.firebaseapp.com",
-  projectId: "ledgerbook-1db5d",
-  storageBucket: "ledgerbook-1db5d.firebasestorage.app",
-  messagingSenderId: "465884400783",
-  appId: "1:465884400783:web:891ad5dfccf0c9b49334fa",
+  apiKey:            import.meta.env.VITE_FIREBASE_API_KEY            || "AIzaSyBIGOe8cbA7Njar4ehENbIxUFS30Sy2TjE",
+  authDomain:        import.meta.env.VITE_FIREBASE_AUTH_DOMAIN        || "ledgerbook-1db5d.firebaseapp.com",
+  projectId:         import.meta.env.VITE_FIREBASE_PROJECT_ID         || "ledgerbook-1db5d",
+  storageBucket:     import.meta.env.VITE_FIREBASE_STORAGE_BUCKET     || "ledgerbook-1db5d.firebasestorage.app",
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "465884400783",
+  appId:             import.meta.env.VITE_FIREBASE_APP_ID             || "1:465884400783:web:891ad5dfccf0c9b49334fa",
 };
 
 const app  = initializeApp(firebaseConfig);
