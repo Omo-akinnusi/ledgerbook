@@ -4,6 +4,7 @@
 // ================================================================
 
 import React, { useState, useEffect, useRef, useMemo } from "react";
+import * as Sentry from "@sentry/react";
 import StagingBanner from "./StagingBanner.jsx";
 import {
   trackSignup, trackLogin, trackLogout, trackPasswordReset,
@@ -3686,7 +3687,7 @@ class ErrorBoundary extends React.Component {
   }
   componentDidCatch(error, info) {
     if (!this.state.isIndexedDB) {
-      Sentry.captureException(error, { extra: info });
+      Sentry?.captureException(error, { extra: info });
     }
   }
   render() {
@@ -3828,7 +3829,7 @@ export default function CashCounter() {
           }
         } catch(e) {
           console.warn("saveProfile failed:", e.code, e.message);
-          Sentry.captureException(e, { tags: { operation: "save_profile" } });
+          Sentry?.captureException(e, { tags: { operation: "save_profile" } });
           setNeeds(false);
         }
         Sentry.setUser({ id: firebaseUser.uid, email: firebaseUser.email, username: u.name });
@@ -4134,7 +4135,7 @@ function AppCore({ user, onLogout, onUserUpdate }) {
                 body: JSON.stringify({ uid, idToken }),
               });
             } catch (e) {
-              Sentry.captureException(e, { tags: { operation: "downgrade_expired" } });
+              Sentry?.captureException(e, { tags: { operation: "downgrade_expired" } });
             }
           } else {
             setPlan(planData.plan);
@@ -4160,7 +4161,7 @@ function AppCore({ user, onLogout, onUserUpdate }) {
           }
           setPlanInfo(planData);
         }, (err) => {
-          Sentry.captureException(err, { tags: { operation: "plan_snapshot" } });
+          Sentry?.captureException(err, { tags: { operation: "plan_snapshot" } });
         });
         // Real-time listener for entries
         const q = query(entriesCol(uid), orderBy("date", "desc"), limit(ENTRIES_LIMIT));
@@ -4170,7 +4171,7 @@ function AppCore({ user, onLogout, onUserUpdate }) {
           setHasMoreEntries(snapshot.docs.length === ENTRIES_LIMIT);
           setLoading(false);
         }, (err) => {
-          Sentry.captureException(err, { tags: { operation: "entries_snapshot" } });
+          Sentry?.captureException(err, { tags: { operation: "entries_snapshot" } });
           setLoading(false);
         });
         // Real-time listener for budgets
@@ -4178,7 +4179,7 @@ function AppCore({ user, onLogout, onUserUpdate }) {
         unsubBudgets = onSnapshot(qb, (snapshot) => {
           setBudgets(snapshot.docs.map(d => ({ id: d.id, ...d.data() })));
         }, (err) => {
-          Sentry.captureException(err, { tags: { operation: "budgets_snapshot" } });
+          Sentry?.captureException(err, { tags: { operation: "budgets_snapshot" } });
         });
         // Real-time listener for notifications
         const qn = query(notifsCol(uid), orderBy("createdAt", "desc"), limit(30));
@@ -4186,7 +4187,7 @@ function AppCore({ user, onLogout, onUserUpdate }) {
           setNotifs(snapshot.docs.map(d => ({ id: d.id, ...d.data() })));
         }, () => {});
       } catch(e) {
-        Sentry.captureException(e, { tags: { operation: "load_user_data" } });
+        Sentry?.captureException(e, { tags: { operation: "load_user_data" } });
         setLoading(false);
       }
     };
@@ -4329,7 +4330,7 @@ function AppCore({ user, onLogout, onUserUpdate }) {
         trackLimitReached();
         return openUpgrade("limit");
       }
-      Sentry.captureException(e, { tags: { operation: "add_entry" } });
+      Sentry?.captureException(e, { tags: { operation: "add_entry" } });
       showToast("Failed to save. Check connection.","#c62828");
     }
   };
@@ -4340,7 +4341,7 @@ function AppCore({ user, onLogout, onUserUpdate }) {
       trackEntryDeleted();
       showToast("Removed","#888");
     } catch(e) {
-      Sentry.captureException(e, { tags: { operation: "delete_entry" } });
+      Sentry?.captureException(e, { tags: { operation: "delete_entry" } });
       showToast("Failed to delete.","#c62828");
     }
   };
@@ -4351,7 +4352,7 @@ function AppCore({ user, onLogout, onUserUpdate }) {
       trackEntryEdited(data.type);
       showToast("Entry updated!","#25D366");
     } catch(e) {
-      Sentry.captureException(e, { tags: { operation: "edit_entry" } });
+      Sentry?.captureException(e, { tags: { operation: "edit_entry" } });
       showToast("Failed to update.","#c62828");
     }
   };
@@ -5129,7 +5130,7 @@ function AppCore({ user, onLogout, onUserUpdate }) {
             ) : (
               <>
                 {budgetView==="list"   && <BudgetList   budgets={budgets} entries={entries} currency={currency} p={p} isDesktop={isDesktop} uid={uid} onNew={()=>{ setActiveBudget(null); setBudgetView("create"); }} onView={(b)=>{ setActiveBudget(b); setBudgetView("detail"); }} onDelete={async(id)=>{ await delBudget(uid,id); showToast("Budget deleted","#888"); }} showToast={showToast}/>}
-                {budgetView==="create" && <BudgetCreate  budget={activeBudget} expCats={expCats} incCats={incCats} currency={currency} p={p} isDesktop={isDesktop} uid={uid} onSave={async(b)=>{ try { if(b.id){ await saveBudget(uid,b.id,b); showToast("Budget updated!",p); } else { await addBudget(uid,b); trackBudgetCreated(); showToast("Budget created!",p); } setBudgetView("list"); } catch(e){ Sentry.captureException(e); showToast("Failed to save","#c62828"); }}} onBack={()=>setBudgetView("list")}/>}
+                {budgetView==="create" && <BudgetCreate  budget={activeBudget} expCats={expCats} incCats={incCats} currency={currency} p={p} isDesktop={isDesktop} uid={uid} onSave={async(b)=>{ try { if(b.id){ await saveBudget(uid,b.id,b); showToast("Budget updated!",p); } else { await addBudget(uid,b); trackBudgetCreated(); showToast("Budget created!",p); } setBudgetView("list"); } catch(e){ Sentry?.captureException(e); showToast("Failed to save","#c62828"); }}} onBack={()=>setBudgetView("list")}/>}
                 {budgetView==="detail" && <BudgetDetail  budget={activeBudget} entries={entries} currency={currency} p={p} bg={bg} isDesktop={isDesktop} onBack={()=>setBudgetView("list")} onEdit={(b)=>{ setActiveBudget(b); setBudgetView("create"); }} onDelete={async(id)=>{ await delBudget(uid,id); setBudgetView("list"); showToast("Budget deleted","#888"); }}/>}
               </>
             )}
