@@ -4,26 +4,30 @@
 
 const cors = require("cors")({ origin: true });
 
-let admin;
+let _admin;
 
-function getDb() {
-  if (!admin) admin = require("firebase-admin");
-  if (!admin.apps.find(a => a.name === "cashcounter")) {
-    admin.initializeApp({
-      credential: admin.credential.cert({
+function getAdmin() {
+  if (!_admin) _admin = require("firebase-admin");
+  if (!_admin.apps.length) {
+    _admin.initializeApp({
+      credential: _admin.credential.cert({
         projectId:   process.env.FIREBASE_PROJECT_ID,
         clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
         privateKey:  (process.env.FIREBASE_PRIVATE_KEY || "").replace(/\\n/g, "\n"),
       }),
-    }, "cashcounter");
+    });
   }
-  return admin.app("cashcounter").firestore();
+  return _admin;
+}
+
+function getDb() {
+  return getAdmin().app().firestore();
 }
 
 // ── Helpers ───────────────────────────────────────────────
 async function verifyToken(uid, idToken) {
-  if (!admin) admin = require("firebase-admin");
-  const decoded = await admin.app("cashcounter").auth().verifyIdToken(idToken);
+  const a = getAdmin();
+  const decoded = await a.app().auth().verifyIdToken(idToken);
   if (decoded.uid !== uid) throw new Error("Token uid mismatch");
   return decoded;
 }

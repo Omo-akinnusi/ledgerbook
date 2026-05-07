@@ -4099,7 +4099,8 @@ function AppCore({ user, onLogout, onUserUpdate }) {
     setMonoLoading(true);
     setMonoMsg("");
     try {
-      const idToken = await auth.currentUser.getIdToken();
+      // Force refresh=true to guarantee a fresh token, not a cached one
+      const idToken = await auth.currentUser.getIdToken(true);
       const res = await fetch("/api/mono", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
