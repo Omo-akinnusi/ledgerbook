@@ -73,7 +73,7 @@ function formatDate(dateStr) {
 
 // ── Actions ───────────────────────────────────────────────
 async function exchange(uid, code, db) {
-  const monoRes = await fetch("https://api.withmono.com/account/auth", {
+  const monoRes = await fetch("https://api.withmono.com/v2/accounts/auth", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -82,24 +82,25 @@ async function exchange(uid, code, db) {
     body: JSON.stringify({ code }),
   });
   const monoData = await monoRes.json();
-  if (!monoRes.ok || !monoData.id) {
+  if (!monoRes.ok || !monoData.data?.id) {
     throw Object.assign(new Error(monoData.message || "Failed to exchange code"), { status: 400 });
   }
 
-  const accountId = monoData.id;
-  const detailsRes = await fetch(`https://api.withmono.com/accounts/${accountId}`, {
+  const accountId = monoData.data.id;
+  const detailsRes = await fetch(`https://api.withmono.com/v2/accounts/${accountId}`, {
     headers: { "mono-sec-key": process.env.MONO_SECRET_KEY },
   });
   const details = await detailsRes.json();
+  const acct = details.data?.account || {};
 
   await db.doc(`users/${uid}/settings/mono`).set({
     accountId,
-    accountName:   details.account?.name             || "",
-    accountNumber: details.account?.accountNumber    || "",
-    bankName:      details.account?.institution?.name|| "",
-    accountType:   details.account?.type             || "",
-    currency:      details.account?.currency         || "NGN",
-    balance:       details.account?.balance          || 0,
+    accountName:   acct.name             || "",
+    accountNumber: acct.account_number   || acct.accountNumber || "",
+    bankName:      acct.institution?.name|| "",
+    accountType:   acct.type             || "",
+    currency:      acct.currency         || "NGN",
+    balance:       acct.balance          || 0,
     connectedAt:   new Date().toISOString(),
     lastSyncAt:    null,
     status:        "active",
@@ -108,10 +109,10 @@ async function exchange(uid, code, db) {
   console.log(`Mono connected for user ${uid}: ${accountId}`);
   return {
     accountId,
-    accountName:   details.account?.name             || "",
-    bankName:      details.account?.institution?.name|| "",
-    accountNumber: details.account?.accountNumber    || "",
-    balance:       details.account?.balance          || 0,
+    accountName:   acct.name             || "",
+    bankName:      acct.institution?.name|| "",
+    accountNumber: acct.account_number   || acct.accountNumber || "",
+    balance:       acct.balance          || 0,
   };
 }
 
@@ -127,7 +128,7 @@ async function sync(uid, db) {
   start.setDate(start.getDate() - 90);
 
   const monoRes = await fetch(
-    `https://api.withmono.com/accounts/${accountId}/transactions?` +
+    `https://api.withmono.com/v2/accounts/${accountId}/transactions?` +
     `start=${start.toISOString().split("T")[0]}&end=${end.toISOString().split("T")[0]}&paginate=false`,
     { headers: { "mono-sec-key": process.env.MONO_SECRET_KEY } }
   );
@@ -161,9 +162,9 @@ async function sync(uid, db) {
     imported++;
   }
 
-  const balRes  = await fetch(`https://api.withmono.com/accounts/${accountId}`,
+  const balRes  = await fetch(`https://api.withmono.com/v2/accounts/${accountId}`,
     { headers: { "mono-sec-key": process.env.MONO_SECRET_KEY } }).catch(() => null);
-  const newBal  = balRes ? (await balRes.json()).account?.balance || 0 : monoSnap.data().balance;
+  const newBal  = balRes ? (await balRes.json()).data?.account?.balance || 0 : monoSnap.data().balance;
 
   await db.doc(`users/${uid}/settings/mono`).set({
     lastSyncAt: new Date().toISOString(),
@@ -180,7 +181,7 @@ async function disconnect(uid, db) {
   const accountId = monoSnap.exists ? monoSnap.data().accountId : null;
 
   if (accountId) {
-    await fetch(`https://api.withmono.com/accounts/${accountId}/unlink`, {
+    await fetch(`https://api.withmono.com/v2/accounts/${accountId}/unlink`, {
       method: "POST",
       headers: { "mono-sec-key": process.env.MONO_SECRET_KEY },
     }).catch(e => console.warn("Mono unlink warning:", e.message));
