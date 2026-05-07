@@ -126,14 +126,9 @@ async function sync(uid, db) {
   }
   const { accountId } = monoSnap.data();
 
-  const end   = new Date();
-  const start = new Date();
-  start.setDate(start.getDate() - 90);
-
   // Format date as DD/MM/YYYY — required by Mono v2 transactions API
-  function monoDate(d) {
-    return `${String(d.getDate()).padStart(2,"0")}/${String(d.getMonth()+1).padStart(2,"0")}/${d.getFullYear()}`;
-  }
+  const monoDate = (d) =>
+    `${String(d.getDate()).padStart(2,"0")}/${String(d.getMonth()+1).padStart(2,"0")}/${d.getFullYear()}`;
 
   const end   = new Date();
   const start = new Date();
