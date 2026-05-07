@@ -3899,19 +3899,19 @@ export default function CashCounter() {
           // Track signup on Ninja project server-side — only once per user
           if (isNewReferral) {
             DB.remove(`lb_ref_${firebaseUser.uid}`);
-            fetch("/api/ninja-track-signup", {
+            fetch("/api/ninja", {
               method:  "POST",
               headers: { "Content-Type": "application/json" },
-              body:    JSON.stringify({ referralCode: refCode, uid: firebaseUser.uid }),
+              body:    JSON.stringify({ action: "track-signup", referralCode: refCode, uid: firebaseUser.uid }),
             }).then(() => {
               setDoc(userDoc(firebaseUser.uid), { ninjaSignupTracked: true }, { merge: true }).catch(() => {});
             }).catch(e => console.warn("Ninja signup tracking failed:", e.message));
           } else if (refCode && profileData.referredBy && !profileData.ninjaSignupTracked) {
             // Referral was saved but API was never called — retry once
-            fetch("/api/ninja-track-signup", {
+            fetch("/api/ninja", {
               method:  "POST",
               headers: { "Content-Type": "application/json" },
-              body:    JSON.stringify({ referralCode: refCode, uid: firebaseUser.uid }),
+              body:    JSON.stringify({ action: "track-signup", referralCode: refCode, uid: firebaseUser.uid }),
             }).then(() => {
               setDoc(userDoc(firebaseUser.uid), { ninjaSignupTracked: true }, { merge: true }).catch(() => {});
             }).catch(e => console.warn("Ninja signup tracking retry failed:", e.message));
@@ -4122,10 +4122,10 @@ function AppCore({ user, onLogout, onUserUpdate }) {
     setMonoMsg("");
     try {
       const idToken = await auth.currentUser.getIdToken();
-      const res = await fetch("/api/mono-exchange", {
+      const res = await fetch("/api/mono", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ code, idToken, uid }),
+        body: JSON.stringify({ action: "exchange", code, idToken, uid }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Connection failed");
@@ -4144,10 +4144,10 @@ function AppCore({ user, onLogout, onUserUpdate }) {
     setMonoMsg("");
     try {
       const idToken = await auth.currentUser.getIdToken();
-      const res = await fetch("/api/mono-sync", {
+      const res = await fetch("/api/mono", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ idToken, uid }),
+        body: JSON.stringify({ action: "sync", idToken, uid }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Sync failed");
@@ -4169,10 +4169,10 @@ function AppCore({ user, onLogout, onUserUpdate }) {
     setMonoLoading(true);
     try {
       const idToken = await auth.currentUser.getIdToken();
-      const res = await fetch("/api/mono-disconnect", {
+      const res = await fetch("/api/mono", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ idToken, uid }),
+        body: JSON.stringify({ action: "disconnect", idToken, uid }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Disconnect failed");
