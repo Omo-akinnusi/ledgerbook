@@ -135,6 +135,10 @@ async function sync(uid, db) {
   const monoData = await monoRes.json();
   const monoTxs = monoData.data || [];
 
+  console.log(`Mono sync: fetched ${monoTxs.length} transactions for account ${accountId}`);
+  console.log(`Mono sync: date range ${start.toISOString().split("T")[0]} to ${end.toISOString().split("T")[0]}`);
+  if (monoTxs.length > 0) console.log("Mono sync: sample tx:", JSON.stringify(monoTxs[0]));
+
   const entriesRef    = db.collection(`users/${uid}/entries`);
   const existingSnap  = await entriesRef.where("source", "==", "mono").get();
   const existingIds   = new Set(existingSnap.docs.map(d => d.data().monoTxId).filter(Boolean));
