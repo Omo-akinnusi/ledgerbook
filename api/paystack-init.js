@@ -23,10 +23,14 @@ function isValidUid(uid) {
 }
 
 // Amount map in kobo — server-side, users cannot manipulate prices
+// Includes both live and test plan codes
 const PLAN_AMOUNTS = {
-  PLN_riztufvgcixap7k: 500000,   // Monthly  ₦5,000
-  PLN_lr0mhzc8n3wa28h: 2700000,  // 6-Month  ₦27,000
-  PLN_cizrk6zouo32rjs: 5000000,  // Annual   ₦50,000
+  PLN_riztufvgcixap7k: 500000,   // Live Monthly  ₦5,000
+  PLN_lr0mhzc8n3wa28h: 2700000,  // Live 6-Month  ₦27,000
+  PLN_cizrk6zouo32rjs: 5000000,  // Live Annual   ₦50,000
+  PLN_gh2mcit6fixix9k: 500000,   // Test Monthly  ₦5,000
+  PLN_gxtrrhn8z2tfqmf: 2700000,  // Test 6-Month  ₦27,000
+  PLN_87ghrcbnb4p8aaa: 5000000,  // Test Annual   ₦50,000
 };
 
 // Amounts for one-time charges (same prices, keyed by interval)
