@@ -2543,7 +2543,7 @@ function DeleteAccountModal({ user, onDeleted, onClose }) {
   );
 }
 
-function SettingsScreen({ branding, setBranding, currency, setCurrency, incCats, setIncCats, expCats, setExpCats, user, onLogout, onClose, isPro=false, onUpgrade, planInfo=null, onUserUpdate }) {
+function SettingsScreen({ branding, setBranding, currency, setCurrency, incCats, setIncCats, expCats, setExpCats, user, onLogout, onClose, isPro=false, onUpgrade, planInfo=null, onUserUpdate, monoInfo=null, monoLoading=false, monoSyncing=false, monoMsg="", onMonoConnect, onMonoSync, onMonoDisconnect }) {
   const [editingProfile, setEditingProfile] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [profileForm,    setProfileForm]    = useState({
@@ -2818,6 +2818,95 @@ function SettingsScreen({ branding, setBranding, currency, setCurrency, incCats,
               <div style={{ marginTop:10, fontSize:11, color:"#aaa", lineHeight:1.6 }}>
                 To cancel, open the subscription email from Paystack and click "Cancel subscription".
               </div>
+            </div>
+          )}
+
+          {/* ── Connected Accounts (Mono) — Pro only ── */}
+          {isPro && (
+            <div style={{ background:"#fff", borderRadius:14, padding:"14px 18px",
+              marginBottom:14, border:"1px solid #e8edf2" }}>
+              <div style={{ fontSize:10, fontWeight:800, color:"#205361",
+                textTransform:"uppercase", letterSpacing:1, marginBottom:12 }}>
+                Connected Accounts
+              </div>
+              {monoInfo ? (
+                <>
+                  <div style={{ display:"flex", alignItems:"center", gap:12, marginBottom:12 }}>
+                    <div style={{ width:38, height:38, borderRadius:10, background:"#E8F5E9",
+                      display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+                      <svg viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2"
+                        strokeLinecap="round" strokeLinejoin="round" style={{ width:18, height:18 }}>
+                        <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/>
+                        <line x1="1" y1="10" x2="23" y2="10"/>
+                      </svg>
+                    </div>
+                    <div style={{ flex:1 }}>
+                      <div style={{ fontWeight:800, fontSize:13, color:"#1a1a1a" }}>{monoInfo.bankName}</div>
+                      <div style={{ fontSize:11, color:"#9ca3af", marginTop:1 }}>
+                        {monoInfo.accountName} · ••••{(monoInfo.accountNumber||"").slice(-4)}
+                      </div>
+                    </div>
+                    <div style={{ textAlign:"right" }}>
+                      <div style={{ fontWeight:900, fontSize:14, color:"#205361" }}>
+                        {fmtAmt(monoInfo.balance / 100, currency)}
+                      </div>
+                      <div style={{ fontSize:10, color:"#9ca3af", marginTop:1 }}>Balance</div>
+                    </div>
+                  </div>
+                  {[
+                    ["Connected", monoInfo.connectedAt ? fmtDate(monoInfo.connectedAt) : "—"],
+                    ["Last Sync",  monoInfo.lastSyncAt  ? fmtDate(monoInfo.lastSyncAt)  : "Never"],
+                  ].map(([k,v]) => (
+                    <div key={k} style={{ display:"flex", justifyContent:"space-between",
+                      padding:"6px 0", borderBottom:"1px solid #f0f0f0" }}>
+                      <span style={{ fontSize:12, color:"#9ca3af" }}>{k}</span>
+                      <span style={{ fontSize:12, fontWeight:700, color:"#222" }}>{v}</span>
+                    </div>
+                  ))}
+                  {monoMsg && (
+                    <div style={{ fontSize:11, color:"#205361", marginTop:8, fontWeight:600 }}>{monoMsg}</div>
+                  )}
+                  <div style={{ display:"flex", gap:8, marginTop:14 }}>
+                    <button onClick={handleMonoSync} disabled={monoSyncing}
+                      style={{ flex:1, padding:"11px", background:"linear-gradient(135deg,#205361,#5CB1CB)",
+                        color:"#fff", border:"none", borderRadius:10,
+                        fontWeight:800, fontSize:13, cursor:"pointer" }}>
+                      {monoSyncing ? "Syncing…" : "Sync Transactions"}
+                    </button>
+                    <button onClick={handleMonoDisconnect} disabled={monoLoading}
+                      style={{ padding:"11px 16px", background:"none",
+                        border:"1.5px solid #ffcdd2", borderRadius:10,
+                        fontWeight:700, fontSize:13, color:"#c62828", cursor:"pointer" }}>
+                      Disconnect
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <p style={{ fontSize:12, color:"#9ca3af", lineHeight:1.6, marginBottom:12 }}>
+                    Connect your Nigerian bank account to automatically import transactions into Cash Counter. No manual entry needed.
+                  </p>
+                  <button onClick={openMonoConnect} disabled={monoLoading}
+                    style={{ width:"100%", padding:"13px",
+                      background:"linear-gradient(135deg,#205361,#5CB1CB)",
+                      color:"#fff", border:"none", borderRadius:12,
+                      fontWeight:800, fontSize:14, cursor:"pointer",
+                      display:"flex", alignItems:"center", justifyContent:"center", gap:8 }}>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2"
+                      strokeLinecap="round" strokeLinejoin="round" style={{ width:16, height:16 }}>
+                      <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/>
+                      <line x1="1" y1="10" x2="23" y2="10"/>
+                    </svg>
+                    {monoLoading ? "Connecting…" : "Connect Bank Account"}
+                  </button>
+                  {monoMsg && (
+                    <div style={{ fontSize:11, color:"#c62828", marginTop:8, fontWeight:600 }}>{monoMsg}</div>
+                  )}
+                  <p style={{ fontSize:10, color:"#bbb", marginTop:8, lineHeight:1.5, textAlign:"center" }}>
+                    Powered by Mono · Read-only access · Disconnect anytime
+                  </p>
+                </>
+              )}
             </div>
           )}
 
@@ -3999,7 +4088,116 @@ function NotificationPanel({ uid, notifs, onClose, onMarkAllRead }) {
 
 function AppCore({ user, onLogout, onUserUpdate }) {
 
-  // ── PWA Install prompt ─────────────────────────────────────────
+  // ── Mono bank connection state ────────────────────────────────────
+  const [monoInfo,      setMonoInfo]      = useState(null);
+  const [monoLoading,   setMonoLoading]   = useState(false);
+  const [monoSyncing,   setMonoSyncing]   = useState(false);
+  const [monoMsg,       setMonoMsg]       = useState("");
+  const [showMonoPrompt,setShowMonoPrompt]= useState(false);
+
+  // Load Mono connection info in real time
+  useEffect(() => {
+    if (!uid || !isPro) return;
+    const unsubMono = onSnapshot(
+      doc(db, `users/${uid}/settings/mono`),
+      (snap) => {
+        if (snap.exists()) {
+          setMonoInfo(snap.data());
+          setShowMonoPrompt(false);
+        } else {
+          setMonoInfo(null);
+          // Show home prompt only if not dismissed this session
+          if (!sessionStorage.getItem("mono_prompt_dismissed")) {
+            setShowMonoPrompt(true);
+          }
+        }
+      },
+      () => {}
+    );
+    return () => unsubMono();
+  }, [uid, isPro]);
+
+  const handleMonoSuccess = async (code) => {
+    setMonoLoading(true);
+    setMonoMsg("");
+    try {
+      const idToken = await auth.currentUser.getIdToken();
+      const res = await fetch("/api/mono-exchange", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code, idToken, uid }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Connection failed");
+      setMonoMsg(`✓ ${data.bankName} account connected successfully`);
+      showToast("Bank account connected!", "#25D366");
+    } catch (e) {
+      setMonoMsg("Failed to connect account. Please try again.");
+      showToast("Connection failed. Try again.", "#c62828");
+    } finally {
+      setMonoLoading(false);
+    }
+  };
+
+  const handleMonoSync = async () => {
+    setMonoSyncing(true);
+    setMonoMsg("");
+    try {
+      const idToken = await auth.currentUser.getIdToken();
+      const res = await fetch("/api/mono-sync", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ idToken, uid }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Sync failed");
+      const msg = data.imported > 0
+        ? `✓ ${data.imported} transactions imported`
+        : "Already up to date";
+      setMonoMsg(msg);
+      showToast(msg, "#25D366");
+    } catch (e) {
+      setMonoMsg("Sync failed. Please try again.");
+      showToast("Sync failed. Try again.", "#c62828");
+    } finally {
+      setMonoSyncing(false);
+    }
+  };
+
+  const handleMonoDisconnect = async () => {
+    if (!window.confirm("Disconnect your bank account? All imported transactions will be deleted.")) return;
+    setMonoLoading(true);
+    try {
+      const idToken = await auth.currentUser.getIdToken();
+      const res = await fetch("/api/mono-disconnect", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ idToken, uid }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Disconnect failed");
+      showToast(`Bank account disconnected. ${data.deleted} entries removed.`, "#205361");
+    } catch (e) {
+      showToast("Disconnect failed. Try again.", "#c62828");
+    } finally {
+      setMonoLoading(false);
+    }
+  };
+
+  const openMonoConnect = () => {
+    const monoPublicKey = import.meta.env.VITE_MONO_PUBLIC_KEY;
+    if (!monoPublicKey) {
+      showToast("Mono not configured", "#c62828");
+      return;
+    }
+    const mono = new window.Connect({
+      key: monoPublicKey,
+      onSuccess: ({ code }) => handleMonoSuccess(code),
+      onClose: () => {},
+    });
+    mono.setup();
+    mono.open();
+  };
   const [installPrompt, setInstallPrompt]   = useState(null);
   const [showInstall,   setShowInstall]     = useState(false);
   const [isIOS,         setIsIOS]           = useState(false);
@@ -4619,6 +4817,83 @@ function AppCore({ user, onLogout, onUserUpdate }) {
                   <button onClick={dismissInstall}
                     style={{ background:"none", border:"none", color:"#ccc",
                       cursor:"pointer", padding:0, fontSize:18, lineHeight:1, flexShrink:0 }}>✕</button>
+                </div>
+              )}
+
+              {/* ── Mono bank connect prompt (Pro only, not yet connected) ── */}
+              {isPro && showMonoPrompt && !monoInfo && (
+                <div style={{ background:"#fff", border:`1.5px solid ${p}33`,
+                  borderRadius:14, padding:"12px 14px", marginBottom:14,
+                  display:"flex", alignItems:"flex-start", gap:12,
+                  boxShadow:`0 2px 12px ${p}15` }}>
+                  <div style={{ width:38, height:38, borderRadius:11, flexShrink:0,
+                    background:`linear-gradient(135deg,#205361,#5CB1CB)`,
+                    display:"flex", alignItems:"center", justifyContent:"center" }}>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2"
+                      strokeLinecap="round" strokeLinejoin="round" style={{ width:18, height:18 }}>
+                      <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/>
+                      <line x1="1" y1="10" x2="23" y2="10"/>
+                    </svg>
+                  </div>
+                  <div style={{ flex:1, minWidth:0 }}>
+                    <div style={{ fontWeight:800, fontSize:13, color:"#1a1a1a", marginBottom:3 }}>
+                      Connect your bank account
+                    </div>
+                    <div style={{ fontSize:11, color:"#666", lineHeight:1.55, marginBottom:10 }}>
+                      Import transactions automatically from your Nigerian bank account. No manual entry needed.
+                    </div>
+                    <div style={{ display:"flex", gap:8 }}>
+                      <button onClick={openMonoConnect} disabled={monoLoading}
+                        style={{ background:`linear-gradient(135deg,#205361,#5CB1CB)`,
+                          color:"#fff", border:"none", borderRadius:8,
+                          padding:"7px 14px", fontSize:12, fontWeight:800, cursor:"pointer" }}>
+                        {monoLoading ? "Connecting…" : "Connect Bank"}
+                      </button>
+                      <button onClick={()=>{ setShowMonoPrompt(false); sessionStorage.setItem("mono_prompt_dismissed","1"); }}
+                        style={{ background:"none", border:"1px solid #e5e7eb",
+                          borderRadius:8, padding:"7px 12px", fontSize:12,
+                          fontWeight:600, color:"#9ca3af", cursor:"pointer" }}>
+                        Later
+                      </button>
+                    </div>
+                    {monoMsg && <div style={{ fontSize:11, color:"#205361", marginTop:8, fontWeight:600 }}>{monoMsg}</div>}
+                  </div>
+                  <button onClick={()=>{ setShowMonoPrompt(false); sessionStorage.setItem("mono_prompt_dismissed","1"); }}
+                    style={{ background:"none", border:"none", color:"#ccc",
+                      cursor:"pointer", fontSize:18, lineHeight:1, flexShrink:0 }}>✕</button>
+                </div>
+              )}
+
+              {/* ── Mono connected — sync banner ── */}
+              {isPro && monoInfo && (
+                <div style={{ background:"#f0fbf4", border:"1.5px solid #C8E6C9",
+                  borderRadius:14, padding:"12px 14px", marginBottom:14,
+                  display:"flex", alignItems:"center", gap:12 }}>
+                  <div style={{ width:32, height:32, borderRadius:50, flexShrink:0,
+                    background:"#E8F5E9", display:"flex", alignItems:"center", justifyContent:"center" }}>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2"
+                      strokeLinecap="round" strokeLinejoin="round" style={{ width:16, height:16 }}>
+                      <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/>
+                      <line x1="1" y1="10" x2="23" y2="10"/>
+                    </svg>
+                  </div>
+                  <div style={{ flex:1, minWidth:0 }}>
+                    <div style={{ fontWeight:800, fontSize:12, color:"#1B5E20" }}>
+                      {monoInfo.bankName} connected
+                    </div>
+                    <div style={{ fontSize:10, color:"#4CAF50", marginTop:1 }}>
+                      {monoInfo.lastSyncAt
+                        ? `Last synced ${fmtDate(monoInfo.lastSyncAt)}`
+                        : "Never synced — tap to import transactions"}
+                    </div>
+                    {monoMsg && <div style={{ fontSize:10, color:"#205361", marginTop:4, fontWeight:600 }}>{monoMsg}</div>}
+                  </div>
+                  <button onClick={handleMonoSync} disabled={monoSyncing}
+                    style={{ background:"#16a34a", color:"#fff", border:"none",
+                      borderRadius:8, padding:"6px 12px", fontSize:11,
+                      fontWeight:800, cursor:"pointer", flexShrink:0 }}>
+                    {monoSyncing ? "Syncing…" : "Sync Now"}
+                  </button>
                 </div>
               )}
 
@@ -5306,7 +5581,10 @@ function AppCore({ user, onLogout, onUserUpdate }) {
           incCats={incCats} setIncCats={setIncCats} expCats={expCats} setExpCats={setExpCats}
           user={user} onLogout={onLogout} onClose={()=>setShowSt(false)}
           isPro={isPro} onUpgrade={()=>{ setShowSt(false); openUpgrade(); }}
-          planInfo={planInfo} onUserUpdate={onUserUpdate}/>}
+          planInfo={planInfo} onUserUpdate={onUserUpdate}
+          monoInfo={monoInfo} monoLoading={monoLoading} monoSyncing={monoSyncing}
+          monoMsg={monoMsg} onMonoConnect={openMonoConnect}
+          onMonoSync={handleMonoSync} onMonoDisconnect={handleMonoDisconnect}/>}
         {showDP&&<DateRangePicker preset={datePreset} dateRange={dateRange} onChange={handleDateChange} onClose={()=>setShowDP(false)} primaryColor={p}/>}
         {showUpgrade&&<UpgradeModal onClose={()=>setShowUpgrade(false)} reason={atLimit?"limit":"default"} monthCount={monthCount} p={p} user={user} currency={currency}/>}
         {editingEntry&&<EditEntryModal entry={editingEntry} onClose={()=>setEditingEntry(null)} onSave={handleEditSave} incCats={incCats} expCats={expCats} currency={currency}/>}
