@@ -4095,28 +4095,6 @@ function AppCore({ user, onLogout, onUserUpdate }) {
   const [monoMsg,       setMonoMsg]       = useState("");
   const [showMonoPrompt,setShowMonoPrompt]= useState(false);
 
-  // Load Mono connection info in real time
-  useEffect(() => {
-    if (!uid || !isPro) return;
-    const unsubMono = onSnapshot(
-      doc(db, `users/${uid}/settings/mono`),
-      (snap) => {
-        if (snap.exists()) {
-          setMonoInfo(snap.data());
-          setShowMonoPrompt(false);
-        } else {
-          setMonoInfo(null);
-          // Show home prompt only if not dismissed this session
-          if (!sessionStorage.getItem("mono_prompt_dismissed")) {
-            setShowMonoPrompt(true);
-          }
-        }
-      },
-      () => {}
-    );
-    return () => unsubMono();
-  }, [uid, isPro]);
-
   const handleMonoSuccess = async (code) => {
     setMonoLoading(true);
     setMonoMsg("");
@@ -4284,6 +4262,7 @@ function AppCore({ user, onLogout, onUserUpdate }) {
     let unsubBudgets;
     let unsubNotifs;
     let unsubPlan;
+    let unsubMono;
     const loadData = async () => {
       try {
         // Load profile fields (industry, phone) that may have been set during onboarding
@@ -4384,6 +4363,23 @@ function AppCore({ user, onLogout, onUserUpdate }) {
         unsubNotifs = onSnapshot(qn, (snapshot) => {
           setNotifs(snapshot.docs.map(d => ({ id: d.id, ...d.data() })));
         }, () => {});
+
+        // Real-time listener for Mono connection info
+        unsubMono = onSnapshot(
+          doc(db, `users/${uid}/settings/mono`),
+          (snap) => {
+            if (snap.exists()) {
+              setMonoInfo(snap.data());
+              setShowMonoPrompt(false);
+            } else {
+              setMonoInfo(null);
+              if (!sessionStorage.getItem("mono_prompt_dismissed")) {
+                setShowMonoPrompt(true);
+              }
+            }
+          },
+          () => {}
+        );
       } catch(e) {
         Sentry?.captureException(e, { tags: { operation: "load_user_data" } });
         setLoading(false);
@@ -4395,6 +4391,7 @@ function AppCore({ user, onLogout, onUserUpdate }) {
       if (unsubBudgets) unsubBudgets();
       if (unsubNotifs)  unsubNotifs();
       if (unsubPlan)    unsubPlan();
+      if (unsubMono)    unsubMono();
     };
   }, [uid]);
 
