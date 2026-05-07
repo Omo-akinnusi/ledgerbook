@@ -72,6 +72,10 @@ module.exports = async function handler(req, res) {
 
   const { email, planCode, uid, paymentType = "card", interval } = req.body || {};
 
+  console.log("paystack-init called:", { email, planCode, uid, paymentType, interval });
+  console.log("PLAN_AMOUNTS keys:", Object.keys(PLAN_AMOUNTS));
+  console.log("planCode match:", planCode, "->", PLAN_AMOUNTS[planCode]);
+
   if (!isValidEmail(email)) return res.status(400).json({ error: "Invalid email address" });
   if (!isValidUid(uid))     return res.status(400).json({ error: "Invalid session. Please sign in again." });
 
