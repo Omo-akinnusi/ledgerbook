@@ -127,17 +127,21 @@ async function sync(uid, db) {
   const start = new Date();
   start.setDate(start.getDate() - 90);
 
+  // Fetch all available transactions — no date filter
+  // Mono v2 date format requirements are unclear in sandbox mode
+  // so we fetch all and let Mono return what's available
   const monoRes = await fetch(
-    `https://api.withmono.com/v2/accounts/${accountId}/transactions?` +
-    `start=${start.toISOString().split("T")[0]}&end=${end.toISOString().split("T")[0]}&paginate=false`,
+    `https://api.withmono.com/v2/accounts/${accountId}/transactions?paginate=false`,
     { headers: { "mono-sec-key": process.env.MONO_SECRET_KEY } }
   );
   const monoData = await monoRes.json();
   const monoTxs = monoData.data || [];
 
   console.log(`Mono sync: fetched ${monoTxs.length} transactions for account ${accountId}`);
-  console.log(`Mono sync: date range ${start.toISOString().split("T")[0]} to ${end.toISOString().split("T")[0]}`);
+  console.log(`Mono sync: full response status: ${monoRes.status}`);
+  console.log(`Mono sync: response keys: ${Object.keys(monoData).join(", ")}`);
   if (monoTxs.length > 0) console.log("Mono sync: sample tx:", JSON.stringify(monoTxs[0]));
+  else console.log("Mono sync: raw response:", JSON.stringify(monoData));
 
   const entriesRef    = db.collection(`users/${uid}/entries`);
   const existingSnap  = await entriesRef.where("source", "==", "mono").get();
