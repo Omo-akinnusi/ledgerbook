@@ -2867,13 +2867,13 @@ function SettingsScreen({ branding, setBranding, currency, setCurrency, incCats,
                     <div style={{ fontSize:11, color:"#205361", marginTop:8, fontWeight:600 }}>{monoMsg}</div>
                   )}
                   <div style={{ display:"flex", gap:8, marginTop:14 }}>
-                    <button onClick={handleMonoSync} disabled={monoSyncing}
+                    <button onClick={onMonoSync} disabled={monoSyncing}
                       style={{ flex:1, padding:"11px", background:"linear-gradient(135deg,#205361,#5CB1CB)",
                         color:"#fff", border:"none", borderRadius:10,
                         fontWeight:800, fontSize:13, cursor:"pointer" }}>
                       {monoSyncing ? "Syncing…" : "Sync Transactions"}
                     </button>
-                    <button onClick={handleMonoDisconnect} disabled={monoLoading}
+                    <button onClick={onMonoDisconnect} disabled={monoLoading}
                       style={{ padding:"11px 16px", background:"none",
                         border:"1.5px solid #ffcdd2", borderRadius:10,
                         fontWeight:700, fontSize:13, color:"#c62828", cursor:"pointer" }}>
@@ -2886,7 +2886,7 @@ function SettingsScreen({ branding, setBranding, currency, setCurrency, incCats,
                   <p style={{ fontSize:12, color:"#9ca3af", lineHeight:1.6, marginBottom:12 }}>
                     Connect your Nigerian bank account to automatically import transactions into Cash Counter. No manual entry needed.
                   </p>
-                  <button onClick={openMonoConnect} disabled={monoLoading}
+                  <button onClick={onMonoConnect} disabled={monoLoading}
                     style={{ width:"100%", padding:"13px",
                       background:"linear-gradient(135deg,#205361,#5CB1CB)",
                       color:"#fff", border:"none", borderRadius:12,
@@ -4168,10 +4168,16 @@ function AppCore({ user, onLogout, onUserUpdate }) {
       showToast("Mono not configured", "#c62828");
       return;
     }
-    const mono = new window.Connect({
-      key: monoPublicKey,
+    // Mono Connect widget — supports both old and new SDK versions
+    const MonoConnect = window.MonoConnect || window.Connect;
+    if (!MonoConnect) {
+      showToast("Mono Connect failed to load. Please refresh and try again.", "#c62828");
+      return;
+    }
+    const mono = new MonoConnect({
+      key:       monoPublicKey,
       onSuccess: ({ code }) => handleMonoSuccess(code),
-      onClose: () => {},
+      onClose:   () => {},
     });
     mono.setup();
     mono.open();
