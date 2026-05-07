@@ -64,6 +64,9 @@ function mapCategory(tx, type) {
 
 function formatDate(dateStr) {
   if (!dateStr) return new Date().toISOString().split("T")[0];
+  // Mono v2 returns full ISO timestamps e.g. "2026-05-07T15:08:55.818Z"
+  // Mono v1 returned DD/MM/YYYY
+  if (dateStr.includes("T")) return dateStr.slice(0, 10);
   if (dateStr.includes("/")) {
     const [d, m, y] = dateStr.split("/");
     return `${y}-${m.padStart(2,"0")}-${d.padStart(2,"0")}`;
@@ -127,21 +130,24 @@ async function sync(uid, db) {
   const start = new Date();
   start.setDate(start.getDate() - 90);
 
-  // Fetch all available transactions — no date filter
-  // Mono v2 date format requirements are unclear in sandbox mode
-  // so we fetch all and let Mono return what's available
+  // Format date as DD/MM/YYYY — required by Mono v2 transactions API
+  function monoDate(d) {
+    return `${String(d.getDate()).padStart(2,"0")}/${String(d.getMonth()+1).padStart(2,"0")}/${d.getFullYear()}`;
+  }
+
+  const end   = new Date();
+  const start = new Date();
+  start.setDate(start.getDate() - 90);
+
   const monoRes = await fetch(
-    `https://api.withmono.com/v2/accounts/${accountId}/transactions?paginate=false`,
+    `https://api.withmono.com/v2/accounts/${accountId}/transactions?` +
+    `start=${monoDate(start)}&end=${monoDate(end)}&paginate=false`,
     { headers: { "mono-sec-key": process.env.MONO_SECRET_KEY } }
   );
   const monoData = await monoRes.json();
   const monoTxs = monoData.data || [];
 
   console.log(`Mono sync: fetched ${monoTxs.length} transactions for account ${accountId}`);
-  console.log(`Mono sync: full response status: ${monoRes.status}`);
-  console.log(`Mono sync: response keys: ${Object.keys(monoData).join(", ")}`);
-  if (monoTxs.length > 0) console.log("Mono sync: sample tx:", JSON.stringify(monoTxs[0]));
-  else console.log("Mono sync: raw response:", JSON.stringify(monoData));
 
   const entriesRef    = db.collection(`users/${uid}/entries`);
   const existingSnap  = await entriesRef.where("source", "==", "mono").get();
@@ -170,9 +176,10 @@ async function sync(uid, db) {
     imported++;
   }
 
-  const balRes  = await fetch(`https://api.withmono.com/v2/accounts/${accountId}`,
+  const balRes = await fetch(`https://api.withmono.com/v2/accounts/${accountId}`,
     { headers: { "mono-sec-key": process.env.MONO_SECRET_KEY } }).catch(() => null);
-  const newBal  = balRes ? (await balRes.json()).data?.account?.balance || 0 : monoSnap.data().balance;
+  const balData = balRes ? await balRes.json() : null;
+  const newBal  = balData?.data?.account?.balance ?? monoSnap.data().balance;
 
   await db.doc(`users/${uid}/settings/mono`).set({
     lastSyncAt: new Date().toISOString(),
