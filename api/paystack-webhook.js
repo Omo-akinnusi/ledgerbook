@@ -7,7 +7,7 @@ let admin;
 // Cash Counter Firebase (main app)
 function getDb() {
   if (!admin) admin = require("firebase-admin");
-  if (!admin.apps.length) {
+  if (!admin.apps.find(a => a.name === "cashcounter")) {
     admin.initializeApp({
       credential: admin.credential.cert({
         projectId:   process.env.FIREBASE_PROJECT_ID,

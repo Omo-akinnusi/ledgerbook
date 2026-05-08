@@ -8,26 +8,26 @@ let _admin;
 
 function getAdmin() {
   if (!_admin) _admin = require("firebase-admin");
-  if (!_admin.apps.length) {
+  if (!_admin.apps.find(a => a.name === "cashcounter")) {
     _admin.initializeApp({
       credential: _admin.credential.cert({
         projectId:   process.env.FIREBASE_PROJECT_ID,
         clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
         privateKey:  (process.env.FIREBASE_PRIVATE_KEY || "").replace(/\\n/g, "\n"),
       }),
-    });
+    }, "cashcounter");
   }
   return _admin;
 }
 
 function getDb() {
-  return getAdmin().app().firestore();
+  return getAdmin().app("cashcounter").firestore();
 }
 
 // ── Helpers ───────────────────────────────────────────────
 async function verifyToken(uid, idToken) {
   const a = getAdmin();
-  const decoded = await a.app().auth().verifyIdToken(idToken);
+  const decoded = await a.app("cashcounter").auth().verifyIdToken(idToken);
   if (decoded.uid !== uid) throw new Error("Token uid mismatch");
   return decoded;
 }
