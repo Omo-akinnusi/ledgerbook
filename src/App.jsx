@@ -5,7 +5,6 @@
 
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import * as Sentry from "@sentry/react";
-import StagingBanner from "./StagingBanner.jsx";
 import {
   trackSignup, trackLogin, trackLogout, trackPasswordReset,
   trackOnboardingStart, trackOnboardingComplete, trackOnboardingSkip,
@@ -2322,55 +2321,6 @@ const AInput = AuthField;
 // ═══════════════════════════════════════════════════════════════
 // KEYBOARD WIDGET
 // ═══════════════════════════════════════════════════════════════
-function KeyboardWidget({ currency, branding, incCats, expCats, onClose }) {
-  const [kwType,setKwType] = useState("income");
-  const [kwAmt,setKwAmt]   = useState("");
-  const [kwCat,setKwCat]   = useState("");
-  const [kwNote,setKwNote] = useState("");
-  const cats = kwType==="income"?incCats:expCats;
-  return (
-    <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.45)", zIndex:200, display:"flex", alignItems:"flex-end" }}
-      onClick={e=>{if(e.target===e.currentTarget)onClose(null);}}>
-      <div style={{ background:"#1a1a2e", borderRadius:"24px 24px 0 0", width:"100%", padding:`18px ${S.px}px`,
-        paddingBottom:`max(${S.px}px, calc(env(safe-area-inset-bottom, 0px) + ${S.px}px))` }}>
-        <div style={{ width:40, height:4, background:"rgba(255,255,255,0.2)", borderRadius:2, margin:"0 auto 16px" }}/>
-        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:14 }}>
-          <span style={{ color:"#fff", fontWeight:800, fontSize:16 }}>⌨️ Quick Entry</span>
-          <button onClick={()=>onClose(null)} style={{ background:"rgba(255,255,255,0.12)", border:"none", color:"#fff", borderRadius:10, padding:"6px 14px", cursor:"pointer", fontSize:13, fontWeight:600 }}>✕</button>
-        </div>
-        <div style={{ display:"flex", background:"rgba(255,255,255,0.08)", borderRadius:12, padding:3, marginBottom:14 }}>
-          {["income","expense"].map(t=>(
-            <button key={t} onClick={()=>{setKwType(t);setKwCat("");}}
-              style={{ flex:1, padding:"10px", border:"none", borderRadius:10, fontWeight:700, fontSize:13, cursor:"pointer",
-                background:kwType===t?(t==="income"?"#25D366":"#FF9800"):"transparent", color:kwType===t?"#fff":"#888" }}>
-              {t==="income"?"Income":"Expense"}
-            </button>
-          ))}
-        </div>
-        <input value={kwAmt} onChange={e=>setKwAmt(e.target.value)} type="number" placeholder={`Amount (${currency.symbol})`}
-          style={{ width:"100%", background:"rgba(255,255,255,0.08)", border:"1.5px solid rgba(255,255,255,0.15)", borderRadius:12,
-            padding:"12px 15px", color:"#fff", fontSize:22, fontWeight:800, marginBottom:12, boxSizing:"border-box", outline:"none" }}/>
-        <div style={{ display:"flex", gap:7, flexWrap:"wrap", marginBottom:12 }}>
-          {cats.map(c=>(
-            <button key={c} onClick={()=>setKwCat(c)}
-              style={{ padding:"6px 13px", borderRadius:18, border:`1.5px solid ${kwCat===c?"#25D366":"rgba(255,255,255,0.2)"}`,
-                background:kwCat===c?"rgba(37,211,102,0.18)":"transparent", color:kwCat===c?"#25D366":"#bbb", fontSize:12, cursor:"pointer" }}>
-              {c}
-            </button>
-          ))}
-        </div>
-        <input value={kwNote} onChange={e=>setKwNote(e.target.value)} type="text" placeholder="Note (optional)"
-          style={{ width:"100%", background:"rgba(255,255,255,0.08)", border:"1.5px solid rgba(255,255,255,0.15)", borderRadius:12,
-            padding:"10px 15px", color:"#fff", fontSize:14, marginBottom:14, boxSizing:"border-box", outline:"none" }}/>
-        <button onClick={()=>{if(kwAmt&&kwCat)onClose({type:kwType,amount:parseFloat(kwAmt),category:kwCat,note:kwNote});}}
-          style={{ width:"100%", padding:"15px", background:kwType==="income"?"#25D366":"#FF9800", color:"#fff", border:"none", borderRadius:14, fontSize:15, fontWeight:900, cursor:"pointer" }}>
-          ✓ Save Entry
-        </button>
-      </div>
-    </div>
-  );
-}
-
 // ═══════════════════════════════════════════════════════════════
 // SETTINGS SCREEN
 // ═══════════════════════════════════════════════════════════════
@@ -3961,10 +3911,10 @@ export default function CashCounter() {
     if (auth.currentUser) reload(auth.currentUser);
   };
 
-  if (!authChecked) return (<ErrorBoundary><StagingBanner/><GlobalStyles/><SplashScreen/></ErrorBoundary>);
-  if (!user)        return (<ErrorBoundary><StagingBanner/><GlobalStyles/><AuthScreen/></ErrorBoundary>);
+  if (!authChecked) return (<ErrorBoundary><GlobalStyles/><SplashScreen/></ErrorBoundary>);
+  if (!user)        return (<ErrorBoundary><GlobalStyles/><AuthScreen/></ErrorBoundary>);
   if (needsVerification) return (
-    <><StagingBanner/><GlobalStyles/><EmailVerificationScreen
+    <><GlobalStyles/><EmailVerificationScreen
       email={user.email}
       onVerified={handleVerified}
       onLogout={handleLogout}
@@ -3972,9 +3922,9 @@ export default function CashCounter() {
     /></>
   );
   if (needsOnboarding) return (
-    <><StagingBanner/><GlobalStyles/><OnboardingScreen user={user} onComplete={handleOnboardingComplete}/></>
+    <><GlobalStyles/><OnboardingScreen user={user} onComplete={handleOnboardingComplete}/></>
   );
-  return (<ErrorBoundary><StagingBanner/><GlobalStyles/><AppCore user={user} onLogout={handleLogout} onUserUpdate={u=>setUser(prev=>({...prev,...u}))}/></ErrorBoundary>);
+  return (<ErrorBoundary><GlobalStyles/><AppCore user={user} onLogout={handleLogout} onUserUpdate={u=>setUser(prev=>({...prev,...u}))}/></ErrorBoundary>);
 }
 
 // ═══════════════════════════════════════════════════════════════
