@@ -126,23 +126,28 @@ async function sync(uid, db) {
   }
   const { accountId } = monoSnap.data();
 
-  // Format date as DD/MM/YYYY — required by Mono v2 transactions API
-  const monoDate = (d) =>
-    `${String(d.getDate()).padStart(2,"0")}/${String(d.getMonth()+1).padStart(2,"0")}/${d.getFullYear()}`;
-
-  const end   = new Date();
-  const start = new Date();
-  start.setDate(start.getDate() - 90);
-
   const monoRes = await fetch(
-    `https://api.withmono.com/v2/accounts/${accountId}/transactions?` +
-    `start=${monoDate(start)}&end=${monoDate(end)}&paginate=false`,
+    `https://api.withmono.com/v2/accounts/${accountId}/transactions?paginate=false`,
     { headers: { "mono-sec-key": process.env.MONO_SECRET_KEY } }
   );
   const monoData = await monoRes.json();
-  const monoTxs = monoData.data || [];
+  const allTxs = monoData.data || [];
 
-  console.log(`Mono sync: fetched ${monoTxs.length} transactions for account ${accountId}`);
+  // Filter locally to last 90 days — Mono's date filter params
+  // behave inconsistently between sandbox and live environments
+  const ninetyDaysAgo = new Date();
+  ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
+  // Safety cap — never import more than 500 transactions in a single sync
+  // to protect against excessive Firestore writes
+  const MAX_IMPORT = 500;
+  const monoTxs = allTxs
+    .filter(tx => {
+      if (!tx.date) return false;
+      return new Date(tx.date) >= ninetyDaysAgo;
+    })
+    .slice(0, MAX_IMPORT);
+
+  console.log(`Mono sync: fetched ${allTxs.length} total, ${monoTxs.length} within 90 days for account ${accountId}`);
 
   const entriesRef    = db.collection(`users/${uid}/entries`);
   const existingSnap  = await entriesRef.where("source", "==", "mono").get();
