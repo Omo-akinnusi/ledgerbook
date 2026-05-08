@@ -980,6 +980,7 @@ function UpgradeModal({ onClose, reason="default", monthCount=0, p="#075E54", us
     ["infinity",  "Unlimited entries",          "Free plan: 20/month"],
     ["target",    "Budget creation & tracking", "Set targets, track actuals"],
     ["tag",       "Custom categories",          "Add, edit, remove categories"],
+    ["bank",      "Link your bank account",     "Auto-import transactions via Mono"],
     ["shield",    "No ads, ever",               "Clean, distraction-free UI"],
     ["chart",     "All reports & exports",      "CSV, PDF income statements"],
   ];
@@ -3775,13 +3776,13 @@ class ErrorBoundary extends React.Component {
 const WELCOME_SCREENS = [
   {
     icon: (
-      <svg viewBox="0 0 64 64" fill="none" style={{ width:72, height:72 }}>
-        <rect x="8" y="8" width="48" height="48" rx="14" fill="rgba(92,177,203,0.15)" stroke="#5CB1CB" strokeWidth="1.5"/>
-        <path d="M20 38 L28 28 L36 34 L44 22" stroke="#5CB1CB" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
-        <circle cx="44" cy="22" r="3" fill="#5CB1CB"/>
-        <rect x="20" y="42" width="8" height="3" rx="1.5" fill="rgba(92,177,203,0.5)"/>
-        <rect x="30" y="38" width="8" height="7" rx="1.5" fill="rgba(92,177,203,0.5)"/>
-        <rect x="40" y="34" width="8" height="11" rx="1.5" fill="#5CB1CB"/>
+      <svg viewBox="0 0 56 56" fill="none" style={{ width:56, height:56 }}>
+        <path d="M8 42 L20 28 L30 35 L42 18" stroke="#5CB1CB" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/>
+        <circle cx="42" cy="18" r="4" fill="#5CB1CB"/>
+        <rect x="8" y="45" width="8" height="4" rx="2" fill="rgba(92,177,203,0.4)"/>
+        <rect x="20" y="40" width="8" height="9" rx="2" fill="rgba(92,177,203,0.4)"/>
+        <rect x="32" y="35" width="8" height="14" rx="2" fill="rgba(92,177,203,0.6)"/>
+        <rect x="44" y="28" width="8" height="21" rx="2" fill="#5CB1CB"/>
       </svg>
     ),
     label: "Track income & expenses",
@@ -3790,57 +3791,56 @@ const WELCOME_SCREENS = [
   },
   {
     icon: (
-      <svg viewBox="0 0 64 64" fill="none" style={{ width:72, height:72 }}>
-        <circle cx="32" cy="32" r="24" fill="rgba(92,177,203,0.12)" stroke="#5CB1CB" strokeWidth="1.5"/>
-        <path d="M32 18 L32 32 L42 38" stroke="#5CB1CB" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
-        <circle cx="32" cy="32" r="4" fill="#5CB1CB"/>
-        <text x="32" y="56" textAnchor="middle" fill="#5CB1CB" fontSize="8" fontWeight="bold">PROFIT</text>
+      <svg viewBox="0 0 56 56" fill="none" style={{ width:56, height:56 }}>
+        <circle cx="28" cy="28" r="20" stroke="#5CB1CB" strokeWidth="2.5"/>
+        <path d="M28 16 L28 28 L38 34" stroke="#5CB1CB" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/>
+        <circle cx="28" cy="28" r="3.5" fill="#5CB1CB"/>
+        <path d="M28 8 L28 12 M28 44 L28 48 M8 28 L12 28 M44 28 L48 28" stroke="rgba(92,177,203,0.3)" strokeWidth="2" strokeLinecap="round"/>
       </svg>
     ),
     label: "Know your real profit",
     headline: "See your real profit\nin real time.",
-    body: "Your dashboard updates the moment you record a transaction. No more guessing what's left after expenses — your net profit is always front and centre.",
+    body: "Your dashboard updates the moment you record a transaction. Your net profit is always front and centre — no more guessing.",
   },
   {
     icon: (
-      <svg viewBox="0 0 64 64" fill="none" style={{ width:72, height:72 }}>
-        <rect x="10" y="16" width="44" height="32" rx="10" fill="rgba(92,177,203,0.12)" stroke="#5CB1CB" strokeWidth="1.5"/>
-        <rect x="18" y="30" width="28" height="5" rx="2.5" fill="rgba(92,177,203,0.2)"/>
-        <rect x="18" y="30" width="16" height="5" rx="2.5" fill="#5CB1CB"/>
-        <path d="M46 16 L46 10 M50 18 L54 14 M48 22 L54 22" stroke="#5CB1CB" strokeWidth="2" strokeLinecap="round"/>
-        <rect x="18" y="22" width="12" height="4" rx="2" fill="rgba(92,177,203,0.4)"/>
+      <svg viewBox="0 0 56 56" fill="none" style={{ width:56, height:56 }}>
+        <rect x="8" y="16" width="40" height="28" rx="8" stroke="#5CB1CB" strokeWidth="2.5"/>
+        <rect x="16" y="28" width="24" height="5" rx="2.5" fill="rgba(92,177,203,0.2)"/>
+        <rect x="16" y="28" width="15" height="5" rx="2.5" fill="#5CB1CB"/>
+        <rect x="16" y="21" width="10" height="3.5" rx="1.75" fill="rgba(92,177,203,0.4)"/>
+        <path d="M42 10 L42 6 M46 14 L50 10 M48 20 L52 20" stroke="#5CB1CB" strokeWidth="2.5" strokeLinecap="round"/>
       </svg>
     ),
     label: "Budgets & alerts",
     headline: "Set budgets.\nStay on track.",
-    body: "Create spending targets for any category. Cash Counter tracks your progress in real time and alerts you before you overspend — not after.",
+    body: "Create spending targets for any category. Cash Counter tracks your progress and alerts you before you overspend — not after.",
   },
   {
     icon: (
-      <svg viewBox="0 0 64 64" fill="none" style={{ width:72, height:72 }}>
-        <rect x="14" y="8" width="36" height="46" rx="8" fill="rgba(92,177,203,0.12)" stroke="#5CB1CB" strokeWidth="1.5"/>
-        <rect x="20" y="20" width="24" height="2.5" rx="1.25" fill="rgba(92,177,203,0.5)"/>
-        <rect x="20" y="26" width="18" height="2.5" rx="1.25" fill="rgba(92,177,203,0.4)"/>
-        <rect x="20" y="32" width="20" height="2.5" rx="1.25" fill="rgba(92,177,203,0.4)"/>
-        <rect x="20" y="38" width="14" height="2.5" rx="1.25" fill="rgba(92,177,203,0.3)"/>
-        <path d="M38 48 L44 54 M44 48 L38 54" stroke="#5CB1CB" strokeWidth="2" strokeLinecap="round"/>
-        <circle cx="50" cy="51" r="7" fill="rgba(32,83,97,0.9)" stroke="#5CB1CB" strokeWidth="1.5"/>
-        <path d="M47 51 L49.5 53.5 L53 49" stroke="#5CB1CB" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+      <svg viewBox="0 0 56 56" fill="none" style={{ width:56, height:56 }}>
+        <rect x="12" y="6" width="32" height="42" rx="7" stroke="#5CB1CB" strokeWidth="2.5"/>
+        <rect x="18" y="18" width="20" height="2.5" rx="1.25" fill="#5CB1CB"/>
+        <rect x="18" y="24" width="14" height="2.5" rx="1.25" fill="rgba(92,177,203,0.55)"/>
+        <rect x="18" y="30" width="16" height="2.5" rx="1.25" fill="rgba(92,177,203,0.45)"/>
+        <rect x="18" y="36" width="10" height="2.5" rx="1.25" fill="rgba(92,177,203,0.35)"/>
+        <circle cx="40" cy="44" r="10" fill="#0d1f2a" stroke="#5CB1CB" strokeWidth="2"/>
+        <path d="M36.5 44 L39.5 47 L44 42" stroke="#5CB1CB" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
       </svg>
     ),
     label: "Reports in one tap",
     headline: "Generate reports.\nShare in one tap.",
-    body: "Create a full income statement as a PDF or CSV instantly. Professional enough to share with your bank, accountant, or investor — right from your phone.",
+    body: "Create a full income statement as PDF or CSV instantly. Professional enough for your bank, accountant, or investor — from your phone.",
   },
   {
     icon: (
-      <svg viewBox="0 0 64 64" fill="none" style={{ width:72, height:72 }}>
-        <rect x="10" y="20" width="44" height="30" rx="10" fill="rgba(92,177,203,0.12)" stroke="#5CB1CB" strokeWidth="1.5"/>
-        <rect x="10" y="28" width="44" height="8" fill="rgba(92,177,203,0.15)"/>
-        <rect x="18" y="36" width="12" height="6" rx="3" fill="#5CB1CB"/>
-        <path d="M24 12 L24 20 M32 10 L32 20 M40 12 L40 20" stroke="#5CB1CB" strokeWidth="2" strokeLinecap="round"/>
-        <circle cx="48" cy="46" r="8" fill="rgba(32,83,97,.9)" stroke="#5CB1CB" strokeWidth="1.5"/>
-        <path d="M45 46 L47.5 48.5 L51 44" stroke="#5CB1CB" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+      <svg viewBox="0 0 56 56" fill="none" style={{ width:56, height:56 }}>
+        <rect x="6" y="18" width="44" height="28" rx="8" stroke="#5CB1CB" strokeWidth="2.5"/>
+        <rect x="6" y="26" width="44" height="8" fill="rgba(92,177,203,0.15)"/>
+        <rect x="14" y="34" width="14" height="5" rx="2.5" fill="#5CB1CB"/>
+        <path d="M18 10 L18 18 M28 8 L28 18 M38 10 L38 18" stroke="#5CB1CB" strokeWidth="2.5" strokeLinecap="round"/>
+        <circle cx="44" cy="42" r="9" fill="#0d1f2a" stroke="#5CB1CB" strokeWidth="2"/>
+        <path d="M41 42 L43.5 44.5 L48 40" stroke="#5CB1CB" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
       </svg>
     ),
     label: "Link your bank",
@@ -3850,201 +3850,212 @@ const WELCOME_SCREENS = [
 ];
 
 const WS_CSS = `
-  @keyframes ws-slide-in  { from { opacity:0; transform:translateX(32px) } to { opacity:1; transform:translateX(0) } }
-  @keyframes ws-slide-out { from { opacity:1; transform:translateX(0) }     to { opacity:0; transform:translateX(-32px) } }
-  @keyframes ws-fade-in   { from { opacity:0; transform:translateY(20px) }  to { opacity:1; transform:translateY(0) } }
-  .ws-entering { animation: ws-slide-in .35s cubic-bezier(.22,.68,0,1.1) both }
-  .ws-icon     { animation: ws-fade-in  .4s  cubic-bezier(.22,.68,0,1.2) .1s both }
+  @keyframes ws-in  { from { opacity:0; transform:translateX(28px) } to { opacity:1; transform:translateX(0) } }
+  @keyframes ws-up  { from { opacity:0; transform:translateY(16px) } to { opacity:1; transform:translateY(0) } }
+  .ws-slide { animation: ws-in .32s cubic-bezier(.22,.68,0,1.1) both }
+  .ws-icon  { animation: ws-up .38s cubic-bezier(.22,.68,0,1.2) .06s both }
+
+  /* Responsive container — fills mobile, centres on desktop */
+  .ws-root {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(160deg,#030a10 0%,#0d1f2a 100%);
+    padding: 0;
+  }
+  .ws-card {
+    width: 100%;
+    max-width: 480px;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    z-index: 2;
+  }
+  @media (min-width: 600px) {
+    .ws-root {
+      padding: 40px 24px;
+      background: linear-gradient(160deg,#030a10 0%,#0d1f2a 100%);
+    }
+    .ws-card {
+      min-height: auto;
+      border-radius: 28px;
+      border: 1px solid rgba(92,177,203,.15);
+      box-shadow: 0 32px 80px rgba(0,0,0,.5);
+      overflow: hidden;
+      background: linear-gradient(160deg,#030a10 0%,#0d1f2a 100%);
+    }
+  }
+
+  /* Icon container — fixed size so all icons align the same */
+  .ws-icon-wrap {
+    width: 120px;
+    height: 120px;
+    border-radius: 32px;
+    background: rgba(92,177,203,0.1);
+    border: 1.5px solid rgba(92,177,203,0.22);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 32px;
+  }
 `;
 
 function WelcomeScreen({ onDone }) {
-  const [step,  setStep]  = useState(0);
-  const [key,   setKey]   = useState(0); // force re-mount for animation
+  const [step, setStep] = useState(0);
+  const [key,  setKey]  = useState(0);
 
-  const isLast   = step === WELCOME_SCREENS.length;
-  const current  = WELCOME_SCREENS[step] || null;
-  const TOTAL    = WELCOME_SCREENS.length;
+  const isLast  = step === WELCOME_SCREENS.length;
+  const current = WELCOME_SCREENS[step] || null;
+  const TOTAL   = WELCOME_SCREENS.length;
+  const acc     = "#5CB1CB";
+  const brand   = "#205361";
 
-  const goNext = () => {
-    setKey(k => k + 1);
-    setStep(s => s + 1);
-  };
-
-  const skip = () => {
-    onDone();
-  };
-
-  const p    = "#205361";
-  const acc  = "#5CB1CB";
-  const W    = "100%";
+  const goNext = () => { setKey(k => k + 1); setStep(s => s + 1); };
+  const skip   = () => onDone();
 
   return (
-    <div style={{
-      minHeight: "100vh",
-      background: "linear-gradient(160deg,#030a10 0%,#0d1f2a 100%)",
-      display: "flex", flexDirection: "column",
-      alignItems: "center", justifyContent: "space-between",
-      padding: "0 0 env(safe-area-inset-bottom,0px)",
-      position: "relative", overflow: "hidden",
-    }}>
+    <div className="ws-root">
       <style>{WS_CSS}</style>
 
-      {/* Background grid */}
-      <div style={{ position:"absolute", inset:0, pointerEvents:"none",
-        backgroundImage:"linear-gradient(rgba(92,177,203,.045) 1px,transparent 1px),linear-gradient(90deg,rgba(92,177,203,.045) 1px,transparent 1px)",
-        backgroundSize:"42px 42px" }}/>
+      {/* Background grid — covers the whole viewport */}
+      <div style={{ position:"fixed", inset:0, pointerEvents:"none", zIndex:0,
+        backgroundImage:"linear-gradient(rgba(92,177,203,.04) 1px,transparent 1px),linear-gradient(90deg,rgba(92,177,203,.04) 1px,transparent 1px)",
+        backgroundSize:"44px 44px" }}/>
+      <div style={{ position:"fixed", width:600, height:600, borderRadius:"50%", pointerEvents:"none", zIndex:0,
+        background:"radial-gradient(circle,rgba(32,83,97,.5) 0%,transparent 65%)",
+        top:-200, left:-160 }}/>
+      <div style={{ position:"fixed", width:380, height:380, borderRadius:"50%", pointerEvents:"none", zIndex:0,
+        background:"radial-gradient(circle,rgba(92,177,203,.09) 0%,transparent 65%)",
+        bottom:-80, right:-80 }}/>
 
-      {/* Orbs */}
-      <div style={{ position:"absolute", width:500, height:500, borderRadius:"50%",
-        background:"radial-gradient(circle,rgba(32,83,97,.55) 0%,transparent 65%)",
-        top:-180, left:-150, pointerEvents:"none" }}/>
-      <div style={{ position:"absolute", width:340, height:340, borderRadius:"50%",
-        background:"radial-gradient(circle,rgba(92,177,203,.1) 0%,transparent 65%)",
-        bottom:-80, right:-80, pointerEvents:"none" }}/>
+      <div className="ws-card">
 
-      {/* Top bar — logo + skip */}
-      <div style={{ width:W, maxWidth:480, display:"flex", alignItems:"center",
-        justifyContent:"space-between", padding:"52px 28px 0", position:"relative", zIndex:2 }}>
-        <div style={{ display:"flex", alignItems:"center", gap:10 }}>
-          <div style={{ width:34, height:34, borderRadius:10,
-            background:`linear-gradient(135deg,${p},${acc})`,
-            display:"flex", alignItems:"center", justifyContent:"center",
-            boxShadow:`0 0 18px rgba(92,177,203,.3)` }}>
-            <svg viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2"
-              strokeLinecap="round" strokeLinejoin="round" style={{ width:17, height:17 }}>
-              <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
-              <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
-            </svg>
+        {/* Top bar */}
+        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between",
+          padding:"44px 28px 0", flexShrink:0 }}>
+          <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+            <div style={{ width:36, height:36, borderRadius:10,
+              background:`linear-gradient(135deg,${brand},${acc})`,
+              display:"flex", alignItems:"center", justifyContent:"center",
+              boxShadow:`0 0 20px rgba(92,177,203,.28)`, flexShrink:0 }}>
+              <svg viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2"
+                strokeLinecap="round" strokeLinejoin="round" style={{ width:17, height:17 }}>
+                <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+                <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+              </svg>
+            </div>
+            <span style={{ fontWeight:700, fontSize:15, color:"#fff" }}>
+              Cash <span style={{ color:acc }}>Counter</span>
+            </span>
           </div>
-          <span style={{ fontWeight:700, fontSize:15, color:"#fff", letterSpacing:"-.2px" }}>
-            Cash <span style={{ color:acc }}>Counter</span>
-          </span>
+          {!isLast && (
+            <button onClick={skip} style={{ background:"rgba(255,255,255,.08)",
+              border:"none", color:"rgba(255,255,255,.55)", fontSize:13,
+              fontWeight:600, padding:"7px 18px", borderRadius:20, cursor:"pointer" }}>
+              Skip
+            </button>
+          )}
         </div>
-        {!isLast && (
-          <button onClick={skip}
-            style={{ background:"rgba(255,255,255,.08)", border:"none",
-              color:"rgba(255,255,255,.6)", fontSize:13, fontWeight:600,
-              padding:"7px 16px", borderRadius:20, cursor:"pointer" }}>
-            Skip
-          </button>
-        )}
-      </div>
 
-      {/* Content area */}
-      <div key={key} className="ws-entering" style={{
-        flex:1, display:"flex", flexDirection:"column",
-        alignItems:"center", justifyContent:"center",
-        padding:"40px 32px 24px", maxWidth:480, width:W,
-        position:"relative", zIndex:2,
-      }}>
-        {!isLast ? (
-          <>
-            {/* Icon */}
-            <div className="ws-icon" style={{ marginBottom:36 }}>
-              {current.icon}
-            </div>
-
-            {/* Label pill */}
-            <div style={{ background:"rgba(92,177,203,.12)", border:"1px solid rgba(92,177,203,.25)",
-              borderRadius:20, padding:"5px 16px", marginBottom:16,
-              fontSize:10, fontWeight:700, color:acc,
-              letterSpacing:"1.2px", textTransform:"uppercase" }}>
-              {current.label}
-            </div>
-
-            {/* Headline */}
-            <div style={{ fontFamily:"inherit", fontWeight:900, fontSize:34,
-              color:"#fff", lineHeight:1.1, letterSpacing:"-1.5px",
-              textAlign:"center", marginBottom:18, whiteSpace:"pre-line" }}>
-              {current.headline}
-            </div>
-
-            {/* Body */}
-            <p style={{ fontSize:15, fontWeight:300, color:"rgba(255,255,255,.55)",
-              lineHeight:1.7, textAlign:"center", maxWidth:340, margin:0 }}>
-              {current.body}
-            </p>
-          </>
-        ) : (
-          /* Final Get Started screen */
-          <>
-            <div className="ws-icon" style={{ marginBottom:32 }}>
-              <div style={{ width:88, height:88, borderRadius:26,
-                background:`linear-gradient(135deg,${p},${acc})`,
-                display:"flex", alignItems:"center", justifyContent:"center",
-                boxShadow:`0 0 48px rgba(92,177,203,.3)` }}>
-                <svg viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2"
-                  strokeLinecap="round" strokeLinejoin="round" style={{ width:44, height:44 }}>
-                  <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
-                  <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
-                </svg>
+        {/* Slide content */}
+        <div key={key} className="ws-slide" style={{
+          flex:1, display:"flex", flexDirection:"column",
+          alignItems:"center", justifyContent:"center",
+          padding:"48px 32px 32px", textAlign:"center",
+        }}>
+          {!isLast ? (
+            <>
+              {/* Icon box — consistent size across all screens */}
+              <div className="ws-icon ws-icon-wrap">
+                {current.icon}
               </div>
-            </div>
 
-            <div style={{ fontSize:11, fontWeight:700, color:acc,
-              letterSpacing:"2px", textTransform:"uppercase",
-              marginBottom:16, textAlign:"center" }}>
-              You're ready
-            </div>
+              {/* Label */}
+              <div style={{ background:"rgba(92,177,203,.12)", border:"1px solid rgba(92,177,203,.25)",
+                borderRadius:20, padding:"5px 16px", marginBottom:18,
+                fontSize:10, fontWeight:700, color:acc,
+                letterSpacing:"1.2px", textTransform:"uppercase" }}>
+                {current.label}
+              </div>
 
-            <div style={{ fontFamily:"inherit", fontWeight:900, fontSize:36,
-              color:"#fff", lineHeight:1.05, letterSpacing:"-1.5px",
-              textAlign:"center", marginBottom:18 }}>
-              Finally know<br/>your numbers.
-            </div>
+              {/* Headline */}
+              <div style={{ fontWeight:900, fontSize:32, color:"#fff",
+                lineHeight:1.1, letterSpacing:"-1.5px", marginBottom:16,
+                whiteSpace:"pre-line" }}>
+                {current.headline}
+              </div>
 
-            <p style={{ fontSize:15, fontWeight:300, color:"rgba(255,255,255,.55)",
-              lineHeight:1.7, textAlign:"center", maxWidth:320, margin:0 }}>
-              Join thousands of Nigerian businesses tracking their finances with Cash Counter.
-              Free to start — no credit card needed.
-            </p>
-          </>
-        )}
-      </div>
-
-      {/* Bottom — dots + button */}
-      <div style={{ width:W, maxWidth:480, padding:"0 28px 48px",
-        display:"flex", flexDirection:"column", alignItems:"center",
-        gap:24, position:"relative", zIndex:2 }}>
-
-        {/* Progress dots */}
-        <div style={{ display:"flex", gap:6, alignItems:"center" }}>
-          {[...Array(TOTAL + 1)].map((_, i) => (
-            <div key={i} onClick={() => { setKey(k=>k+1); setStep(i); }}
-              style={{
-                height:4, borderRadius:2, cursor:"pointer",
-                transition:"all .3s ease",
-                width: i === step ? 20 : 6,
-                background: i === step ? acc
-                  : i < step ? `rgba(92,177,203,.4)` : "rgba(255,255,255,.2)",
-              }}/>
-          ))}
+              {/* Body */}
+              <p style={{ fontSize:15, fontWeight:300, color:"rgba(255,255,255,.52)",
+                lineHeight:1.72, maxWidth:360, margin:"0 auto" }}>
+                {current.body}
+              </p>
+            </>
+          ) : (
+            /* Final screen */
+            <>
+              <div className="ws-icon" style={{ marginBottom:28 }}>
+                <div style={{ width:96, height:96, borderRadius:28,
+                  background:`linear-gradient(135deg,${brand},${acc})`,
+                  display:"flex", alignItems:"center", justifyContent:"center",
+                  boxShadow:`0 0 52px rgba(92,177,203,.28)`, margin:"0 auto" }}>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2"
+                    strokeLinecap="round" strokeLinejoin="round" style={{ width:46, height:46 }}>
+                    <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+                    <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+                  </svg>
+                </div>
+              </div>
+              <div style={{ fontSize:11, fontWeight:700, color:acc,
+                letterSpacing:"2px", textTransform:"uppercase", marginBottom:14 }}>
+                You're ready
+              </div>
+              <div style={{ fontWeight:900, fontSize:34, color:"#fff",
+                lineHeight:1.05, letterSpacing:"-1.5px", marginBottom:16 }}>
+                Finally know<br/>your numbers.
+              </div>
+              <p style={{ fontSize:15, fontWeight:300, color:"rgba(255,255,255,.52)",
+                lineHeight:1.72, maxWidth:320, margin:"0 auto" }}>
+                Join Nigerian businesses tracking their finances with Cash Counter.
+                Free to start — no credit card needed.
+              </p>
+            </>
+          )}
         </div>
 
-        {/* CTA button */}
-        {!isLast ? (
-          <button onClick={goNext} style={{
+        {/* Bottom — dots + button */}
+        <div style={{ padding:"0 28px 48px", display:"flex",
+          flexDirection:"column", alignItems:"center", gap:22, flexShrink:0 }}>
+
+          {/* Progress dots */}
+          <div style={{ display:"flex", gap:6, alignItems:"center" }}>
+            {[...Array(TOTAL + 1)].map((_, i) => (
+              <div key={i}
+                onClick={() => { setKey(k => k+1); setStep(i); }}
+                style={{ height:4, borderRadius:2, cursor:"pointer",
+                  transition:"all .3s ease",
+                  width: i === step ? 22 : 6,
+                  background: i === step ? acc
+                    : i < step ? "rgba(92,177,203,.4)"
+                    : "rgba(255,255,255,.2)" }}/>
+            ))}
+          </div>
+
+          {/* Button */}
+          <button onClick={isLast ? onDone : goNext} style={{
             width:"100%", padding:"16px",
-            background:`linear-gradient(135deg,${p},${acc})`,
+            background:`linear-gradient(135deg,${brand},${acc})`,
             color:"#fff", border:"none", borderRadius:16,
             fontSize:16, fontWeight:900, cursor:"pointer",
-            boxShadow:`0 0 32px rgba(92,177,203,.2), 0 8px 24px rgba(0,0,0,.4)`,
+            boxShadow:`0 0 32px rgba(92,177,203,.18), 0 8px 24px rgba(0,0,0,.35)`,
             letterSpacing:"-.2px",
           }}>
-            Continue →
+            {isLast ? "Get Started" : "Continue →"}
           </button>
-        ) : (
-          <button onClick={onDone} style={{
-            width:"100%", padding:"16px",
-            background:`linear-gradient(135deg,${p},${acc})`,
-            color:"#fff", border:"none", borderRadius:16,
-            fontSize:16, fontWeight:900, cursor:"pointer",
-            boxShadow:`0 0 32px rgba(92,177,203,.2), 0 8px 24px rgba(0,0,0,.4)`,
-            letterSpacing:"-.2px",
-          }}>
-            Get Started
-          </button>
-        )}
+        </div>
+
       </div>
     </div>
   );
