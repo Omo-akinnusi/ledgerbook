@@ -20,14 +20,6 @@
     {
       "src": "/subscription-success",
       "dest": "/subscription-success.html"
-    },
-    {
-      "src": "/api/(.*)",
-      "dest": "/api/$1"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "/index.html"
     }
   ],
   "headers": [
