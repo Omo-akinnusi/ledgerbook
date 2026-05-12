@@ -124,7 +124,7 @@ async function sync(uid, db) {
   if (!monoSnap.exists || !monoSnap.data().accountId) {
     throw Object.assign(new Error("No Mono account connected"), { status: 400 });
   }
-  const { accountId } = monoSnap.data();
+  const { accountId, lastSyncAt } = monoSnap.data();
 
   const monoRes = await fetch(
     `https://api.withmono.com/v2/accounts/${accountId}/transactions?paginate=false`,
@@ -133,21 +133,18 @@ async function sync(uid, db) {
   const monoData = await monoRes.json();
   const allTxs = monoData.data || [];
 
-  // Filter locally to last 90 days — Mono's date filter params
-  // behave inconsistently between sandbox and live environments
-  const ninetyDaysAgo = new Date();
-  ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
-  // Safety cap — never import more than 500 transactions in a single sync
-  // to protect against excessive Firestore writes
-  const MAX_IMPORT = 500;
-  const monoTxs = allTxs
-    .filter(tx => {
-      if (!tx.date) return false;
-      return new Date(tx.date) >= ninetyDaysAgo;
-    })
-    .slice(0, MAX_IMPORT);
+  // First sync: import last 90 days
+  // Subsequent syncs: only import transactions newer than lastSyncAt
+  // This avoids re-importing everything and relying on Mono's broken date filter
+  const cutoff = lastSyncAt
+    ? new Date(lastSyncAt)
+    : (() => { const d = new Date(); d.setDate(d.getDate() - 90); return d; })();
 
-  console.log(`Mono sync: fetched ${allTxs.length} total, ${monoTxs.length} within 90 days for account ${accountId}`);
+  const monoTxs = allTxs
+    .filter(tx => tx.date && new Date(tx.date) >= cutoff)
+    .slice(0, 500); // safety cap — max 500 per sync
+
+  console.log(`Mono sync: fetched ${allTxs.length} total, ${monoTxs.length} new since ${cutoff.toISOString()}`);
 
   const entriesRef    = db.collection(`users/${uid}/entries`);
   const existingSnap  = await entriesRef.where("source", "==", "mono").get();
