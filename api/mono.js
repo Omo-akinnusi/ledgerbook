@@ -135,16 +135,19 @@ async function sync(uid, db) {
 
   // First sync: import last 90 days
   // Subsequent syncs: only import transactions newer than lastSyncAt
-  // This avoids re-importing everything and relying on Mono's broken date filter
   const cutoff = lastSyncAt
     ? new Date(lastSyncAt)
     : (() => { const d = new Date(); d.setDate(d.getDate() - 90); return d; })();
 
   const monoTxs = allTxs
     .filter(tx => tx.date && new Date(tx.date) >= cutoff)
-    .slice(0, 500); // safety cap — max 500 per sync
+    .slice(0, 500);
 
-  console.log(`Mono sync: fetched ${allTxs.length} total, ${monoTxs.length} new since ${cutoff.toISOString()}`);
+  // Debug — log most recent 3 transaction dates to check against cutoff
+  const recent3 = allTxs.slice(0, 3).map(tx => ({ id: tx.id, date: tx.date, amount: tx.amount }));
+  console.log(`Mono sync: lastSyncAt=${lastSyncAt}, cutoff=${cutoff.toISOString()}`);
+  console.log(`Mono sync: ${allTxs.length} total fetched, ${monoTxs.length} pass cutoff`);
+  console.log(`Mono sync: 3 most recent txs:`, JSON.stringify(recent3));
 
   const entriesRef    = db.collection(`users/${uid}/entries`);
   const existingSnap  = await entriesRef.where("source", "==", "mono").get();
