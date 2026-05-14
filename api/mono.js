@@ -151,20 +151,40 @@ async function sync(uid, db) {
   console.log(`Mono sync: ${allTxs.length} total fetched, ${monoTxs.length} pass cutoff`);
   console.log(`Mono sync: 3 most recent txs:`, JSON.stringify(recent3));
 
-  const entriesRef    = db.collection(`users/${uid}/entries`);
-  const existingSnap  = await entriesRef.where("source", "==", "mono").get();
-  const existingIds   = new Set(existingSnap.docs.map(d => d.data().monoTxId).filter(Boolean));
+  const entriesRef   = db.collection(`users/${uid}/entries`);
+  const existingSnap = await entriesRef.where("source", "==", "mono").get();
 
-  console.log(`Mono dedup: found ${existingSnap.docs.length} existing mono entries, ${existingIds.size} with monoTxId`);
+  // Mono transaction IDs are NOT stable across API calls on live accounts —
+  // the same transaction returns a different ID each time.
+  // Use a fingerprint of date + amount + narration as the stable dedup key.
+  const fingerprint = (tx) => {
+    const date   = formatDate(tx.date);
+    const amount = Math.abs(tx.amount);
+    const narr   = (tx.narration || "").trim().toLowerCase().slice(0, 40);
+    return `${date}|${amount}|${narr}`;
+  };
+
+  const existingFingerprints = new Set(
+    existingSnap.docs.map(d => {
+      const e = d.data();
+      // Build fingerprint from stored entry
+      const narr = (e.note || "").trim().toLowerCase().slice(0, 40);
+      const amt  = Math.round(e.amount * 100); // convert back to kobo
+      return `${e.date}|${amt}|${narr}`;
+    })
+  );
+
+  console.log(`Mono dedup: ${existingSnap.docs.length} existing entries, ${existingFingerprints.size} fingerprints`);
 
   const batch = db.batch();
   let imported = 0, skipped = 0;
 
   for (const tx of monoTxs) {
-    const monoTxId = tx._id || tx.id;
-    if (existingIds.has(monoTxId)) { skipped++; continue; }
+    const fp     = fingerprint(tx);
+    if (existingFingerprints.has(fp)) { skipped++; continue; }
+
     const amount = Math.abs(tx.amount / 100);
-    if (!amount || amount <= 0)   { skipped++; continue; }
+    if (!amount || amount <= 0) { skipped++; continue; }
 
     const type     = mapType(tx);
     const category = mapCategory(tx, type);
@@ -174,7 +194,7 @@ async function sync(uid, db) {
       type, amount, category, date,
       note:      tx.narration || "",
       source:    "mono",
-      monoTxId,
+      monoTxId:  tx.id || tx._id || "",  // store for reference even if unstable
       createdAt: new Date().toISOString(),
     });
     imported++;
