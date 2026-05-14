@@ -134,9 +134,11 @@ async function sync(uid, db) {
   const allTxs = monoData.data || [];
 
   // First sync: import last 90 days
-  // Subsequent syncs: only import transactions newer than lastSyncAt
+  // Subsequent syncs: go back 120hrs (5 days) before lastSyncAt to catch
+  // transactions Mono processes with a significant delay (can be 2-5 days on live accounts)
+  // Deduplication by monoTxId prevents double-importing
   const cutoff = lastSyncAt
-    ? new Date(lastSyncAt)
+    ? (() => { const d = new Date(lastSyncAt); d.setDate(d.getDate() - 5); return d; })()
     : (() => { const d = new Date(); d.setDate(d.getDate() - 90); return d; })();
 
   const monoTxs = allTxs
