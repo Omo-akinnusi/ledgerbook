@@ -155,6 +155,8 @@ async function sync(uid, db) {
   const existingSnap  = await entriesRef.where("source", "==", "mono").get();
   const existingIds   = new Set(existingSnap.docs.map(d => d.data().monoTxId).filter(Boolean));
 
+  console.log(`Mono dedup: found ${existingSnap.docs.length} existing mono entries, ${existingIds.size} with monoTxId`);
+
   const batch = db.batch();
   let imported = 0, skipped = 0;
 
