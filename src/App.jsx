@@ -1,7 +1,36 @@
-// ================================================================
-// Cash Counter — Business Finance Tracker by VBook Enterprise
-// UI Fix: Proper mobile padding, safe-area insets, responsive layout
-// ================================================================
+// ════════════════════════════════════════════════════════════════════
+// Cash Counter — Business Finance Tracker
+// Built by VBook Enterprise | cashcounter.vbookng.com
+// ════════════════════════════════════════════════════════════════════
+//
+// COMPONENT MAP — use Ctrl+G (line number) or Ctrl+F to navigate
+// ─────────────────────────────────────────────────────────────────
+// CONSTANTS & CONFIG          ~ line  60   Plan codes, free limits,
+//                                          currency list, categories
+// ANALYTICS HELPERS           ~ line 130   GA4 event wrappers
+// FIREBASE HELPERS            ~ line 200   Firestore collection refs,
+//                                          document helpers
+// FORMATTING HELPERS          ~ line 300   fmtAmt, fmtDate, etc.
+// WELCOME SCREENS             ~ line 3775  First-time onboarding slides
+// SPLASH SCREEN               ~ line 3840  Loading screen
+// AUTH SCREEN                 ~ line 3860  Sign in / Sign up
+// EMAIL VERIFICATION          ~ line 4100  Email verification gate
+// ONBOARDING SCREEN           ~ line 3325  Business setup (4 steps)
+// UPGRADE MODAL               ~ line  975  Pro plan purchase flow
+// EDIT ENTRY MODAL            ~ line 2980  Edit existing entry
+// DELETE ACCOUNT MODAL        ~ line 2400  Account deletion flow
+// NOTIFICATION PANEL          ~ line 2490  In-app notification centre
+// DATE RANGE PICKER           ~ line 2540  Custom date range selector
+// AD BANNER                   ~ line 2260  House ads + AdSense fallback
+// SETTINGS SCREEN             ~ line 2546  Settings (brand/currency/cats/account)
+// APP CORE                    ~ line 3960  Main app shell + all state
+//   ├── Mono bank state       ~ line 4020  Connect/sync/disconnect
+//   ├── PWA install prompt    ~ line 4090  Add to home screen
+//   ├── Data loading          ~ line 4180  onSnapshot listeners
+//   └── Home / History /      ~ line 4500+ View rendering
+//       Budget / Summary
+// CASH COUNTER (root)         ~ line 4210  Auth gate + route to screens
+// ════════════════════════════════════════════════════════════════════
 
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import * as Sentry from "@sentry/react";
